@@ -1,0 +1,47 @@
+{
+  "name": "resourcexjs",
+  "version": "0.0.2",
+  "description": "ResourceX - Agent Resource Protocol for AI Agents",
+  "keywords": [
+    "resourcex",
+    "arp",
+    "agent",
+    "resource",
+    "protocol",
+    "ai"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Deepractice/ResourceX.git"
+  },
+  "homepage": "https://github.com/Deepractice/ResourceX",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "bun run build.ts",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@resourcexjs/core": "workspace:*"
+  },
+  "devDependencies": {},
+  "publishConfig": {
+    "access": "public"
+  }
+}
