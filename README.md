@@ -118,9 +118,11 @@ await rx.resolve("arp:json:https://api.example.com/data.json");
 
 Part of the [Deepractice](https://github.com/Deepractice) AI Agent infrastructure:
 
-- **[PromptX](https://github.com/Deepractice/PromptX)** - AI Agent context management platform (DPML)
-- **[AgentX](https://github.com/Deepractice/AgentX)** - Event-driven AI Agent runtime (DAEP)
-- **[DARP](https://github.com/Deepractice/DARP)** - Agent Resource Protocol specification
+- **[PromptX](https://github.com/Deepractice/PromptX)** - AI Agent context platform
+- **[AgentX](https://github.com/Deepractice/AgentX)** - AI Agent runtime platform
+- **[ToolX](https://github.com/Deepractice/ToolX)** - Tool integration
+- **[UIX](https://github.com/Deepractice/UIX)** - AI-to-UI protocol layer
+- **[SandboX](https://github.com/Deepractice/SandboX)** - Agent sandbox
 
 ## Contributing
 
