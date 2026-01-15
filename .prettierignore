@@ -45,3 +45,4 @@ yarn.lock
 
 # Generated files
 CHANGELOG.md
+bdd/reports/
