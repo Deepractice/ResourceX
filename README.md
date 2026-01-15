@@ -1,13 +1,28 @@
-# ResourceX
+<div align="center">
+  <h1>ResourceX</h1>
+  <p>
+    <strong>Unified resource manager for AI Agents based on ARP</strong>
+  </p>
+  <p>基于 ARP 协议的 AI Agent 统一资源管理器</p>
 
-**Unified resource manager for AI Agents based on ARP ｜ 基于 ARP 协议的 AI Agent 统一资源管理器**
+  <p>
+    <b>Unified Access</b> · <b>Web Native</b> · <b>Fully Extensible</b>
+  </p>
+  <p>
+    <b>统一访问</b> · <b>原生协议</b> · <b>完全可扩展</b>
+  </p>
 
-[![npm version](https://img.shields.io/npm/v/resourcexjs.svg)](https://www.npmjs.com/package/resourcexjs)
-[![npm downloads](https://img.shields.io/npm/dm/resourcexjs.svg)](https://www.npmjs.com/package/resourcexjs)
-[![GitHub stars](https://img.shields.io/github/stars/Deepractice/ResourceX)](https://github.com/Deepractice/ResourceX/stargazers)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
-[![Node.js](https://img.shields.io/badge/Node.js-%3E%3D22-green.svg)](https://nodejs.org/)
+  <p>
+    <a href="https://github.com/Deepractice/ResourceX"><img src="https://img.shields.io/github/stars/Deepractice/ResourceX?style=social" alt="Stars"/></a>
+    <a href="LICENSE"><img src="https://img.shields.io/github/license/Deepractice/ResourceX?color=blue" alt="License"/></a>
+    <a href="https://www.npmjs.com/package/resourcexjs"><img src="https://img.shields.io/npm/v/resourcexjs?color=cb3837&logo=npm" alt="npm"/></a>
+  </p>
+
+  <p>
+    <a href="README.md"><strong>English</strong></a> |
+    <a href="README.zh-CN.md">简体中文</a>
+  </p>
+</div>
 
 ---
 
@@ -66,20 +81,6 @@ arp "arp:text:https://example.com/file.txt" --json
 | [`@resourcexjs/core`](./packages/core) | Core implementation |
 | [`@resourcexjs/cli`](./packages/cli)   | CLI tool            |
 
-## Error Handling
-
-```typescript
-import { createResourceX, ResourceXError } from "resourcexjs";
-
-try {
-  await rx.resolve("arp:text:https://example.com/file.txt");
-} catch (error) {
-  if (error instanceof ResourceXError) {
-    console.error(error.message);
-  }
-}
-```
-
 ## Custom Handlers
 
 ### Transport
@@ -115,11 +116,11 @@ await rx.resolve("arp:json:https://api.example.com/data.json");
 
 ## Ecosystem
 
-ResourceX is part of [Deepractice](https://github.com/Deepractice)'s AI development ecosystem:
+Part of the [Deepractice](https://github.com/Deepractice) AI Agent infrastructure:
 
-- [AgentX](https://github.com/Deepractice/AgentX) - AI agent development framework
-- [PromptX](https://github.com/Deepractice/PromptX) - Prompt engineering toolkit
-- [DPML](https://github.com/Deepractice/dpml) - Deepractice Markup Language
+- **[PromptX](https://github.com/Deepractice/PromptX)** - AI Agent context management platform (DPML)
+- **[AgentX](https://github.com/Deepractice/AgentX)** - Event-driven AI Agent runtime (DAEP)
+- **[DARP](https://github.com/Deepractice/DARP)** - Agent Resource Protocol specification
 
 ## Contributing
 
@@ -128,3 +129,11 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for development setup and guidelines.
 ## License
 
 [MIT](./LICENSE)
+
+---
+
+<div align="center">
+  <p>
+    Built with ❤️ by <a href="https://github.com/Deepractice">Deepractice</a>
+  </p>
+</div>
