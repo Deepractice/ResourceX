@@ -1,10 +1,19 @@
 # ResourceX
 
-Agent Resource Protocol (ARP) implementation for AI Agents.
+**Unified resource manager for AI Agents based on ARP ｜ 基于 ARP 协议的 AI Agent 统一资源管理器**
+
+[![npm version](https://img.shields.io/npm/v/resourcexjs.svg)](https://www.npmjs.com/package/resourcexjs)
+[![npm downloads](https://img.shields.io/npm/dm/resourcexjs.svg)](https://www.npmjs.com/package/resourcexjs)
+[![GitHub stars](https://img.shields.io/github/stars/Deepractice/ResourceX)](https://github.com/Deepractice/ResourceX/stargazers)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-%3E%3D22-green.svg)](https://nodejs.org/)
+
+---
 
 ## What is ARP?
 
-ARP (Agent Resource Protocol) is a URL format that separates **what** a resource is from **how** to get it:
+**ARP (Agent Resource Protocol)** is a URL format that separates **what** a resource is from **how** to get it:
 
 ```
 arp:{semantic}:{transport}://{location}
@@ -104,10 +113,18 @@ rx.registerSemantic({
 await rx.resolve("arp:json:https://api.example.com/data.json");
 ```
 
+## Ecosystem
+
+ResourceX is part of [Deepractice](https://github.com/Deepractice)'s AI development ecosystem:
+
+- [AgentX](https://github.com/Deepractice/AgentX) - AI agent development framework
+- [PromptX](https://github.com/Deepractice/PromptX) - Prompt engineering toolkit
+- [DPML](https://github.com/Deepractice/dpml) - Deepractice Markup Language
+
 ## Contributing
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for development setup and guidelines.
 
 ## License
 
-MIT
+[MIT](./LICENSE)
