@@ -1,6 +1,6 @@
 {
   "name": "@resourcexjs/cli",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "CLI for ResourceX - Agent Resource Protocol",
   "keywords": [
     "resourcex",

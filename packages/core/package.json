@@ -1,6 +1,6 @@
 {
   "name": "@resourcexjs/core",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "ResourceX Core - ARP (Agent Resource Protocol) implementation",
   "keywords": [
     "resourcex",
