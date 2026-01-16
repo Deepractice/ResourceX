@@ -27,55 +27,119 @@
 
 ---
 
-## What is ARP?
+## Why ResourceX?
 
-**ARP (Agent Resource Protocol)** is a URL format that separates **what** a resource is from **how** to get it:
+AI Agents need to access resources from different sources: configuration from local files, prompts from remote URLs, training data from cloud storage. Each source requires different code:
 
+```typescript
+// Reading from different sources = different code
+const localConfig = await fs.readFile("./config.txt", "utf-8");
+const remotePrompt = await fetch("https://api.example.com/prompt.txt").then((r) => r.text());
+const s3Data = await s3Client.getObject({ Bucket: "...", Key: "..." });
 ```
-arp:{semantic}:{transport}://{location}
+
+**ResourceX solves this with a unified protocol**: one API for all resources, regardless of source or type.
+
+```typescript
+// One API for everything
+const config = await rx.resolve("arp:text:file://./config.txt");
+const prompt = await rx.resolve("arp:text:https://api.example.com/prompt.txt");
+const data = await rx.resolve("arp:binary:s3://bucket/data.bin");
 ```
 
-- **semantic**: What the resource is (`text`, `binary`)
-- **transport**: How to fetch it (`https`, `http`, `file`)
-- **location**: Where to find it
-
-## Installation
+## Quick Start
 
 ```bash
 npm install resourcexjs
 ```
-
-## Usage
 
 ```typescript
 import { createResourceX } from "resourcexjs";
 
 const rx = createResourceX();
 
-// Resolve (read) a resource
-const resource = await rx.resolve("arp:text:https://example.com/file.txt");
-console.log(resource.type); // "text"
-console.log(resource.content); // file content
-console.log(resource.meta); // { url, semantic, transport, size, ... }
+// Read a text file
+const resource = await rx.resolve("arp:text:file://./hello.txt");
+console.log(resource.content); // "Hello World"
+```
 
-// Deposit (write) a resource
-await rx.deposit("arp:text:file://./data/config.txt", "hello world");
+## Core Features
 
-// Binary resources
-await rx.deposit("arp:binary:file://./data/image.png", imageBuffer);
-const binary = await rx.resolve("arp:binary:file://./data/image.png");
-console.log(binary.content); // Buffer
+### Resolve (Read Resources)
 
+```typescript
+// Text from remote URL
+const text = await rx.resolve("arp:text:https://example.com/file.txt");
+console.log(text.content); // string
+
+// Binary from local file
+const image = await rx.resolve("arp:binary:file://./photo.png");
+console.log(image.content); // Buffer
+```
+
+### Deposit (Write Resources)
+
+```typescript
+// Write text to local file
+await rx.deposit("arp:text:file://./config.txt", "hello world");
+
+// Write binary data
+await rx.deposit("arp:binary:file://./image.png", imageBuffer);
+```
+
+### Exists & Delete
+
+```typescript
 // Check if resource exists
-const exists = await rx.exists("arp:text:file://./data/config.txt");
+const exists = await rx.exists("arp:text:file://./config.txt");
 
 // Delete a resource
-await rx.delete("arp:text:file://./data/config.txt");
+await rx.delete("arp:text:file://./config.txt");
 ```
+
+## How it Works
+
+ResourceX uses **ARP (Agent Resource Protocol)**, a URL format that separates **what** a resource is from **how** to access it:
+
+```
+arp:{semantic}:{transport}://{location}
+```
+
+- **semantic**: What the resource is (`text`, `binary`)
+- **transport**: How to access it (`https`, `http`, `file`)
+- **location**: Where to find it
+
+### Semantic + Transport = Orthogonal
+
+You can mix and match any semantic with any transport:
+
+| Semantic | Transport | Example                                    |
+| -------- | --------- | ------------------------------------------ |
+| `text`   | `file`    | `arp:text:file://./config.txt`             |
+| `text`   | `https`   | `arp:text:https://example.com/data.txt`    |
+| `binary` | `file`    | `arp:binary:file://./image.png`            |
+| `binary` | `s3`      | `arp:binary:s3://bucket/data.bin` (custom) |
+
+### Built-in Handlers
+
+**Semantic:**
+
+| Name     | Content  | Description                    |
+| -------- | -------- | ------------------------------ |
+| `text`   | `string` | Plain text with UTF-8 encoding |
+| `binary` | `Buffer` | Raw binary, no transformation  |
+
+**Transport:**
+
+| Name    | Capabilities           | Description      |
+| ------- | ---------------------- | ---------------- |
+| `https` | read                   | HTTPS protocol   |
+| `http`  | read                   | HTTP protocol    |
+| `file`  | read/write/list/delete | Local filesystem |
 
 ## Resource Definition
 
-Define custom resources as shortcuts for commonly used ARP URLs:
+Tired of repeating the same long URLs? Define shortcuts:
 
 ```typescript
 import { createResourceX } from "resourcexjs";
@@ -85,19 +149,68 @@ import { homedir } from "os";
 const rx = createResourceX({
   resources: [
     {
-      name: "sandbox-log",
+      name: "app-config",
       semantic: "text",
       transport: "file",
-      basePath: join(homedir(), ".myapp", "logs"),
+      basePath: join(homedir(), ".myapp", "config"),
     },
   ],
 });
 
-// Use resource URL instead of full ARP URL
-await rx.deposit("sandbox-log://app.log", "log entry");
-// Equivalent to: arp:text:file://~/.myapp/logs/app.log
+// Short and clean
+await rx.deposit("app-config://settings.txt", "theme=dark");
 
-const log = await rx.resolve("sandbox-log://app.log");
+// Instead of
+await rx.deposit("arp:text:file://~/.myapp/config/settings.txt", "theme=dark");
+```
+
+## Extensibility
+
+### Custom Transport
+
+Add new transport protocols (S3, GCS, Redis, etc.):
+
+```typescript
+rx.registerTransport({
+  name: "s3",
+  capabilities: { canRead: true, canWrite: true, canList: true, canDelete: true, canStat: false },
+  async read(location: string): Promise<Buffer> {
+    // Your S3 implementation
+    return buffer;
+  },
+  async write(location: string, content: Buffer): Promise<void> {
+    // Your S3 implementation
+  },
+});
+
+// Use it
+await rx.resolve("arp:text:s3://bucket/key.txt");
+```
+
+### Custom Semantic
+
+Add new semantic types (JSON, YAML, Image, etc.):
+
+```typescript
+rx.registerSemantic({
+  name: "json",
+  async resolve(transport, location, context) {
+    const buffer = await transport.read(location);
+    return {
+      type: "json",
+      content: JSON.parse(buffer.toString()),
+      meta: { ...context, size: buffer.length, resolvedAt: context.timestamp.toISOString() },
+    };
+  },
+  async deposit(transport, location, data, context) {
+    const buffer = Buffer.from(JSON.stringify(data));
+    await transport.write(location, buffer);
+  },
+});
+
+// Use it
+const data = await rx.resolve("arp:json:https://api.example.com/data.json");
+console.log(data.content); // Parsed object
 ```
 
 ## CLI
@@ -122,66 +235,6 @@ arp "arp:text:https://example.com/file.txt" --json
 | [`resourcexjs`](./packages/resourcex)  | Main package        |
 | [`@resourcexjs/core`](./packages/core) | Core implementation |
 | [`@resourcexjs/cli`](./packages/cli)   | CLI tool            |
-
-## Built-in Handlers
-
-### Semantic
-
-| Name     | Content Type | Description               |
-| -------- | ------------ | ------------------------- |
-| `text`   | `string`     | Plain text (UTF-8)        |
-| `binary` | `Buffer`     | Raw binary (no transform) |
-
-### Transport
-
-| Name    | Capabilities           | Description      |
-| ------- | ---------------------- | ---------------- |
-| `https` | read                   | HTTPS protocol   |
-| `http`  | read                   | HTTP protocol    |
-| `file`  | read/write/list/delete | Local filesystem |
-
-## Custom Handlers
-
-### Transport (I/O Primitives)
-
-```typescript
-rx.registerTransport({
-  name: "s3",
-  capabilities: { canRead: true, canWrite: true, canList: true, canDelete: true, canStat: false },
-  async read(location: string): Promise<Buffer> {
-    // Read from S3...
-    return buffer;
-  },
-  async write(location: string, content: Buffer): Promise<void> {
-    // Write to S3...
-  },
-});
-
-await rx.resolve("arp:text:s3://bucket/key.txt");
-await rx.deposit("arp:text:s3://bucket/key.txt", "content");
-```
-
-### Semantic (Resource Logic)
-
-```typescript
-rx.registerSemantic({
-  name: "json",
-  async resolve(transport, location, context) {
-    const buffer = await transport.read(location);
-    return {
-      type: "json",
-      content: JSON.parse(buffer.toString()),
-      meta: { ...context, size: buffer.length, resolvedAt: context.timestamp.toISOString() },
-    };
-  },
-  async deposit(transport, location, data, context) {
-    const buffer = Buffer.from(JSON.stringify(data));
-    await transport.write(location, buffer);
-  },
-});
-
-await rx.resolve("arp:json:https://api.example.com/data.json");
-```
 
 ## Ecosystem
 
