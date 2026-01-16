@@ -8,8 +8,6 @@ import {
   deposit as coreDeposit,
   resourceExists as coreExists,
   resourceDelete as coreDelete,
-  getTransportHandler,
-  getSemanticHandler,
   registerTransportHandler,
   registerSemanticHandler,
   createResourceRegistry,
@@ -156,33 +154,5 @@ export class ResourceX {
   async delete(url: string): Promise<void> {
     const { arpUrl } = this.parseURL(url);
     return coreDelete(arpUrl);
-  }
-
-  /**
-   * Register a custom transport handler
-   */
-  registerTransport(handler: TransportHandler): void {
-    registerTransportHandler(handler);
-  }
-
-  /**
-   * Register a custom semantic handler
-   */
-  registerSemantic(handler: SemanticHandler): void {
-    registerSemanticHandler(handler);
-  }
-
-  /**
-   * Get a transport handler by name
-   */
-  getTransport(name: string): TransportHandler {
-    return getTransportHandler(name);
-  }
-
-  /**
-   * Get a semantic handler by name
-   */
-  getSemantic(name: string): SemanticHandler {
-    return getSemanticHandler(name);
   }
 }

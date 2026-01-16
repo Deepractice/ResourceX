@@ -154,14 +154,6 @@ const parsed = rx.parse("myresource://file.txt");
 // Also works with resource URLs (expanded to full location)
 ```
 
-### `rx.registerTransport(handler)`
-
-Register a custom transport handler.
-
-### `rx.registerSemantic(handler)`
-
-Register a custom semantic handler.
-
 ## Built-in Semantic Types
 
 | Type     | Content  | Description                    |

@@ -137,9 +137,13 @@ You can mix and match any semantic with any transport:
 | `http`  | read                   | HTTP protocol    |
 | `file`  | read/write/list/delete | Local filesystem |
 
-## Resource Definition
+## Configuration and Custom
 
-Tired of repeating the same long URLs? Define shortcuts:
+ResourceX is fully configurable via the `createResourceX()` config object.
+
+### Custom Resources (URL Shortcuts)
+
+Tired of repeating long URLs? Define shortcuts:
 
 ```typescript
 import { createResourceX } from "resourcexjs";
@@ -164,14 +168,12 @@ await rx.deposit("app-config://settings.txt", "theme=dark");
 await rx.deposit("arp:text:file://~/.myapp/config/settings.txt", "theme=dark");
 ```
 
-## Extensibility
-
 ### Custom Transport
 
 Add new transport protocols (S3, GCS, Redis, etc.):
 
 ```typescript
-rx.registerTransport({
+const s3Transport = {
   name: "s3",
   capabilities: { canRead: true, canWrite: true, canList: true, canDelete: true, canStat: false },
   async read(location: string): Promise<Buffer> {
@@ -181,6 +183,10 @@ rx.registerTransport({
   async write(location: string, content: Buffer): Promise<void> {
     // Your S3 implementation
   },
+};
+
+const rx = createResourceX({
+  transports: [s3Transport],
 });
 
 // Use it
@@ -192,7 +198,7 @@ await rx.resolve("arp:text:s3://bucket/key.txt");
 Add new semantic types (JSON, YAML, Image, etc.):
 
 ```typescript
-rx.registerSemantic({
+const jsonSemantic = {
   name: "json",
   async resolve(transport, location, context) {
     const buffer = await transport.read(location);
@@ -206,11 +212,30 @@ rx.registerSemantic({
     const buffer = Buffer.from(JSON.stringify(data));
     await transport.write(location, buffer);
   },
+};
+
+const rx = createResourceX({
+  semantics: [jsonSemantic],
 });
 
 // Use it
 const data = await rx.resolve("arp:json:https://api.example.com/data.json");
 console.log(data.content); // Parsed object
+```
+
+### All Together
+
+Combine everything in one config:
+
+```typescript
+const rx = createResourceX({
+  transports: [s3Transport, redisTransport],
+  semantics: [jsonSemantic, yamlSemantic],
+  resources: [
+    { name: "s3-data", semantic: "json", transport: "s3", basePath: "my-bucket/data" },
+    { name: "cache", semantic: "text", transport: "redis", basePath: "cache:" },
+  ],
+});
 ```
 
 ## CLI

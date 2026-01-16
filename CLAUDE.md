@@ -102,7 +102,14 @@ Semantic handlers (`packages/core/src/semantic/`) orchestrate transport primitiv
 - `text` - Plain text (UTF-8 encoding/decoding)
 - `binary` - Raw binary (Buffer passthrough, no transformation)
 
-Custom handlers can be registered via `registerTransportHandler()` and `registerSemanticHandler()`.
+Custom handlers are registered via config when creating ResourceX instance:
+
+```typescript
+createResourceX({
+  transports: [customTransport],
+  semantics: [customSemantic],
+});
+```
 
 ### Resource Definition System
 

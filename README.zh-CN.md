@@ -137,7 +137,11 @@ Semantic 和 Transport 可以任意组合：
 | `http`  | 读              | HTTP 协议    |
 | `file`  | 读/写/列表/删除 | 本地文件系统 |
 
-## Resource 定义
+## 配置和自定义
+
+ResourceX 通过 `createResourceX()` 配置对象进行完全配置。
+
+### 自定义 Resource（URL 快捷方式）
 
 厌倦了重复写长 URL？定义快捷方式：
 
@@ -164,14 +168,12 @@ await rx.deposit("app-config://settings.txt", "theme=dark");
 await rx.deposit("arp:text:file://~/.myapp/config/settings.txt", "theme=dark");
 ```
 
-## 可扩展性
-
 ### 自定义 Transport
 
 添加新的传输协议（S3、GCS、Redis 等）：
 
 ```typescript
-rx.registerTransport({
+const s3Transport = {
   name: "s3",
   capabilities: { canRead: true, canWrite: true, canList: true, canDelete: true, canStat: false },
   async read(location: string): Promise<Buffer> {
@@ -181,6 +183,10 @@ rx.registerTransport({
   async write(location: string, content: Buffer): Promise<void> {
     // 你的 S3 实现
   },
+};
+
+const rx = createResourceX({
+  transports: [s3Transport],
 });
 
 // 使用
@@ -192,7 +198,7 @@ await rx.resolve("arp:text:s3://bucket/key.txt");
 添加新的语义类型（JSON、YAML、Image 等）：
 
 ```typescript
-rx.registerSemantic({
+const jsonSemantic = {
   name: "json",
   async resolve(transport, location, context) {
     const buffer = await transport.read(location);
@@ -206,11 +212,30 @@ rx.registerSemantic({
     const buffer = Buffer.from(JSON.stringify(data));
     await transport.write(location, buffer);
   },
+};
+
+const rx = createResourceX({
+  semantics: [jsonSemantic],
 });
 
 // 使用
 const data = await rx.resolve("arp:json:https://api.example.com/data.json");
 console.log(data.content); // 解析后的对象
+```
+
+### 组合使用
+
+在一个配置中组合所有自定义：
+
+```typescript
+const rx = createResourceX({
+  transports: [s3Transport, redisTransport],
+  semantics: [jsonSemantic, yamlSemantic],
+  resources: [
+    { name: "s3-data", semantic: "json", transport: "s3", basePath: "my-bucket/data" },
+    { name: "cache", semantic: "text", transport: "redis", basePath: "cache:" },
+  ],
+});
 ```
 
 ## CLI
