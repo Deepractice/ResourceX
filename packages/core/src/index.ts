@@ -17,13 +17,13 @@ export {
   type TransportHandler,
   type TransportCapabilities,
   type ResourceStat,
-  type DeepracticeConfig,
+  type AgentVMConfig,
   getTransportHandler,
   registerTransportHandler,
   httpsHandler,
   httpHandler,
   fileHandler,
-  deepracticeHandler,
+  agentvmHandler,
 } from "./transport/index.js";
 
 // Semantic

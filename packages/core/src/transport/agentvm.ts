@@ -1,6 +1,6 @@
 /**
- * Deepractice Transport Handler
- * Maps deepractice:// to ~/.deepractice/ directory
+ * AgentVM Transport Handler
+ * Maps agentvm:// to ~/.agentvm/ directory
  */
 
 import { homedir } from "node:os";
@@ -9,40 +9,40 @@ import { readFile, writeFile, readdir, access, unlink, mkdir, stat, rm } from "n
 import { TransportError } from "../errors.js";
 import type { TransportHandler, ResourceStat } from "./types.js";
 
-export interface DeepracticeConfig {
+export interface AgentVMConfig {
   /**
-   * Parent directory for .deepractice folder
+   * Parent directory for .agentvm folder
    * @default homedir()
    */
   parentDir?: string;
 }
 
 /**
- * Create deepractice transport handler
- * Maps deepractice://path to parentDir/.deepractice/path
+ * Create agentvm transport handler
+ * Maps agentvm://path to parentDir/.agentvm/path
  *
  * @example
  * ```typescript
- * const handler = deepracticeHandler();
- * // → ~/.deepractice/
+ * const handler = agentvmHandler();
+ * // → ~/.agentvm/
  *
- * const handler = deepracticeHandler({ parentDir: "/var/data" });
- * // → /var/data/.deepractice/
+ * const handler = agentvmHandler({ parentDir: "/var/data" });
+ * // → /var/data/.agentvm/
  * ```
  */
-export function deepracticeHandler(config: DeepracticeConfig = {}): TransportHandler {
+export function agentvmHandler(config: AgentVMConfig = {}): TransportHandler {
   const parentDir = config.parentDir || homedir();
-  const baseDir = join(parentDir, ".deepractice");
+  const baseDir = join(parentDir, ".agentvm");
 
   /**
-   * Resolve deepractice:// location to full filesystem path
+   * Resolve agentvm:// location to full filesystem path
    */
   function resolvePath(location: string): string {
     return join(baseDir, location);
   }
 
   return {
-    name: "deepractice",
+    name: "agentvm",
 
     capabilities: {
       canRead: true,
@@ -58,8 +58,8 @@ export function deepracticeHandler(config: DeepracticeConfig = {}): TransportHan
         return await readFile(fullPath);
       } catch (error) {
         throw new TransportError(
-          `Failed to read from deepractice: ${(error as Error).message}`,
-          "deepractice",
+          `Failed to read from agentvm: ${(error as Error).message}`,
+          "agentvm",
           { cause: error }
         );
       }
@@ -73,8 +73,8 @@ export function deepracticeHandler(config: DeepracticeConfig = {}): TransportHan
         await writeFile(fullPath, content);
       } catch (error) {
         throw new TransportError(
-          `Failed to write to deepractice: ${(error as Error).message}`,
-          "deepractice",
+          `Failed to write to agentvm: ${(error as Error).message}`,
+          "agentvm",
           { cause: error }
         );
       }
@@ -86,8 +86,8 @@ export function deepracticeHandler(config: DeepracticeConfig = {}): TransportHan
         return await readdir(fullPath);
       } catch (error) {
         throw new TransportError(
-          `Failed to list deepractice directory: ${(error as Error).message}`,
-          "deepractice",
+          `Failed to list agentvm directory: ${(error as Error).message}`,
+          "agentvm",
           { cause: error }
         );
       }
@@ -114,8 +114,8 @@ export function deepracticeHandler(config: DeepracticeConfig = {}): TransportHan
         };
       } catch (error) {
         throw new TransportError(
-          `Failed to stat deepractice resource: ${(error as Error).message}`,
-          "deepractice",
+          `Failed to stat agentvm resource: ${(error as Error).message}`,
+          "agentvm",
           { cause: error }
         );
       }
@@ -132,8 +132,8 @@ export function deepracticeHandler(config: DeepracticeConfig = {}): TransportHan
         }
       } catch (error) {
         throw new TransportError(
-          `Failed to delete from deepractice: ${(error as Error).message}`,
-          "deepractice",
+          `Failed to delete from agentvm: ${(error as Error).message}`,
+          "agentvm",
           { cause: error }
         );
       }

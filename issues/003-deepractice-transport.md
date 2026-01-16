@@ -160,18 +160,24 @@ await rx.deposit("arp:json:deepractice://toolx/config.json", toolConfig);
 
 ---
 
-**Status**: Completed
+**Status**: Deprecated (Renamed to agentvm in #6)
 **Priority**: High
-**Labels**: enhancement, transport-handler, ecosystem
+**Labels**: enhancement, transport-handler, ecosystem, deprecated
 
 ## 实现说明
 
-已实现为工厂函数模式：
+已实现为工厂函数模式，但已重命名为 `agentvmHandler`（见 #6）：
 
 ```typescript
+// 已废弃
 deepracticeHandler(config?: { parentDir?: string })
+
+// 新名称
+agentvmHandler(config?: { parentDir?: string })
 ```
 
-- 默认映射到 `~/.deepractice/`
+- 默认映射到 `~/.agentvm/`（不再使用 `.deepractice`）
 - 支持自定义 `parentDir`（测试时可用 `/tmp` 等）
-- `.deepractice` 目录名固定，保持生态一致性
+- `.agentvm` 目录名固定，与 AgentVM 产品保持一致
+
+**重命名原因**：`deepractice` 名称保留给将来的云平台 transport（远程）。
