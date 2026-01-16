@@ -4,7 +4,7 @@
 
 import { TransportError } from "../errors.js";
 
-export type { TransportHandler } from "./types.js";
+export type { TransportHandler, TransportCapabilities, ResourceStat } from "./types.js";
 export { HttpTransportHandler, httpsHandler, httpHandler } from "./http.js";
 export { FileTransportHandler, fileHandler } from "./file.js";
 
@@ -19,12 +19,12 @@ const handlers = new Map<string, TransportHandler>([
 ]);
 
 /**
- * Get transport handler by type
+ * Get transport handler by name
  */
-export function getTransportHandler(type: string): TransportHandler {
-  const handler = handlers.get(type);
+export function getTransportHandler(name: string): TransportHandler {
+  const handler = handlers.get(name);
   if (!handler) {
-    throw new TransportError(`Unsupported transport type: ${type}`, type);
+    throw new TransportError(`Unsupported transport type: ${name}`, name);
   }
   return handler;
 }
@@ -33,5 +33,5 @@ export function getTransportHandler(type: string): TransportHandler {
  * Register a custom transport handler
  */
 export function registerTransportHandler(handler: TransportHandler): void {
-  handlers.set(handler.type, handler);
+  handlers.set(handler.name, handler);
 }

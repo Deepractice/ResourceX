@@ -15,6 +15,8 @@ export { parseARP, type ParsedARP } from "./parser.js";
 // Transport
 export {
   type TransportHandler,
+  type TransportCapabilities,
+  type ResourceStat,
   getTransportHandler,
   registerTransportHandler,
   httpsHandler,
@@ -27,12 +29,12 @@ export {
   type Resource,
   type SemanticHandler,
   type ResourceMeta,
-  type ParseContext,
+  type SemanticContext,
   type TextResource,
   getSemanticHandler,
   registerSemanticHandler,
   textHandler,
 } from "./semantic/index.js";
 
-// Resolve
-export { resolve } from "./resolve.js";
+// Resource Operations
+export { resolve, deposit, resourceExists, resourceDelete } from "./resolve.js";

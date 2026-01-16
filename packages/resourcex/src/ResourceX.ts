@@ -5,6 +5,9 @@
 import {
   parseARP,
   resolve as coreResolve,
+  deposit as coreDeposit,
+  resourceExists as coreExists,
+  resourceDelete as coreDelete,
   getTransportHandler,
   getSemanticHandler,
   registerTransportHandler,
@@ -74,6 +77,27 @@ export class ResourceX {
   }
 
   /**
+   * Deposit data to an ARP URL
+   */
+  async deposit(url: string, data: unknown): Promise<void> {
+    return coreDeposit(url, data);
+  }
+
+  /**
+   * Check if resource exists at ARP URL
+   */
+  async exists(url: string): Promise<boolean> {
+    return coreExists(url);
+  }
+
+  /**
+   * Delete resource at ARP URL
+   */
+  async delete(url: string): Promise<void> {
+    return coreDelete(url);
+  }
+
+  /**
    * Register a custom transport handler
    */
   registerTransport(handler: TransportHandler): void {
@@ -88,16 +112,16 @@ export class ResourceX {
   }
 
   /**
-   * Get a transport handler by type
+   * Get a transport handler by name
    */
-  getTransport(type: string): TransportHandler {
-    return getTransportHandler(type);
+  getTransport(name: string): TransportHandler {
+    return getTransportHandler(name);
   }
 
   /**
-   * Get a semantic handler by type
+   * Get a semantic handler by name
    */
-  getSemantic(type: string): SemanticHandler {
-    return getSemanticHandler(type);
+  getSemantic(name: string): SemanticHandler {
+    return getSemanticHandler(name);
   }
 }

@@ -5,82 +5,207 @@ import {
   registerSemanticHandler,
 } from "../../src/semantic/index.js";
 import { SemanticError } from "../../src/errors.js";
-import type { SemanticHandler, Resource, ParseContext } from "../../src/semantic/types.js";
+import type { SemanticHandler, Resource, SemanticContext } from "../../src/semantic/types.js";
+import type { TransportHandler, TransportCapabilities } from "../../src/transport/types.js";
 
 describe("Semantic Handlers", () => {
-  const createContext = (overrides?: Partial<ParseContext>): ParseContext => ({
+  // Mock transport handler for testing
+  const createMockTransport = (
+    content: Buffer,
+    options?: {
+      canWrite?: boolean;
+      canDelete?: boolean;
+      written?: { location: string; content: Buffer }[];
+      deleted?: string[];
+    }
+  ): TransportHandler => {
+    const written = options?.written ?? [];
+    const deleted = options?.deleted ?? [];
+
+    return {
+      name: "mock",
+      capabilities: {
+        canRead: true,
+        canWrite: options?.canWrite ?? false,
+        canList: false,
+        canDelete: options?.canDelete ?? false,
+        canStat: false,
+      },
+      read: async () => content,
+      write: options?.canWrite
+        ? async (location: string, content: Buffer) => {
+            written.push({ location, content });
+          }
+        : undefined,
+      delete: options?.canDelete
+        ? async (location: string) => {
+            deleted.push(location);
+          }
+        : undefined,
+    };
+  };
+
+  const createContext = (overrides?: Partial<SemanticContext>): SemanticContext => ({
     url: "arp:text:https://example.com/file.txt",
     semantic: "text",
     transport: "https",
     location: "example.com/file.txt",
-    fetchedAt: new Date("2025-01-15T00:00:00Z"),
+    timestamp: new Date("2025-01-15T00:00:00Z"),
     ...overrides,
   });
 
   describe("textHandler", () => {
-    it("has correct type", () => {
-      expect(textHandler.type).toBe("text");
+    it("has correct name", () => {
+      expect(textHandler.name).toBe("text");
     });
 
-    it("parses buffer to text resource", () => {
-      const content = Buffer.from("Hello, World!");
-      const context = createContext();
+    describe("resolve", () => {
+      it("resolves buffer to text resource", async () => {
+        const content = Buffer.from("Hello, World!");
+        const transport = createMockTransport(content);
+        const context = createContext();
 
-      const result = textHandler.parse(content, context);
+        const result = await textHandler.resolve(transport, "example.com/file.txt", context);
 
-      expect(result.type).toBe("text");
-      expect(result.content).toBe("Hello, World!");
+        expect(result.type).toBe("text");
+        expect(result.content).toBe("Hello, World!");
+      });
+
+      it("includes correct meta", async () => {
+        const content = Buffer.from("Test content");
+        const transport = createMockTransport(content);
+        const context = createContext();
+
+        const result = await textHandler.resolve(transport, "example.com/file.txt", context);
+
+        expect(result.meta.url).toBe("arp:text:https://example.com/file.txt");
+        expect(result.meta.semantic).toBe("text");
+        expect(result.meta.transport).toBe("https");
+        expect(result.meta.location).toBe("example.com/file.txt");
+        expect(result.meta.size).toBe(12);
+        expect(result.meta.encoding).toBe("utf-8");
+        expect(result.meta.mimeType).toBe("text/plain");
+        expect(result.meta.resolvedAt).toBe("2025-01-15T00:00:00.000Z");
+      });
+
+      it("handles empty content", async () => {
+        const content = Buffer.from("");
+        const transport = createMockTransport(content);
+        const context = createContext();
+
+        const result = await textHandler.resolve(transport, "example.com/file.txt", context);
+
+        expect(result.content).toBe("");
+        expect(result.meta.size).toBe(0);
+      });
+
+      it("handles unicode content", async () => {
+        const content = Buffer.from("你好世界 🌍");
+        const transport = createMockTransport(content);
+        const context = createContext();
+
+        const result = await textHandler.resolve(transport, "example.com/file.txt", context);
+
+        expect(result.content).toBe("你好世界 🌍");
+      });
+
+      it("handles multiline content", async () => {
+        const content = Buffer.from("line1\nline2\nline3");
+        const transport = createMockTransport(content);
+        const context = createContext();
+
+        const result = await textHandler.resolve(transport, "example.com/file.txt", context);
+
+        expect(result.content).toBe("line1\nline2\nline3");
+      });
     });
 
-    it("includes correct meta", () => {
-      const content = Buffer.from("Test content");
-      const context = createContext();
+    describe("deposit", () => {
+      it("deposits text content", async () => {
+        const written: { location: string; content: Buffer }[] = [];
+        const transport = createMockTransport(Buffer.from(""), { canWrite: true, written });
+        const context = createContext();
 
-      const result = textHandler.parse(content, context);
+        await textHandler.deposit(transport, "example.com/file.txt", "Hello, World!", context);
 
-      expect(result.meta.url).toBe("arp:text:https://example.com/file.txt");
-      expect(result.meta.semantic).toBe("text");
-      expect(result.meta.transport).toBe("https");
-      expect(result.meta.location).toBe("example.com/file.txt");
-      expect(result.meta.size).toBe(12);
-      expect(result.meta.encoding).toBe("utf-8");
-      expect(result.meta.mimeType).toBe("text/plain");
-      expect(result.meta.fetchedAt).toBe("2025-01-15T00:00:00.000Z");
+        expect(written.length).toBe(1);
+        expect(written[0].location).toBe("example.com/file.txt");
+        expect(written[0].content.toString()).toBe("Hello, World!");
+      });
+
+      it("throws when transport does not support write", async () => {
+        const transport = createMockTransport(Buffer.from(""), { canWrite: false });
+        const context = createContext();
+
+        await expect(
+          textHandler.deposit(transport, "example.com/file.txt", "content", context)
+        ).rejects.toThrow(SemanticError);
+        await expect(
+          textHandler.deposit(transport, "example.com/file.txt", "content", context)
+        ).rejects.toThrow("does not support write");
+      });
     });
 
-    it("handles empty content", () => {
-      const content = Buffer.from("");
-      const context = createContext();
+    describe("exists", () => {
+      it("uses transport exists if available", async () => {
+        const transport: TransportHandler = {
+          name: "mock",
+          capabilities: {
+            canRead: true,
+            canWrite: false,
+            canList: false,
+            canDelete: false,
+            canStat: false,
+          },
+          read: async () => Buffer.from(""),
+          exists: async () => true,
+        };
+        const context = createContext();
 
-      const result = textHandler.parse(content, context);
+        const result = await textHandler.exists!(transport, "example.com/file.txt", context);
 
-      expect(result.content).toBe("");
-      expect(result.meta.size).toBe(0);
+        expect(result).toBe(true);
+      });
+
+      it("falls back to read when exists not available", async () => {
+        const transport = createMockTransport(Buffer.from("content"));
+        const context = createContext();
+
+        const result = await textHandler.exists!(transport, "example.com/file.txt", context);
+
+        expect(result).toBe(true);
+      });
     });
 
-    it("handles unicode content", () => {
-      const content = Buffer.from("你好世界 🌍");
-      const context = createContext();
+    describe("delete", () => {
+      it("deletes using transport", async () => {
+        const deleted: string[] = [];
+        const transport = createMockTransport(Buffer.from(""), { canDelete: true, deleted });
+        const context = createContext();
 
-      const result = textHandler.parse(content, context);
+        await textHandler.delete!(transport, "example.com/file.txt", context);
 
-      expect(result.content).toBe("你好世界 🌍");
-    });
+        expect(deleted).toContain("example.com/file.txt");
+      });
 
-    it("handles multiline content", () => {
-      const content = Buffer.from("line1\nline2\nline3");
-      const context = createContext();
+      it("throws when transport does not support delete", async () => {
+        const transport = createMockTransport(Buffer.from(""), { canDelete: false });
+        const context = createContext();
 
-      const result = textHandler.parse(content, context);
-
-      expect(result.content).toBe("line1\nline2\nline3");
+        await expect(
+          textHandler.delete!(transport, "example.com/file.txt", context)
+        ).rejects.toThrow(SemanticError);
+        await expect(
+          textHandler.delete!(transport, "example.com/file.txt", context)
+        ).rejects.toThrow("does not support delete");
+      });
     });
   });
 
   describe("getSemanticHandler", () => {
     it("returns text handler", () => {
       const handler = getSemanticHandler("text");
-      expect(handler.type).toBe("text");
+      expect(handler.name).toBe("text");
     });
 
     it("throws on unsupported semantic", () => {
@@ -90,19 +215,19 @@ describe("Semantic Handlers", () => {
   });
 
   describe("registerSemanticHandler", () => {
-    it("registers custom handler", () => {
+    it("registers custom handler", async () => {
       const customHandler: SemanticHandler = {
-        type: "custom-semantic",
-        parse: (content: Buffer, context: ParseContext): Resource => ({
+        name: "custom-semantic",
+        resolve: async (transport, location, context) => ({
           type: "custom-semantic",
-          content: content.toString(),
+          content: (await transport.read(location)).toString(),
           meta: {
             url: context.url,
             semantic: context.semantic,
             transport: context.transport,
             location: context.location,
-            size: content.length,
-            fetchedAt: context.fetchedAt.toISOString(),
+            size: 0,
+            resolvedAt: context.timestamp.toISOString(),
           },
         }),
       };
@@ -110,7 +235,7 @@ describe("Semantic Handlers", () => {
       registerSemanticHandler(customHandler);
 
       const handler = getSemanticHandler("custom-semantic");
-      expect(handler.type).toBe("custom-semantic");
+      expect(handler.name).toBe("custom-semantic");
     });
   });
 });
