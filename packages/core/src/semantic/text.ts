@@ -3,7 +3,9 @@
  * Handles plain text resources
  */
 
-import type { Resource, SemanticHandler, ParseContext, ResourceMeta } from "./types.js";
+import { SemanticError } from "../errors.js";
+import type { TransportHandler } from "../transport/types.js";
+import type { Resource, SemanticHandler, SemanticContext, ResourceMeta } from "./types.js";
 
 export interface TextResource extends Resource<string> {
   type: "text";
@@ -11,20 +13,25 @@ export interface TextResource extends Resource<string> {
 }
 
 export class TextSemanticHandler implements SemanticHandler<string> {
-  readonly type = "text";
+  readonly name = "text";
 
-  parse(content: Buffer, context: ParseContext): TextResource {
-    const text = content.toString("utf-8");
+  async resolve(
+    transport: TransportHandler,
+    location: string,
+    context: SemanticContext
+  ): Promise<TextResource> {
+    const buffer = await transport.read(location);
+    const text = buffer.toString("utf-8");
 
     const meta: ResourceMeta = {
       url: context.url,
       semantic: context.semantic,
       transport: context.transport,
       location: context.location,
-      size: content.length,
+      size: buffer.length,
       encoding: "utf-8",
       mimeType: "text/plain",
-      fetchedAt: context.fetchedAt.toISOString(),
+      resolvedAt: context.timestamp.toISOString(),
     };
 
     return {
@@ -32,6 +39,56 @@ export class TextSemanticHandler implements SemanticHandler<string> {
       content: text,
       meta,
     };
+  }
+
+  async deposit(
+    transport: TransportHandler,
+    location: string,
+    data: string,
+    context: SemanticContext
+  ): Promise<void> {
+    if (!transport.write) {
+      throw new SemanticError(
+        `Transport "${transport.name}" does not support write operation`,
+        this.name
+      );
+    }
+
+    const buffer = Buffer.from(data, "utf-8");
+    await transport.write(location, buffer);
+  }
+
+  async exists(
+    transport: TransportHandler,
+    location: string,
+    _context: SemanticContext
+  ): Promise<boolean> {
+    if (transport.exists) {
+      return transport.exists(location);
+    }
+
+    // Fallback: try to read
+    try {
+      await transport.read(location);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  async delete(
+    transport: TransportHandler,
+    location: string,
+    _context: SemanticContext
+  ): Promise<void> {
+    if (!transport.delete) {
+      throw new SemanticError(
+        `Transport "${transport.name}" does not support delete operation`,
+        this.name
+      );
+    }
+
+    await transport.delete(location);
   }
 }
 
