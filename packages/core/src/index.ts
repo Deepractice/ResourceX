@@ -31,9 +31,12 @@ export {
   type ResourceMeta,
   type SemanticContext,
   type TextResource,
+  type BinaryResource,
+  type BinaryInput,
   getSemanticHandler,
   registerSemanticHandler,
   textHandler,
+  binaryHandler,
 } from "./semantic/index.js";
 
 // Resource Operations

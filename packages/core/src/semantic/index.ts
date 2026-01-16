@@ -6,12 +6,18 @@ import { SemanticError } from "../errors.js";
 
 export type { Resource, SemanticHandler, ResourceMeta, SemanticContext } from "./types.js";
 export type { TextResource } from "./text.js";
+export type { BinaryResource, BinaryInput } from "./binary.js";
 export { TextSemanticHandler, textHandler } from "./text.js";
+export { BinarySemanticHandler, binaryHandler } from "./binary.js";
 
 import type { SemanticHandler } from "./types.js";
 import { textHandler } from "./text.js";
+import { binaryHandler } from "./binary.js";
 
-const handlers: Map<string, SemanticHandler> = new Map([["text", textHandler]]);
+const handlers = new Map<string, SemanticHandler>([
+  ["text", textHandler],
+  ["binary", binaryHandler],
+]);
 
 /**
  * Get semantic handler by name
