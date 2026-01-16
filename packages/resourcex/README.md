@@ -23,6 +23,15 @@ const resource = await rx.resolve("arp:text:https://example.com/file.txt");
 console.log(resource.type); // "text"
 console.log(resource.content); // file content as string
 console.log(resource.meta); // { url, semantic, transport, ... }
+
+// Deposit a local text resource
+await rx.deposit("arp:text:file://./data/config.txt", "hello world");
+
+// Check if resource exists
+const exists = await rx.exists("arp:text:file://./data/config.txt");
+
+// Delete a resource
+await rx.delete("arp:text:file://./data/config.txt");
 ```
 
 ## ARP URL Format
@@ -32,7 +41,7 @@ arp:{semantic}:{transport}://{location}
 ```
 
 - **semantic**: What the resource is (e.g., `text`)
-- **transport**: How to fetch it (e.g., `https`, `http`, `file`)
+- **transport**: How to access it (e.g., `https`, `http`, `file`)
 - **location**: Where to find it
 
 Examples:
@@ -62,6 +71,31 @@ Resolve an ARP URL and return the resource.
 ```typescript
 const resource = await rx.resolve("arp:text:https://example.com/file.txt");
 // Returns: { type, content, meta }
+```
+
+### `rx.deposit(url, data)`
+
+Deposit data to an ARP URL.
+
+```typescript
+await rx.deposit("arp:text:file://./data/config.txt", "content");
+```
+
+### `rx.exists(url)`
+
+Check if a resource exists.
+
+```typescript
+const exists = await rx.exists("arp:text:file://./data/config.txt");
+// Returns: boolean
+```
+
+### `rx.delete(url)`
+
+Delete a resource.
+
+```typescript
+await rx.delete("arp:text:file://./data/config.txt");
 ```
 
 ### `rx.parse(url)`
@@ -95,7 +129,7 @@ interface Resource {
     size: number; // content size in bytes
     encoding?: string; // content encoding
     mimeType?: string; // MIME type
-    fetchedAt: string; // ISO timestamp
+    resolvedAt: string; // ISO timestamp
   };
 }
 ```

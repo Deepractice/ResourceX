@@ -24,23 +24,35 @@ describe("Transport Handlers", () => {
       expect(httpsHandler.capabilities.canDelete).toBe(false);
     });
 
-    it("reads remote content", async () => {
-      const buffer = await httpsHandler.read("httpbin.org/robots.txt");
+    it(
+      "reads remote content",
+      async () => {
+        const buffer = await httpsHandler.read("httpbin.org/robots.txt");
 
-      expect(buffer).toBeInstanceOf(Buffer);
-      expect(buffer.toString()).toContain("User-agent");
-    });
+        expect(buffer).toBeInstanceOf(Buffer);
+        expect(buffer.toString()).toContain("User-agent");
+      },
+      { timeout: 15000 }
+    );
 
-    it("throws TransportError on HTTP error", async () => {
-      await expect(httpsHandler.read("httpbin.org/status/404")).rejects.toThrow(TransportError);
-      await expect(httpsHandler.read("httpbin.org/status/404")).rejects.toThrow("HTTP 404");
-    });
+    it(
+      "throws TransportError on HTTP error",
+      async () => {
+        await expect(httpsHandler.read("httpbin.org/status/404")).rejects.toThrow(TransportError);
+        await expect(httpsHandler.read("httpbin.org/status/404")).rejects.toThrow("HTTP 404");
+      },
+      { timeout: 15000 }
+    );
 
-    it("throws TransportError on network error", async () => {
-      await expect(httpsHandler.read("invalid.domain.that.does.not.exist/")).rejects.toThrow(
-        TransportError
-      );
-    });
+    it(
+      "throws TransportError on network error",
+      async () => {
+        await expect(httpsHandler.read("invalid.domain.that.does.not.exist/")).rejects.toThrow(
+          TransportError
+        );
+      },
+      { timeout: 15000 }
+    );
   });
 
   describe("httpHandler", () => {

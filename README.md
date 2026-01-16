@@ -51,11 +51,20 @@ import { createResourceX } from "resourcexjs";
 
 const rx = createResourceX();
 
+// Resolve (read) a resource
 const resource = await rx.resolve("arp:text:https://example.com/file.txt");
-
 console.log(resource.type); // "text"
 console.log(resource.content); // file content
 console.log(resource.meta); // { url, semantic, transport, size, ... }
+
+// Deposit (write) a resource
+await rx.deposit("arp:text:file://./data/config.txt", "hello world");
+
+// Check if resource exists
+const exists = await rx.exists("arp:text:file://./data/config.txt");
+
+// Delete a resource
+await rx.delete("arp:text:file://./data/config.txt");
 ```
 
 ## CLI
@@ -83,31 +92,41 @@ arp "arp:text:https://example.com/file.txt" --json
 
 ## Custom Handlers
 
-### Transport
+### Transport (I/O Primitives)
 
 ```typescript
 rx.registerTransport({
-  type: "s3",
-  async fetch(location: string): Promise<Buffer> {
-    // Fetch from S3...
+  name: "s3",
+  capabilities: { canRead: true, canWrite: true, canList: true, canDelete: true, canStat: false },
+  async read(location: string): Promise<Buffer> {
+    // Read from S3...
     return buffer;
+  },
+  async write(location: string, content: Buffer): Promise<void> {
+    // Write to S3...
   },
 });
 
 await rx.resolve("arp:text:s3://bucket/key.txt");
+await rx.deposit("arp:text:s3://bucket/key.txt", "content");
 ```
 
-### Semantic
+### Semantic (Resource Logic)
 
 ```typescript
 rx.registerSemantic({
-  type: "json",
-  parse(content: Buffer, context) {
+  name: "json",
+  async resolve(transport, location, context) {
+    const buffer = await transport.read(location);
     return {
       type: "json",
-      content: JSON.parse(content.toString()),
-      meta: { ...context, size: content.length },
+      content: JSON.parse(buffer.toString()),
+      meta: { ...context, size: buffer.length, resolvedAt: context.timestamp.toISOString() },
     };
+  },
+  async deposit(transport, location, data, context) {
+    const buffer = Buffer.from(JSON.stringify(data));
+    await transport.write(location, buffer);
   },
 });
 

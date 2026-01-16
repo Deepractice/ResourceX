@@ -52,26 +52,60 @@ packages/
 └── cli/         # @resourcexjs/cli - CLI tool (depends on resourcex)
 ```
 
+### Core Concepts
+
+**Transport** handles WHERE + I/O primitives:
+
+- `read(location)` - Read content
+- `write(location, content)` - Write content
+- `list(location)` - List directory
+- `exists(location)` - Check existence
+- `delete(location)` - Delete resource
+
+**Semantic** handles WHAT + HOW (orchestrates Transport):
+
+- `resolve(transport, location, context)` - Fetch and parse resource
+- `deposit(transport, location, data, context)` - Serialize and store resource
+
 ### Resolution Flow
 
-The core resolution logic follows this pipeline (see `packages/core/src/resolve.ts`):
+The core resolution logic (see `packages/core/src/resolve.ts`):
 
-1. **Parse** - `parseARP(url)` extracts semantic, transport, and location from the ARP URL
-2. **Transport** - `getTransportHandler(transport).fetch(location)` fetches raw content (Buffer)
-3. **Semantic** - `getSemanticHandler(semantic).parse(content, context)` transforms to typed Resource
+```
+resolve(url):
+  1. Parse URL → { semantic, transport, location }
+  2. Get handlers → transport, semantic
+  3. Semantic orchestrates → semantic.resolve(transport, location, context)
+                              └── calls transport.read/list internally
+
+deposit(url, data):
+  1. Parse URL → { semantic, transport, location }
+  2. Get handlers → transport, semantic
+  3. Semantic orchestrates → semantic.deposit(transport, location, data, context)
+                              └── calls transport.write internally
+```
 
 ### Handler System
 
-Transport handlers (`packages/core/src/transport/`) and semantic handlers (`packages/core/src/semantic/`) are registered in global registries. Built-in handlers:
+Transport handlers (`packages/core/src/transport/`) provide I/O primitives:
 
-- Transport: `https`, `http`, `file`
-- Semantic: `text`
+- `https`, `http` - Read-only network access
+- `file` - Full filesystem access (read/write/list/delete)
+
+Semantic handlers (`packages/core/src/semantic/`) orchestrate transport primitives:
+
+- `text` - Plain text encoding/decoding
 
 Custom handlers can be registered via `registerTransportHandler()` and `registerSemanticHandler()`.
 
 ### Main API
 
-The `resourcexjs` package exposes `createResourceX()` factory and `ResourceX` class which wraps core functionality with a fluent API for registering custom handlers.
+The `resourcexjs` package exposes `createResourceX()` factory and `ResourceX` class:
+
+- `resolve(url)` - Read resource
+- `deposit(url, data)` - Write resource
+- `exists(url)` - Check existence
+- `delete(url)` - Delete resource
 
 ## Conventions
 
