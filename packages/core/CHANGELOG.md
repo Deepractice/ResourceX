@@ -1,5 +1,15 @@
 # @resourcexjs/core
 
+## 0.4.0
+
+### Minor Changes
+
+- 2ca58a0: Add built-in Deepractice transport for ecosystem local storage:
+  - Add `deepracticeHandler(config?)` factory function
+  - Maps `deepractice://path` to `~/.deepractice/path`
+  - Configurable `parentDir` for testing and custom installations
+  - Full capabilities: read/write/list/delete/exists/stat
+
 ## 0.3.0
 
 ## 0.2.0
