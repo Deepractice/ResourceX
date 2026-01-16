@@ -19,25 +19,32 @@ const rx = createResourceX();
 
 // Resolve a remote text resource
 const resource = await rx.resolve("arp:text:https://example.com/file.txt");
+// Or use shorthand (@ is default)
+const resource = await rx.resolve("@text:https://example.com/file.txt");
 
 console.log(resource.type); // "text"
 console.log(resource.content); // file content as string
 console.log(resource.meta); // { url, semantic, transport, ... }
 
 // Deposit a local text resource
-await rx.deposit("arp:text:file://./data/config.txt", "hello world");
+await rx.deposit("@text:file://./data/config.txt", "hello world");
 
 // Binary resources
-await rx.deposit("arp:binary:file://./data/image.png", imageBuffer);
-const binary = await rx.resolve("arp:binary:file://./data/image.png");
+await rx.deposit("@binary:file://./data/image.png", imageBuffer);
+const binary = await rx.resolve("@binary:file://./data/image.png");
 console.log(binary.content); // Buffer
 
 // Check if resource exists
-const exists = await rx.exists("arp:text:file://./data/config.txt");
+const exists = await rx.exists("@text:file://./data/config.txt");
 
 // Delete a resource
-await rx.delete("arp:text:file://./data/config.txt");
+await rx.delete("@text:file://./data/config.txt");
 ```
+
+### URL Prefix
+
+- `arp:` - Standard prefix (always supported)
+- `@` - Shorthand alias (default, configurable via `alias` config)
 
 ## ARP URL Format
 

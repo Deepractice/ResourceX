@@ -58,9 +58,30 @@ import { createResourceX } from "resourcexjs";
 
 const rx = createResourceX();
 
-// Read a text file
+// Read a text file - standard format
 const resource = await rx.resolve("arp:text:file://./hello.txt");
 console.log(resource.content); // "Hello World"
+
+// Or use shorthand (@ is default alias)
+const resource = await rx.resolve("@text:file://./hello.txt");
+console.log(resource.content); // "Hello World"
+```
+
+### URL Prefix
+
+ResourceX supports two prefixes:
+
+- `arp:` - Standard prefix (always supported)
+- `@` - Shorthand alias (default, configurable)
+
+```typescript
+// Both work
+await rx.resolve("arp:text:file://./config.txt");
+await rx.resolve("@text:file://./config.txt");
+
+// Customize the alias
+const rx = createResourceX({ alias: "#" });
+await rx.resolve("#text:file://./config.txt");
 ```
 
 ## Core Features
