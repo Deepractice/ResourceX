@@ -1,5 +1,21 @@
 # resourcexjs
 
+## 0.2.0
+
+### Minor Changes
+
+- 5be5743: Add binary semantic handler and resource definition support:
+  - **Binary Semantic**: Handle raw binary resources (Buffer, Uint8Array, ArrayBuffer, number[])
+  - **Resource Definition**: Define custom URL shortcuts via config
+    - `createResourceX({ resources: [{ name, semantic, transport, basePath }] })`
+    - Use `name://location` instead of full ARP URL
+  - Use local HTTP server for network tests (improved CI stability)
+
+### Patch Changes
+
+- Updated dependencies [5be5743]
+  - @resourcexjs/core@0.2.0
+
 ## 0.1.0
 
 ### Minor Changes
