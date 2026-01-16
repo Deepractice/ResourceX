@@ -6,8 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ResourceX implements ARP (Agent Resource Protocol), a URL format for AI agents to reference and access resources. The URL format is: `arp:{semantic}:{transport}://{location}`
 
-- **semantic**: What the resource is (text, json, image, prompt)
-- **transport**: How to fetch it (https, http, file, arr)
+- **semantic**: What the resource is (text, binary)
+- **transport**: How to fetch it (https, http, file)
 - **location**: Where to find it
 
 ## Commands
@@ -67,6 +67,11 @@ packages/
 - `resolve(transport, location, context)` - Fetch and parse resource
 - `deposit(transport, location, data, context)` - Serialize and store resource
 
+**Resource Definition** provides URL shortcuts:
+
+- Define `name`, `semantic`, `transport`, `basePath`
+- Use `name://location` instead of full ARP URL
+
 ### Resolution Flow
 
 The core resolution logic (see `packages/core/src/resolve.ts`):
@@ -94,15 +99,29 @@ Transport handlers (`packages/core/src/transport/`) provide I/O primitives:
 
 Semantic handlers (`packages/core/src/semantic/`) orchestrate transport primitives:
 
-- `text` - Plain text encoding/decoding
+- `text` - Plain text (UTF-8 encoding/decoding)
+- `binary` - Raw binary (Buffer passthrough, no transformation)
 
 Custom handlers can be registered via `registerTransportHandler()` and `registerSemanticHandler()`.
+
+### Resource Definition System
+
+Resource definitions (`packages/core/src/resource/`) provide URL shortcuts:
+
+```typescript
+createResourceX({
+  resources: [{ name: "mydata", semantic: "text", transport: "file", basePath: "/path/to/data" }],
+});
+
+// Then use: mydata://file.txt
+// Instead of: arp:text:file:///path/to/data/file.txt
+```
 
 ### Main API
 
 The `resourcexjs` package exposes `createResourceX()` factory and `ResourceX` class:
 
-- `resolve(url)` - Read resource
+- `resolve(url)` - Read resource (supports ARP and Resource URLs)
 - `deposit(url, data)` - Write resource
 - `exists(url)` - Check existence
 - `delete(url)` - Delete resource

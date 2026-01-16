@@ -30,6 +30,9 @@ import { resolve } from "@resourcexjs/core";
 
 const resource = await resolve("arp:text:https://example.com/file.txt");
 // { type: "text", content: "...", meta: { ... } }
+
+const binary = await resolve("arp:binary:file://./image.png");
+// { type: "binary", content: Buffer, meta: { ... } }
 ```
 
 ### Deposit Resources
@@ -38,6 +41,7 @@ const resource = await resolve("arp:text:https://example.com/file.txt");
 import { deposit } from "@resourcexjs/core";
 
 await deposit("arp:text:file://./data/config.txt", "hello world");
+await deposit("arp:binary:file://./data/image.png", buffer);
 ```
 
 ### Check Existence & Delete
@@ -128,6 +132,7 @@ registerSemanticHandler(jsonHandler);
 - `registerTransportHandler(handler)` - Register custom transport
 - `getSemanticHandler(name)` - Get registered semantic handler
 - `registerSemanticHandler(handler)` - Register custom semantic
+- `createResourceRegistry()` - Create a resource definition registry
 
 ### Built-in Handlers
 
@@ -139,7 +144,8 @@ registerSemanticHandler(jsonHandler);
 
 **Semantic:**
 
-- `textHandler` - Plain text
+- `textHandler` - Plain text (UTF-8 encoding)
+- `binaryHandler` - Raw binary (Buffer passthrough)
 
 ### Error Classes
 
@@ -165,6 +171,10 @@ import type {
   ResourceStat,
   SemanticHandler,
   TextResource,
+  BinaryResource,
+  BinaryInput,
+  ResourceDefinition,
+  ResourceRegistry,
 } from "@resourcexjs/core";
 ```
 
