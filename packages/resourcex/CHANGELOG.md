@@ -1,5 +1,19 @@
 # resourcexjs
 
+## 0.3.0
+
+### Minor Changes
+
+- a11ac9a: Remove runtime register methods, unify to config-only approach:
+  - Remove `rx.registerTransport()` / `rx.registerSemantic()` methods
+  - Remove `rx.getTransport()` / `rx.getSemantic()` helper methods
+  - All customization now via `createResourceX()` config only
+  - Update documentation to reflect config-only approach
+
+### Patch Changes
+
+- @resourcexjs/core@0.3.0
+
 ## 0.2.0
 
 ### Minor Changes
