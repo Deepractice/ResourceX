@@ -19,12 +19,23 @@ pre-commit:
 pre-push:
   parallel: false
   commands:
+    install-check:
+      priority: 1
+      run: bun install --frozen-lockfile
+      fail_text: "Lockfile is outdated. Run 'bun install' to update it."
+
     format:
+      priority: 2
       run: bun format:check
 
     lint:
+      priority: 3
       run: bun lint
 
-    install-check:
-      run: bun install --frozen-lockfile
-      fail_text: "Lockfile is outdated. Run 'bun install' to update it."
+    typecheck:
+      priority: 4
+      run: bun typecheck
+
+    test:
+      priority: 5
+      run: bun test
