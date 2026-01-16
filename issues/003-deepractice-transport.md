@@ -160,6 +160,18 @@ await rx.deposit("arp:json:deepractice://toolx/config.json", toolConfig);
 
 ---
 
-**Status**: Open
+**Status**: Completed
 **Priority**: High
 **Labels**: enhancement, transport-handler, ecosystem
+
+## 实现说明
+
+已实现为工厂函数模式：
+
+```typescript
+deepracticeHandler(config?: { parentDir?: string })
+```
+
+- 默认映射到 `~/.deepractice/`
+- 支持自定义 `parentDir`（测试时可用 `/tmp` 等）
+- `.deepractice` 目录名固定，保持生态一致性

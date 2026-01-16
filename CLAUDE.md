@@ -96,6 +96,7 @@ Transport handlers (`packages/core/src/transport/`) provide I/O primitives:
 
 - `https`, `http` - Read-only network access
 - `file` - Full filesystem access (read/write/list/delete)
+- `deepractice` - Deepractice local storage (~/.deepractice, configurable via factory function)
 
 Semantic handlers (`packages/core/src/semantic/`) orchestrate transport primitives:
 

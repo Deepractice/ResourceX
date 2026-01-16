@@ -131,15 +131,37 @@ Semantic 和 Transport 可以任意组合：
 
 **Transport:**
 
-| 名称    | 能力            | 描述         |
-| ------- | --------------- | ------------ |
-| `https` | 读              | HTTPS 协议   |
-| `http`  | 读              | HTTP 协议    |
-| `file`  | 读/写/列表/删除 | 本地文件系统 |
+| 名称          | 能力            | 描述                                  |
+| ------------- | --------------- | ------------------------------------- |
+| `https`       | 读              | HTTPS 协议                            |
+| `http`        | 读              | HTTP 协议                             |
+| `file`        | 读/写/列表/删除 | 本地文件系统                          |
+| `deepractice` | 读/写/列表/删除 | Deepractice 本地存储 (~/.deepractice) |
 
 ## 配置和自定义
 
 ResourceX 通过 `createResourceX()` 配置对象进行完全配置。
+
+### Deepractice Transport
+
+Deepractice 生态内置 transport，自动映射到 `~/.deepractice/`：
+
+```typescript
+import { createResourceX, deepracticeHandler } from "resourcexjs";
+
+const rx = createResourceX({
+  transports: [deepracticeHandler()],
+});
+
+// 自动映射到 ~/.deepractice/sandbox/logs/app.log
+await rx.deposit("arp:text:deepractice://sandbox/logs/app.log", "日志内容");
+
+// 自定义父目录（用于测试或自定义安装）
+const rx = createResourceX({
+  transports: [deepracticeHandler({ parentDir: "/var/data" })],
+});
+// → /var/data/.deepractice/sandbox/logs/app.log
+```
 
 ### 自定义 Resource（URL 快捷方式）
 
