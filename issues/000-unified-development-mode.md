@@ -212,15 +212,170 @@ bun run test
 
 ---
 
+---
+
+## 完整开发流程
+
+### Step 0: Issue 创建
+
+```bash
+# 创建 issue 文档（如果还没有）
+# issues/xxx-feature-name.md
+```
+
+**内容**：
+
+- 背景和痛点
+- 期望用法
+- 设计方案
+- 实现步骤
+
+### Step 1: 创建分支
+
+```bash
+git checkout main
+git pull
+git checkout -b feat/feature-name
+```
+
+### Step 2: Phase 1 - 需求澄清（Code Review）
+
+1. Reviewer（Claude）阅读相关代码/文档/issue
+2. 发现问题，提出疑问（使用问题格式）
+3. Architect（用户）解答，做决策
+4. 确认方案，进入 Phase 2
+
+### Step 3: Phase 2 - 行为定义（BDD）
+
+```bash
+# 1. 编写 feature 文件
+# bdd/features/feature-name.feature
+
+# 2. 运行测试（预期失败，step 未定义）
+cd bdd && bun run test:tags "@feature-tag"
+
+# 3. 实现 step definitions（如需要）
+# bdd/steps/feature-name.steps.ts
+```
+
+### Step 4: Phase 3 - 实现（TDD）
+
+```bash
+# 1. 运行测试（预期失败）
+cd bdd && bun run test:tags "@feature-tag"
+
+# 2. 实现代码
+# packages/core/src/...
+
+# 3. 运行测试直到通过
+cd bdd && bun run test:tags "@feature-tag"
+
+# 4. 运行全部测试确保没破坏其他功能
+bun run test
+bun run test:bdd
+```
+
+### Step 5: 代码质量检查
+
+```bash
+# TypeCheck
+bun run typecheck
+
+# Lint
+bun run lint
+
+# Format
+bun run format
+```
+
+### Step 6: 更新文档
+
+需要更新的文档：
+
+- `README.md` - 如果有新功能/API
+- `README.zh-CN.md` - 中文版
+- `CLAUDE.md` - 如果架构变化
+- `packages/*/README.md` - 相关包的文档
+- `issues/xxx.md` - 更新 issue 状态
+
+### Step 7: 写 Changeset
+
+```bash
+# 手动创建 changeset
+# .changeset/feature-name.md
+
+---
+"packageName": patch|minor|major
+---
+
+Description of changes
+```
+
+**版本规则**：
+
+- `patch` - Bug 修复和内部改进
+- `minor` - 新功能和增强
+- `major` - Breaking changes
+
+### Step 8: 提交代码
+
+```bash
+git add .
+git status  # 检查要提交的文件
+git commit -m "feat: feature description
+
+Co-Authored-By: Claude Sonnet 4.5 (1M context) <noreply@anthropic.com>"
+```
+
+**Commit 规范**：
+
+- 遵循 Conventional Commits
+- `feat:` / `fix:` / `docs:` / `refactor:` / `test:` / `chore:`
+
+### Step 9: 推送和创建 PR
+
+```bash
+# 推送分支
+git push -u origin feat/feature-name
+
+# 创建 PR
+gh pr create --title "feat: feature description" --body "..."
+```
+
+**PR 检查**：
+
+- ✅ CI 通过（lint, typecheck, test, build）
+- ✅ Changeset 存在（自动检查）
+
+### Step 10: 合并
+
+```bash
+# PR approved 后合并
+gh pr merge --squash
+
+# 切回 main 并更新
+git checkout main
+git pull
+
+# 删除本地分支
+git branch -d feat/feature-name
+```
+
+---
+
 ## 快速参考
 
-### 开发新功能
+### 开发新功能（完整版）
 
 ```
-1. Code Review: 讨论需求，确定方案
-2. BDD: 写 .feature 文件
-3. 实现: 让测试通过
-4. 提交
+1. Issue 创建 → 拉分支
+2. Code Review: 讨论需求，确定方案
+3. BDD: 写 .feature 文件
+4. 实现: 让测试通过
+5. 质量检查: typecheck, lint, format
+6. 更新文档
+7. 写 changeset
+8. 提交 → PR → 合并
 ```
 
 ### 修复 Bug
