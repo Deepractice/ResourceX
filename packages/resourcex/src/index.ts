@@ -33,6 +33,7 @@ export type {
   ResourceStat,
   SemanticHandler,
   TextResource,
+  ResourceDefinition,
 } from "@resourcexjs/core";
 
 export { ResourceXError, ParseError, TransportError, SemanticError } from "@resourcexjs/core";
