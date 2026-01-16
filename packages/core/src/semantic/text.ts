@@ -45,7 +45,7 @@ export class TextSemanticHandler implements SemanticHandler<string> {
     transport: TransportHandler,
     location: string,
     data: string,
-    context: SemanticContext
+    _context: SemanticContext
   ): Promise<void> {
     if (!transport.write) {
       throw new SemanticError(

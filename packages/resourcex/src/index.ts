@@ -27,8 +27,10 @@ export type {
   Resource,
   ResourceMeta,
   ParsedARP,
-  ParseContext,
+  SemanticContext,
   TransportHandler,
+  TransportCapabilities,
+  ResourceStat,
   SemanticHandler,
   TextResource,
 } from "@resourcexjs/core";
