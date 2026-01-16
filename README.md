@@ -152,36 +152,36 @@ You can mix and match any semantic with any transport:
 
 **Transport:**
 
-| Name          | Capabilities           | Description                                |
-| ------------- | ---------------------- | ------------------------------------------ |
-| `https`       | read                   | HTTPS protocol                             |
-| `http`        | read                   | HTTP protocol                              |
-| `file`        | read/write/list/delete | Local filesystem                           |
-| `deepractice` | read/write/list/delete | Deepractice local storage (~/.deepractice) |
+| Name      | Capabilities           | Description                        |
+| --------- | ---------------------- | ---------------------------------- |
+| `https`   | read                   | HTTPS protocol                     |
+| `http`    | read                   | HTTP protocol                      |
+| `file`    | read/write/list/delete | Local filesystem                   |
+| `agentvm` | read/write/list/delete | AgentVM local storage (~/.agentvm) |
 
 ## Configuration and Custom
 
 ResourceX is fully configurable via the `createResourceX()` config object.
 
-### Deepractice Transport
+### AgentVM Transport
 
-Built-in transport for Deepractice ecosystem, automatically maps to `~/.deepractice/`:
+Built-in transport for AgentVM local storage, automatically maps to `~/.agentvm/`:
 
 ```typescript
-import { createResourceX, deepracticeHandler } from "resourcexjs";
+import { createResourceX, agentvmHandler } from "resourcexjs";
 
 const rx = createResourceX({
-  transports: [deepracticeHandler()],
+  transports: [agentvmHandler()],
 });
 
-// Automatically maps to ~/.deepractice/sandbox/logs/app.log
-await rx.deposit("arp:text:deepractice://sandbox/logs/app.log", "log entry");
+// Automatically maps to ~/.agentvm/sandbox/logs/app.log
+await rx.deposit("arp:text:agentvm://sandbox/logs/app.log", "log entry");
 
 // Custom parent directory (for testing or custom installations)
 const rx = createResourceX({
-  transports: [deepracticeHandler({ parentDir: "/var/data" })],
+  transports: [agentvmHandler({ parentDir: "/var/data" })],
 });
-// → /var/data/.deepractice/sandbox/logs/app.log
+// → /var/data/.agentvm/sandbox/logs/app.log
 ```
 
 ### Custom Resources (URL Shortcuts)

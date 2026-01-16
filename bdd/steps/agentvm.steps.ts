@@ -1,5 +1,5 @@
 /**
- * Deepractice transport step definitions
+ * AgentVM transport step definitions
  */
 import { Given, Then, Before, After } from "@cucumber/cucumber";
 import { strict as assert } from "node:assert";
@@ -7,7 +7,7 @@ import { mkdir, writeFile, readFile, rm } from "node:fs/promises";
 import { join, dirname } from "node:path";
 import { homedir } from "node:os";
 
-interface DeepracticeWorld {
+interface AgentVMWorld {
   rx: import("resourcexjs").ResourceX | null;
   parentDir: string;
   result: { type: string; content: unknown; meta?: Record<string, unknown> } | null;
@@ -15,7 +15,7 @@ interface DeepracticeWorld {
   content: unknown;
 }
 
-Before({ tags: "@deepractice" }, async function (this: DeepracticeWorld) {
+Before({ tags: "@agentvm" }, async function (this: AgentVMWorld) {
   this.rx = null;
   this.parentDir = homedir();
   this.result = null;
@@ -23,10 +23,10 @@ Before({ tags: "@deepractice" }, async function (this: DeepracticeWorld) {
   this.content = null;
 });
 
-After({ tags: "@deepractice" }, async function (this: DeepracticeWorld) {
+After({ tags: "@agentvm" }, async function (this: AgentVMWorld) {
   // Clean up test files in default location
   try {
-    await rm(join(homedir(), ".deepractice"), { recursive: true, force: true });
+    await rm(join(homedir(), ".agentvm"), { recursive: true, force: true });
   } catch {
     // Ignore cleanup errors
   }
@@ -39,62 +39,62 @@ After({ tags: "@deepractice" }, async function (this: DeepracticeWorld) {
   }
 });
 
-Given("deepractice handler with default config", async function (this: DeepracticeWorld) {
-  const { createResourceX, deepracticeHandler } = await import("resourcexjs");
+Given("agentvm handler with default config", async function (this: AgentVMWorld) {
+  const { createResourceX, agentvmHandler } = await import("resourcexjs");
   this.parentDir = homedir();
   this.rx = createResourceX({
-    transports: [deepracticeHandler()],
+    transports: [agentvmHandler()],
   });
 });
 
 Given(
-  "deepractice handler with parentDir {string}",
-  async function (this: DeepracticeWorld, parentDir: string) {
-    const { createResourceX, deepracticeHandler } = await import("resourcexjs");
+  "agentvm handler with parentDir {string}",
+  async function (this: AgentVMWorld, parentDir: string) {
+    const { createResourceX, agentvmHandler } = await import("resourcexjs");
     // Adjust relative paths for BDD test directory
     const adjustedParentDir = parentDir.startsWith("./")
       ? join(process.cwd(), "bdd", parentDir.slice(2))
       : parentDir;
     this.parentDir = adjustedParentDir;
     this.rx = createResourceX({
-      transports: [deepracticeHandler({ parentDir: adjustedParentDir })],
+      transports: [agentvmHandler({ parentDir: adjustedParentDir })],
     });
   }
 );
 
-// Create local file at deepractice path (default location)
+// Create local file at agentvm path (default location)
 Given(
-  "local file at deepractice path {string} with content {string}",
-  async function (this: DeepracticeWorld, path: string, content: string) {
-    const fullPath = join(this.parentDir, ".deepractice", path);
+  "local file at agentvm path {string} with content {string}",
+  async function (this: AgentVMWorld, path: string, content: string) {
+    const fullPath = join(this.parentDir, ".agentvm", path);
     await mkdir(dirname(fullPath), { recursive: true });
     await writeFile(fullPath, content, "utf-8");
   }
 );
 
-// Create local file at custom deepractice path
+// Create local file at custom agentvm path
 Given(
-  "local file at custom deepractice path {string} with content {string}",
-  async function (this: DeepracticeWorld, path: string, content: string) {
-    const fullPath = join(this.parentDir, ".deepractice", path);
+  "local file at custom agentvm path {string} with content {string}",
+  async function (this: AgentVMWorld, path: string, content: string) {
+    const fullPath = join(this.parentDir, ".agentvm", path);
     await mkdir(dirname(fullPath), { recursive: true });
     await writeFile(fullPath, content, "utf-8");
   }
 );
 
 Then(
-  "file at deepractice path {string} should contain {string}",
-  async function (this: DeepracticeWorld, path: string, expected: string) {
-    const fullPath = join(this.parentDir, ".deepractice", path);
+  "file at agentvm path {string} should contain {string}",
+  async function (this: AgentVMWorld, path: string, expected: string) {
+    const fullPath = join(this.parentDir, ".agentvm", path);
     const content = await readFile(fullPath, "utf-8");
     assert.ok(content.includes(expected), `File should contain "${expected}", got: ${content}`);
   }
 );
 
 Then(
-  "file at custom deepractice path {string} should contain {string}",
-  async function (this: DeepracticeWorld, path: string, expected: string) {
-    const fullPath = join(this.parentDir, ".deepractice", path);
+  "file at custom agentvm path {string} should contain {string}",
+  async function (this: AgentVMWorld, path: string, expected: string) {
+    const fullPath = join(this.parentDir, ".agentvm", path);
     const content = await readFile(fullPath, "utf-8");
     assert.ok(content.includes(expected), `File should contain "${expected}", got: ${content}`);
   }

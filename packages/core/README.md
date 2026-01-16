@@ -141,7 +141,7 @@ registerSemanticHandler(jsonHandler);
 - `httpsHandler` - HTTPS protocol (read-only)
 - `httpHandler` - HTTP protocol (read-only)
 - `fileHandler` - Local file system (read/write/list/delete)
-- `deepracticeHandler(config?)` - Deepractice local storage (factory function, configurable parent directory)
+- `agentvmHandler(config?)` - AgentVM local storage (factory function, configurable parent directory)
 
 **Semantic:**
 
