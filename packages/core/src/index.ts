@@ -41,3 +41,10 @@ export {
 
 // Resource Operations
 export { resolve, deposit, resourceExists, resourceDelete } from "./resolve.js";
+
+// Resource Definition
+export {
+  type ResourceDefinition,
+  type ResourceRegistry,
+  createResourceRegistry,
+} from "./resource/index.js";

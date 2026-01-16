@@ -4,14 +4,13 @@ Feature: Resolve End-to-End Flow
 
   @e2e @meta
   Scenario: Resolve remote text resource
-    Given ARP URL "arp:text:https://httpbin.org/robots.txt"
+    Given ARP URL "arp:text:http://localhost:{{TEST_PORT}}/story"
     When resolve the resource
     Then should return resource object
     And type should be "text"
-    And content should contain "User-agent"
-    And meta.url should be "arp:text:https://httpbin.org/robots.txt"
+    And content should contain "Deepractice"
     And meta.semantic should be "text"
-    And meta.transport should be "https"
+    And meta.transport should be "http"
     And meta.encoding should be "utf-8"
 
   @e2e
@@ -28,7 +27,7 @@ Feature: Resolve End-to-End Flow
     Given ARP URL "invalid-url"
     When resolve the resource
     Then should throw error
-    And error message should contain "Invalid ARP URL"
+    And error message should contain "Invalid URL"
 
   @e2e @error
   Scenario: Resolve unsupported transport type

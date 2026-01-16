@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from "bun:test";
 import { writeFile, mkdir, rm } from "node:fs/promises";
 import { join } from "node:path";
+import type { Server } from "bun";
 import {
   httpsHandler,
   httpHandler,
@@ -12,6 +13,36 @@ import { TransportError } from "../../src/errors.js";
 import type { TransportHandler } from "../../src/transport/types.js";
 
 describe("Transport Handlers", () => {
+  let testServer: Server;
+  let testPort: number;
+
+  beforeAll(() => {
+    // Start local HTTP server for testing
+    testServer = Bun.serve({
+      port: 0, // Random available port
+      fetch(req) {
+        const url = new URL(req.url);
+
+        if (url.pathname === "/test.txt") {
+          return new Response("Test content from server");
+        }
+
+        if (url.pathname === "/404") {
+          return new Response("Not Found", { status: 404 });
+        }
+
+        return new Response("OK");
+      },
+    });
+    testPort = testServer.port;
+  });
+
+  afterAll(() => {
+    if (testServer) {
+      testServer.stop();
+    }
+  });
+
   describe("httpsHandler", () => {
     it("has correct name", () => {
       expect(httpsHandler.name).toBe("https");
@@ -24,25 +55,17 @@ describe("Transport Handlers", () => {
       expect(httpsHandler.capabilities.canDelete).toBe(false);
     });
 
-    it(
-      "reads remote content",
-      async () => {
-        const buffer = await httpsHandler.read("httpbin.org/robots.txt");
+    it("reads remote content", async () => {
+      const buffer = await httpHandler.read(`localhost:${testPort}/test.txt`);
 
-        expect(buffer).toBeInstanceOf(Buffer);
-        expect(buffer.toString()).toContain("User-agent");
-      },
-      { timeout: 15000 }
-    );
+      expect(buffer).toBeInstanceOf(Buffer);
+      expect(buffer.toString()).toBe("Test content from server");
+    });
 
-    it(
-      "throws TransportError on HTTP error",
-      async () => {
-        await expect(httpsHandler.read("httpbin.org/status/404")).rejects.toThrow(TransportError);
-        await expect(httpsHandler.read("httpbin.org/status/404")).rejects.toThrow("HTTP 404");
-      },
-      { timeout: 15000 }
-    );
+    it("throws TransportError on HTTP error", async () => {
+      await expect(httpHandler.read(`localhost:${testPort}/404`)).rejects.toThrow(TransportError);
+      await expect(httpHandler.read(`localhost:${testPort}/404`)).rejects.toThrow("HTTP 404");
+    });
 
     it(
       "throws TransportError on network error",

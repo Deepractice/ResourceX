@@ -14,6 +14,7 @@
 
   <p>
     <a href="https://github.com/Deepractice/ResourceX"><img src="https://img.shields.io/github/stars/Deepractice/ResourceX?style=social" alt="Stars"/></a>
+    <img src="https://visitor-badge.laobi.icu/badge?page_id=Deepractice.ResourceX" alt="Views"/>
     <a href="LICENSE"><img src="https://img.shields.io/github/license/Deepractice/ResourceX?color=blue" alt="License"/></a>
     <a href="https://www.npmjs.com/package/resourcexjs"><img src="https://img.shields.io/npm/v/resourcexjs?color=cb3837&logo=npm" alt="npm"/></a>
   </p>
@@ -34,7 +35,7 @@
 arp:{semantic}:{transport}://{location}
 ```
 
-- **semantic**: What the resource is (`text`)
+- **semantic**: What the resource is (`text`, `binary`)
 - **transport**: How to fetch it (`https`, `http`, `file`)
 - **location**: Where to find it
 
@@ -60,11 +61,43 @@ console.log(resource.meta); // { url, semantic, transport, size, ... }
 // Deposit (write) a resource
 await rx.deposit("arp:text:file://./data/config.txt", "hello world");
 
+// Binary resources
+await rx.deposit("arp:binary:file://./data/image.png", imageBuffer);
+const binary = await rx.resolve("arp:binary:file://./data/image.png");
+console.log(binary.content); // Buffer
+
 // Check if resource exists
 const exists = await rx.exists("arp:text:file://./data/config.txt");
 
 // Delete a resource
 await rx.delete("arp:text:file://./data/config.txt");
+```
+
+## Resource Definition
+
+Define custom resources as shortcuts for commonly used ARP URLs:
+
+```typescript
+import { createResourceX } from "resourcexjs";
+import { join } from "path";
+import { homedir } from "os";
+
+const rx = createResourceX({
+  resources: [
+    {
+      name: "sandbox-log",
+      semantic: "text",
+      transport: "file",
+      basePath: join(homedir(), ".myapp", "logs"),
+    },
+  ],
+});
+
+// Use resource URL instead of full ARP URL
+await rx.deposit("sandbox-log://app.log", "log entry");
+// Equivalent to: arp:text:file://~/.myapp/logs/app.log
+
+const log = await rx.resolve("sandbox-log://app.log");
 ```
 
 ## CLI
@@ -89,6 +122,23 @@ arp "arp:text:https://example.com/file.txt" --json
 | [`resourcexjs`](./packages/resourcex)  | Main package        |
 | [`@resourcexjs/core`](./packages/core) | Core implementation |
 | [`@resourcexjs/cli`](./packages/cli)   | CLI tool            |
+
+## Built-in Handlers
+
+### Semantic
+
+| Name     | Content Type | Description               |
+| -------- | ------------ | ------------------------- |
+| `text`   | `string`     | Plain text (UTF-8)        |
+| `binary` | `Buffer`     | Raw binary (no transform) |
+
+### Transport
+
+| Name    | Capabilities           | Description      |
+| ------- | ---------------------- | ---------------- |
+| `https` | read                   | HTTPS protocol   |
+| `http`  | read                   | HTTP protocol    |
+| `file`  | read/write/list/delete | Local filesystem |
 
 ## Custom Handlers
 
