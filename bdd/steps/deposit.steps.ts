@@ -5,7 +5,7 @@ import { join } from "node:path";
 
 interface DepositWorld {
   url: string;
-  content: string;
+  content: string | Buffer | Uint8Array | ArrayBuffer | number[];
   result: { type: string; content: unknown; meta?: Record<string, unknown> } | null;
   error: Error | null;
 }

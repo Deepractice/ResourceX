@@ -111,6 +111,24 @@
 
 ## Phase 2: BDD 模式
 
+### BDD vs Unit 测试边界
+
+| 测试类型 | 测试层级       | 视角       |
+| -------- | -------------- | ---------- |
+| **BDD**  | 最外层 API/APP | 用户视角   |
+| **Unit** | 内部模块       | 开发者视角 |
+
+**BDD 测试原则**：
+
+- 只通过最外层公开 API 测试，不测试内部模块
+- 测试用户可见的行为，不测试实现细节
+- 这样做有助于从用户视角审视 API 设计
+
+**Unit 测试原则**：
+
+- 测试内部模块的具体实现
+- 可以 mock 依赖，关注边界条件
+
 ### Feature 文件结构
 
 ```gherkin
@@ -134,19 +152,14 @@ Feature: 功能名称
 ```
 bdd/
 ├── features/
-│   ├── queue/
-│   │   ├── subscribe.feature      # 订阅功能
-│   │   ├── ack.feature            # ACK 功能
-│   │   └── reconnect.feature      # 断线重连
-│   ├── agentx/
-│   │   ├── local-mode.feature     # 本地模式
-│   │   └── remote-mode.feature    # 远程模式
+│   ├── resolve.feature
+│   ├── deposit.feature
 │   └── ...
 ├── steps/
-│   ├── queue.steps.ts
-│   ├── agentx.steps.ts
-│   └── ...
-└── world.ts                        # 共享上下文
+│   ├── resolve.steps.ts
+│   ├── deposit.steps.ts
+│   └── common.steps.ts
+└── cucumber.js                     # Cucumber 配置
 ```
 
 ### 编写原则
@@ -159,27 +172,16 @@ bdd/
 ### 示例
 
 ```gherkin
-@queue @subscribe
-Feature: Queue 订阅
-  客户端可以订阅 topic，接收实时消息，断线后能恢复。
+@resolve
+Feature: Resolve Resource
+  通过 ARP URL 解析资源
 
-  Background:
-    Given Queue 服务已启动
-    And 客户端已连接
-
-  Scenario: 客户端订阅 topic 后收到新消息
-    Given topic "session-123" 存在
-    When 客户端订阅 "session-123"
-    And 服务端发送消息 "hello" 到 "session-123"
-    Then 客户端应该收到消息 "hello"
-
-  Scenario: 客户端断线重连后恢复消息
-    Given 客户端订阅了 "session-123"
-    And 客户端消费到 cursor "c-100"
-    When 客户端断开连接
-    And 服务端发送消息 "missed" 到 "session-123"
-    And 客户端重新连接
-    Then 客户端应该收到消息 "missed"
+  Scenario: 解析本地文本资源
+    Given ARP URL "arp:text:file://./data/hello.txt"
+    When resolve the resource
+    Then should return resource object
+    And type should be "text"
+    And content should contain "Hello"
 ```
 
 ---
@@ -190,16 +192,16 @@ Feature: Queue 订阅
 
 ```bash
 # 1. 运行测试（预期失败）
-bun bdd --tags @queue
+cd bdd && bun run test:tags "@feature-tag"
 
 # 2. 实现代码
 # ... 编写实现 ...
 
 # 3. 运行测试（通过）
-bun bdd --tags @queue
+cd bdd && bun run test:tags "@feature-tag"
 
 # 4. 运行全部测试确保没有破坏其他功能
-bun test
+bun run test
 ```
 
 ### 原则
@@ -245,19 +247,18 @@ bun test
 
 ```bash
 # 运行所有 BDD 测试
-bun bdd
+bun run test:bdd
 
 # 运行指定 tag 的测试
-bun bdd --tags @queue
-bun bdd --tags "@queue and @subscribe"
-bun bdd --tags "not @pending"
+cd bdd && bun run test:tags "@resolve"
+cd bdd && bun run test:tags "@resolve and @e2e"
+cd bdd && bun run test:tags "not @pending"
 
 # 运行单元测试
-bun test
-bun --filter @agentxjs/queue test
+bun run test
 
 # 类型检查
-bun typecheck
+bun run typecheck
 ```
 
 ---
@@ -276,8 +277,6 @@ bun typecheck
 
 ## 相关文件
 
-- `bdd/` - BDD 测试目录
-- `bdd/cucumber.js` - Cucumber 配置
 - `bdd/features/` - Feature 文件
 - `bdd/steps/` - Step 实现
-- `bdd/world.ts` - 共享上下文
+- `bdd/cucumber.js` - Cucumber 配置
