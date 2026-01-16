@@ -1,5 +1,12 @@
 # @resourcexjs/cli
 
+## 0.5.0
+
+### Patch Changes
+
+- Updated dependencies [5577d4c]
+  - resourcexjs@0.5.0
+
 ## 0.4.0
 
 ### Patch Changes

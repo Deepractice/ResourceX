@@ -1,5 +1,23 @@
 # resourcexjs
 
+## 0.5.0
+
+### Minor Changes
+
+- 5577d4c: Rename deepractice transport to agentvm:
+  - Rename `deepracticeHandler` to `agentvmHandler`
+  - Rename `DeepracticeConfig` to `AgentVMConfig`
+  - Change directory from `~/.deepractice/` to `~/.agentvm/`
+  - Update all URLs from `deepractice://` to `agentvm://`
+  - Align with AgentVM product naming
+
+  **Note**: `deepractice` name is reserved for future cloud platform transport.
+
+### Patch Changes
+
+- Updated dependencies [5577d4c]
+  - @resourcexjs/core@0.5.0
+
 ## 0.4.0
 
 ### Minor Changes
