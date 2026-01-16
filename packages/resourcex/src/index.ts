@@ -34,6 +34,10 @@ export type {
   SemanticHandler,
   TextResource,
   ResourceDefinition,
+  DeepracticeConfig,
 } from "@resourcexjs/core";
+
+// Re-export built-in handlers
+export { deepracticeHandler } from "@resourcexjs/core";
 
 export { ResourceXError, ParseError, TransportError, SemanticError } from "@resourcexjs/core";

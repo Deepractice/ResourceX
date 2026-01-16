@@ -7,6 +7,7 @@ import { TransportError } from "../errors.js";
 export type { TransportHandler, TransportCapabilities, ResourceStat } from "./types.js";
 export { HttpTransportHandler, httpsHandler, httpHandler } from "./http.js";
 export { FileTransportHandler, fileHandler } from "./file.js";
+export { deepracticeHandler, type DeepracticeConfig } from "./deepractice.js";
 
 import type { TransportHandler } from "./types.js";
 import { httpsHandler, httpHandler } from "./http.js";

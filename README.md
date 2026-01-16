@@ -131,15 +131,37 @@ You can mix and match any semantic with any transport:
 
 **Transport:**
 
-| Name    | Capabilities           | Description      |
-| ------- | ---------------------- | ---------------- |
-| `https` | read                   | HTTPS protocol   |
-| `http`  | read                   | HTTP protocol    |
-| `file`  | read/write/list/delete | Local filesystem |
+| Name          | Capabilities           | Description                                |
+| ------------- | ---------------------- | ------------------------------------------ |
+| `https`       | read                   | HTTPS protocol                             |
+| `http`        | read                   | HTTP protocol                              |
+| `file`        | read/write/list/delete | Local filesystem                           |
+| `deepractice` | read/write/list/delete | Deepractice local storage (~/.deepractice) |
 
 ## Configuration and Custom
 
 ResourceX is fully configurable via the `createResourceX()` config object.
+
+### Deepractice Transport
+
+Built-in transport for Deepractice ecosystem, automatically maps to `~/.deepractice/`:
+
+```typescript
+import { createResourceX, deepracticeHandler } from "resourcexjs";
+
+const rx = createResourceX({
+  transports: [deepracticeHandler()],
+});
+
+// Automatically maps to ~/.deepractice/sandbox/logs/app.log
+await rx.deposit("arp:text:deepractice://sandbox/logs/app.log", "log entry");
+
+// Custom parent directory (for testing or custom installations)
+const rx = createResourceX({
+  transports: [deepracticeHandler({ parentDir: "/var/data" })],
+});
+// → /var/data/.deepractice/sandbox/logs/app.log
+```
 
 ### Custom Resources (URL Shortcuts)
 

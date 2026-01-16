@@ -1,13 +1,15 @@
 /**
  * Common step definitions shared across features
  */
-import { Given, Then } from "@cucumber/cucumber";
+import { Given, When, Then } from "@cucumber/cucumber";
 import { strict as assert } from "node:assert";
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
 interface CommonWorld {
+  rx?: import("resourcexjs").ResourceX;
   url?: string;
+  content?: unknown;
   result?: { type: string; content: unknown; meta?: Record<string, unknown> } | null;
   error?: Error | null;
 }
@@ -96,4 +98,36 @@ Then("meta.encoding should be {string}", function (this: CommonWorld, expected: 
   assert.ok(this.result, `Failed: ${this.error?.message}`);
   assert.ok(this.result.meta, "Result should have meta");
   assert.equal(this.result.meta.encoding, expected);
+});
+
+// Resource operations
+When("deposit the content to {string}", async function (this: CommonWorld, url: string) {
+  assert.ok(this.rx, "ResourceX not initialized");
+  assert.ok(this.content !== undefined && this.content !== null, "Content not set");
+  try {
+    await this.rx.deposit(url, this.content);
+  } catch (e) {
+    this.error = e as Error;
+  }
+});
+
+When("delete resource {string}", async function (this: CommonWorld, url: string) {
+  assert.ok(this.rx, "ResourceX not initialized");
+  try {
+    await this.rx.delete(url);
+  } catch (e) {
+    this.error = e as Error;
+  }
+});
+
+Then("resource {string} should exist", async function (this: CommonWorld, url: string) {
+  assert.ok(this.rx, "ResourceX not initialized");
+  const exists = await this.rx.exists(url);
+  assert.ok(exists, `Resource should exist: ${url}`);
+});
+
+Then("resource {string} should not exist", async function (this: CommonWorld, url: string) {
+  assert.ok(this.rx, "ResourceX not initialized");
+  const exists = await this.rx.exists(url);
+  assert.ok(!exists, `Resource should not exist: ${url}`);
 });
