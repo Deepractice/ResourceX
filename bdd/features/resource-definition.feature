@@ -8,7 +8,7 @@ Feature: Resource Definition
       | name   | semantic | transport | basePath           |
       | mydata | text     | file      | ./test-data/mydata |
     And local file "test-data/mydata/config.txt" with content "hello config"
-    When resolve "mydata://config.txt"
+    When resolve "@mydata://config.txt"
     Then should return resource object
     And type should be "text"
 
@@ -17,7 +17,7 @@ Feature: Resource Definition
     Given ResourceX created with config
       | name   | semantic | transport | basePath           |
       | mydata | text     | file      | ./test-data/mydata |
-    When deposit "hello world" to "mydata://greeting.txt"
+    When deposit "hello world" to "@mydata://greeting.txt"
     Then should succeed without error
     And file "./test-data/mydata/greeting.txt" should contain "hello world"
 
@@ -26,7 +26,7 @@ Feature: Resource Definition
     Given ResourceX created with config
       | name      | semantic | transport | basePath   |
       | localfile | text     | file      | ./test-data |
-    When deposit "direct content" to "localfile://direct.txt"
+    When deposit "direct content" to "@localfile://direct.txt"
     Then should succeed without error
     And file "./test-data/direct.txt" should contain "direct content"
 
@@ -36,8 +36,8 @@ Feature: Resource Definition
       | name   | semantic | transport | basePath            |
       | logs   | text     | file      | ./test-data/logs    |
       | blobs  | binary   | file      | ./test-data/blobs   |
-    When deposit "log entry" to "logs://app.log"
-    And deposit bytes [0xCA, 0xFE] to "blobs://data.bin"
+    When deposit "log entry" to "@logs://app.log"
+    And deposit bytes [0xCA, 0xFE] to "@blobs://data.bin"
     Then file "./test-data/logs/app.log" should contain "log entry"
     And file "./test-data/blobs/data.bin" bytes should be [0xCA, 0xFE]
 
@@ -46,7 +46,7 @@ Feature: Resource Definition
     Given ResourceX created with config
       | name   | semantic | transport | basePath           |
       | mydata | text     | file      | ./test-data/mydata |
-    When deposit "via resource" to "mydata://file1.txt"
+    When deposit "via resource" to "@mydata://file1.txt"
     And deposit "via arp" to "arp:text:file://./test-data/mydata/file2.txt"
     Then file "./test-data/mydata/file1.txt" should contain "via resource"
     And file "./test-data/mydata/file2.txt" should contain "via arp"
@@ -54,6 +54,6 @@ Feature: Resource Definition
   @e2e @error
   Scenario: Resolve undefined resource throws error
     Given ResourceX created with no resources
-    When resolve "undefined-resource://something"
+    When resolve "@undefined-resource://something"
     Then should throw error
     And error message should contain "Unknown resource"

@@ -3,7 +3,6 @@
  */
 
 import {
-  parseARP,
   resolve as coreResolve,
   deposit as coreDeposit,
   resourceExists as coreExists,
@@ -31,6 +30,13 @@ export interface ResourceXConfig {
   timeout?: number;
 
   /**
+   * URL prefix alias (default: "arp")
+   * All URLs must start with this prefix
+   * @example "arp", "@", "r"
+   */
+  alias?: string;
+
+  /**
    * Custom transport handlers to register
    */
   transports?: TransportHandler[];
@@ -51,10 +57,12 @@ export interface ResourceXConfig {
  */
 export class ResourceX {
   readonly timeout?: number;
+  private readonly alias: string;
   private readonly resourceRegistry: ResourceRegistry;
 
   constructor(config: ResourceXConfig = {}) {
     this.timeout = config.timeout;
+    this.alias = config.alias || "@";
     this.resourceRegistry = createResourceRegistry();
 
     // Register custom handlers from config
@@ -79,41 +87,86 @@ export class ResourceX {
   }
 
   /**
-   * Parse URL (supports both ARP and Resource URLs)
+   * Parse URL (supports both ARP and Resource URLs with custom prefix)
    */
   private parseURL(url: string): { arpUrl: string; parsed: ParsedARP } {
-    // Standard ARP URL
+    // Check prefix: "arp:" (always supported) or configured alias
+    let content: string;
+
     if (url.startsWith("arp:")) {
-      return { arpUrl: url, parsed: parseARP(url) };
+      content = url.substring(4); // Remove "arp:"
+    } else if (url.startsWith(this.alias)) {
+      content = url.substring(this.alias.length); // Remove alias
+    } else {
+      throw new ParseError(`Invalid URL prefix: must start with "arp:" or "${this.alias}"`, url);
     }
 
-    // Resource URL: name://location
-    const match = url.match(/^([a-z][a-z0-9-]*):\/\/(.*)$/);
-    if (!match) {
-      throw new ParseError(`Invalid URL format: ${url}`, url);
+    // Find :// separator
+    const separatorIndex = content.indexOf("://");
+    if (separatorIndex === -1) {
+      throw new ParseError(`Invalid URL format: missing "://"`, url);
     }
 
-    const [, name, location] = match;
-    const definition = this.resourceRegistry.get(name);
+    const beforeSeparator = content.substring(0, separatorIndex);
+    const location = content.substring(separatorIndex + 3);
 
-    if (!definition) {
-      throw new ParseError(`Unknown resource: "${name}"`, url);
+    // Count colons in the part before ://
+    const colonCount = (beforeSeparator.match(/:/g) || []).length;
+
+    // ARP URL: {alias}:semantic:transport://location (1 colon before ://)
+    if (colonCount === 1) {
+      const parts = beforeSeparator.split(":");
+      if (parts.length !== 2) {
+        throw new ParseError(`Invalid ARP URL format`, url);
+      }
+
+      const [semantic, transport] = parts;
+
+      if (!semantic || !transport || !location) {
+        throw new ParseError(
+          `Invalid ARP URL: semantic, transport, and location are required`,
+          url
+        );
+      }
+
+      const arpUrl = `arp:${semantic}:${transport}://${location}`;
+
+      return {
+        arpUrl,
+        parsed: { semantic, transport, location },
+      };
     }
 
-    // Expand to full location
-    const fullLocation = definition.basePath ? join(definition.basePath, location) : location;
+    // Resource URL: {alias}:name://location (0 colons before ://)
+    if (colonCount === 0) {
+      const name = beforeSeparator;
 
-    // Build ARP URL
-    const arpUrl = `arp:${definition.semantic}:${definition.transport}://${fullLocation}`;
+      if (!name || !location) {
+        throw new ParseError(`Invalid Resource URL: name and location are required`, url);
+      }
 
-    return {
-      arpUrl,
-      parsed: {
-        semantic: definition.semantic,
-        transport: definition.transport,
-        location: fullLocation,
-      },
-    };
+      const definition = this.resourceRegistry.get(name);
+      if (!definition) {
+        throw new ParseError(`Unknown resource: "${name}"`, url);
+      }
+
+      // Expand to full location
+      const fullLocation = definition.basePath ? join(definition.basePath, location) : location;
+
+      // Build ARP URL
+      const arpUrl = `arp:${definition.semantic}:${definition.transport}://${fullLocation}`;
+
+      return {
+        arpUrl,
+        parsed: {
+          semantic: definition.semantic,
+          transport: definition.transport,
+          location: fullLocation,
+        },
+      };
+    }
+
+    throw new ParseError(`Invalid URL format: unexpected colon count in "${beforeSeparator}"`, url);
   }
 
   /**

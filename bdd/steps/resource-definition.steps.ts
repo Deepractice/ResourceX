@@ -81,7 +81,12 @@ Given("ResourceX created with no resources", async function (this: ResourceWorld
 When("resolve {string}", async function (this: ResourceWorld, url: string) {
   assert.ok(this.rx, "ResourceX not initialized");
   try {
-    this.result = await this.rx.resolve(url);
+    // Adjust file URLs for BDD test directory
+    let adjustedUrl = url;
+    if (url.includes("file://./")) {
+      adjustedUrl = url.replace("file://./", `file://./bdd/`);
+    }
+    this.result = await this.rx.resolve(adjustedUrl);
   } catch (e) {
     this.error = e as Error;
   }
@@ -92,9 +97,9 @@ When(
   async function (this: ResourceWorld, content: string, url: string) {
     assert.ok(this.rx, "ResourceX not initialized");
     try {
-      // Adjust ARP file URLs to include bdd path
+      // Adjust file URLs to include bdd path
       let adjustedUrl = url;
-      if (url.includes("arp:") && url.includes("file://./")) {
+      if (url.includes("file://./")) {
         adjustedUrl = url.replace("file://./", `file://./bdd/`);
       }
       await this.rx.deposit(adjustedUrl, content);

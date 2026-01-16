@@ -58,9 +58,30 @@ import { createResourceX } from "resourcexjs";
 
 const rx = createResourceX();
 
-// 读取文本文件
+// 读取文本文件 - 标准格式
 const resource = await rx.resolve("arp:text:file://./hello.txt");
 console.log(resource.content); // "Hello World"
+
+// 或使用简写（默认 @ 别名）
+const resource = await rx.resolve("@text:file://./hello.txt");
+console.log(resource.content); // "Hello World"
+```
+
+### URL 前缀
+
+ResourceX 支持两种前缀：
+
+- `arp:` - 标准前缀（永远支持）
+- `@` - 简写别名（默认，可配置）
+
+```typescript
+// 两种都可以
+await rx.resolve("arp:text:file://./config.txt");
+await rx.resolve("@text:file://./config.txt");
+
+// 自定义别名
+const rx = createResourceX({ alias: "#" });
+await rx.resolve("#text:file://./config.txt");
 ```
 
 ## 核心功能
