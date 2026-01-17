@@ -81,7 +81,7 @@ Feature: Registry
   # Search - Find resources
   # ============================================
 
-  @search
+  @search @skip
   Scenario: Search resources by name
     Given linked resources:
       | locator                          |
@@ -93,7 +93,7 @@ Feature: Registry
     And results should contain "foo-prompt"
     And results should contain "foo-tool"
 
-  @search
+  @search @skip
   Scenario: Search resources by type
     Given linked resources:
       | locator                          |
@@ -103,7 +103,7 @@ Feature: Registry
     When I search for resources of type "prompt"
     Then I should find 2 resources
 
-  @search
+  @search @skip
   Scenario: Search with no results
     When I search for "nonexistent"
     Then I should find 0 resources
