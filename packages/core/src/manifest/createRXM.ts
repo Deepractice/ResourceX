@@ -1,5 +1,5 @@
 import type { RXM, ManifestData } from "./types.js";
-import { ManifestError } from "../errors.js";
+import { ManifestError } from "~/errors.js";
 
 class RXMImpl implements RXM {
   readonly domain: string;

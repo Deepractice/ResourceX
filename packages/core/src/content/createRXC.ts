@@ -1,5 +1,5 @@
 import type { RXC } from "./types.js";
-import { ContentError } from "../errors.js";
+import { ContentError } from "~/errors.js";
 
 class RXCImpl implements RXC {
   private _stream: ReadableStream<Uint8Array>;
