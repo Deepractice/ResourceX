@@ -1,5 +1,14 @@
 # @resourcexjs/registry
 
+## 0.7.1
+
+### Patch Changes
+
+- b277bf1: Test patch release
+- Updated dependencies [b277bf1]
+  - @resourcexjs/core@0.7.1
+  - @resourcexjs/arp@0.7.1
+
 ## 0.7.0
 
 ### Minor Changes
