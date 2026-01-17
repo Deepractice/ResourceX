@@ -64,6 +64,8 @@ export default [
         Headers: "readonly",
         AbortSignal: "readonly",
         AbortController: "readonly",
+        ReadableStream: "readonly",
+        Uint8Array: "readonly",
       },
     },
     plugins: {

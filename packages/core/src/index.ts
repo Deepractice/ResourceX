@@ -14,3 +14,7 @@ export { parseRXL } from "./locator/index.js";
 // Manifest (RXM)
 export type { RXM, ManifestData } from "./manifest/index.js";
 export { createRXM } from "./manifest/index.js";
+
+// Content (RXC)
+export type { RXC } from "./content/index.js";
+export { createRXC, loadRXC } from "./content/index.js";

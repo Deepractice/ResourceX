@@ -30,8 +30,11 @@ export { parseRXL } from "@resourcexjs/core";
 export type { RXM, ManifestData } from "@resourcexjs/core";
 export { createRXM } from "@resourcexjs/core";
 
+// RXC - ResourceX Content
+export type { RXC } from "@resourcexjs/core";
+export { createRXC, loadRXC } from "@resourcexjs/core";
+
 // TODO: Implement ResourceX protocol
-// - RXC (Content)
 // - RXR (Resource)
 
 declare const __VERSION__: string | undefined;
