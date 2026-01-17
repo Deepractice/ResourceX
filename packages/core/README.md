@@ -1,8 +1,8 @@
 # @resourcexjs/core
 
-Core implementation of Agent Resource Protocol (ARP).
+Core types and implementations for ResourceX.
 
-> **Note**: For most use cases, use the [`resourcexjs`](https://www.npmjs.com/package/resourcexjs) package instead. This package is for advanced usage and custom extensions.
+> **Note**: For most use cases, use the main [`resourcexjs`](https://www.npmjs.com/package/resourcexjs) package. This package is for advanced usage.
 
 ## Installation
 
@@ -12,171 +12,245 @@ npm install @resourcexjs/core
 bun add @resourcexjs/core
 ```
 
-## Usage
+## What's Inside
 
-### Parse ARP URLs
+Core building blocks for ResourceX:
+
+- **RXL** (Locator) - Parse locator strings
+- **RXM** (Manifest) - Create resource metadata
+- **RXC** (Content) - Stream-based content
+- **RXR** (Resource) - Complete resource type
+- **ResourceType** - Type system with serializer & resolver
+- **TypeHandlerChain** - Responsibility chain for type handling
+- **Errors** - Error hierarchy
+
+## API
+
+### RXL - Resource Locator
+
+Parse resource locator strings. Format: `[domain/path/]name[.type][@version]`
 
 ```typescript
-import { parseARP } from "@resourcexjs/core";
+import { parseRXL } from "@resourcexjs/core";
 
-const parsed = parseARP("arp:text:https://example.com/file.txt");
-// { semantic: "text", transport: "https", location: "example.com/file.txt" }
+const rxl = parseRXL("deepractice.ai/sean/assistant.prompt@1.0.0");
+
+rxl.domain; // "deepractice.ai"
+rxl.path; // "sean"
+rxl.name; // "assistant"
+rxl.type; // "prompt"
+rxl.version; // "1.0.0"
+rxl.toString(); // "deepractice.ai/sean/assistant.prompt@1.0.0"
 ```
 
-### Resolve Resources
+### RXM - Resource Manifest
+
+Create and validate resource metadata:
 
 ```typescript
-import { resolve } from "@resourcexjs/core";
+import { createRXM } from "@resourcexjs/core";
 
-const resource = await resolve("arp:text:https://example.com/file.txt");
-// { type: "text", content: "...", meta: { ... } }
+const manifest = createRXM({
+  domain: "deepractice.ai",
+  path: "sean", // optional
+  name: "assistant",
+  type: "prompt",
+  version: "1.0.0",
+});
 
-const binary = await resolve("arp:binary:file://./image.png");
-// { type: "binary", content: Buffer, meta: { ... } }
+manifest.toLocator(); // → "deepractice.ai/sean/assistant.prompt@1.0.0"
+manifest.toJSON(); // → plain object
 ```
 
-### Deposit Resources
+Required fields: domain, name, type, version
+
+### RXC - Resource Content
+
+Stream-based content (can only be consumed once, like fetch Response):
 
 ```typescript
-import { deposit } from "@resourcexjs/core";
+import { createRXC, loadRXC } from "@resourcexjs/core";
 
-await deposit("arp:text:file://./data/config.txt", "hello world");
-await deposit("arp:binary:file://./data/image.png", buffer);
+// Create from memory
+const content = createRXC("Hello, World!");
+const content = createRXC(Buffer.from([1, 2, 3]));
+const content = createRXC(readableStream);
+
+// Load from file or URL (async)
+const content = await loadRXC("./file.txt");
+const content = await loadRXC("https://example.com/data.txt");
+
+// Consume (choose one, can only use once)
+const text = await content.text(); // → string
+const buffer = await content.buffer(); // → Buffer
+const json = await content.json<T>(); // → T
+const stream = content.stream; // → ReadableStream<Uint8Array>
 ```
 
-### Check Existence & Delete
+### RXR - Resource
+
+Complete resource object (pure interface, no factory):
 
 ```typescript
-import { resourceExists, resourceDelete } from "@resourcexjs/core";
+import type { RXR } from "@resourcexjs/core";
 
-const exists = await resourceExists("arp:text:file://./data/config.txt");
-await resourceDelete("arp:text:file://./data/config.txt");
-```
+interface RXR {
+  locator: RXL;
+  manifest: RXM;
+  content: RXC;
+}
 
-### Custom Transport Handler
-
-Transport provides I/O primitives (read/write/list/exists/delete):
-
-```typescript
-import { registerTransportHandler, type TransportHandler } from "@resourcexjs/core";
-
-const s3Handler: TransportHandler = {
-  name: "s3",
-  capabilities: {
-    canRead: true,
-    canWrite: true,
-    canList: true,
-    canDelete: true,
-    canStat: false,
-  },
-  async read(location: string): Promise<Buffer> {
-    // read from S3...
-    return buffer;
-  },
-  async write(location: string, content: Buffer): Promise<void> {
-    // write to S3...
-  },
-  async list(location: string): Promise<string[]> {
-    // list S3 objects...
-    return keys;
-  },
+// Create from literals
+const rxr: RXR = {
+  locator: parseRXL("localhost/test.text@1.0.0"),
+  manifest: createRXM({ domain: "localhost", name: "test", type: "text", version: "1.0.0" }),
+  content: createRXC("content"),
 };
-
-registerTransportHandler(s3Handler);
 ```
 
-### Custom Semantic Handler
+### Resource Types
 
-Semantic orchestrates Transport primitives to handle resource logic:
+Built-in types:
 
 ```typescript
-import { registerSemanticHandler, type SemanticHandler, type Resource } from "@resourcexjs/core";
+import { textType, jsonType, binaryType, builtinTypes } from "@resourcexjs/core";
 
-const jsonHandler: SemanticHandler = {
-  name: "json",
-  async resolve(transport, location, context): Promise<Resource> {
-    const buffer = await transport.read(location);
-    return {
-      type: "json",
-      content: JSON.parse(buffer.toString("utf-8")),
-      meta: {
-        url: context.url,
-        semantic: context.semantic,
-        transport: context.transport,
-        location: context.location,
-        size: buffer.length,
-        resolvedAt: context.timestamp.toISOString(),
-      },
-    };
-  },
-  async deposit(transport, location, data, context): Promise<void> {
-    if (!transport.write) throw new Error("Transport does not support write");
-    const buffer = Buffer.from(JSON.stringify(data), "utf-8");
-    await transport.write(location, buffer);
-  },
-};
-
-registerSemanticHandler(jsonHandler);
+console.log(textType.name); // "text"
+console.log(textType.aliases); // ["txt", "plaintext"]
+console.log(jsonType.aliases); // ["config", "manifest"]
+console.log(binaryType.aliases); // ["bin", "blob", "raw"]
 ```
 
-## Exports
+Define custom types:
 
-### Functions
+```typescript
+import { defineResourceType } from "@resourcexjs/core";
 
-- `parseARP(url)` - Parse ARP URL string
-- `resolve(url)` - Resolve ARP URL to resource
-- `deposit(url, data)` - Deposit data to ARP URL
-- `resourceExists(url)` - Check if resource exists
-- `resourceDelete(url)` - Delete resource
-- `getTransportHandler(name)` - Get registered transport handler
-- `registerTransportHandler(handler)` - Register custom transport
-- `getSemanticHandler(name)` - Get registered semantic handler
-- `registerSemanticHandler(handler)` - Register custom semantic
-- `createResourceRegistry()` - Create a resource definition registry
+defineResourceType({
+  name: "prompt",
+  aliases: ["deepractice-prompt"],
+  description: "AI Prompt template",
+  serializer: {
+    async serialize(rxr: RXR): Promise<Buffer> {
+      // Convert RXR to Buffer for storage
+      const text = await rxr.content.text();
+      return Buffer.from(JSON.stringify({ template: text }));
+    },
+    async deserialize(data: Buffer, manifest: RXM): Promise<RXR> {
+      // Convert Buffer back to RXR
+      const obj = JSON.parse(data.toString());
+      return {
+        locator: parseRXL(manifest.toLocator()),
+        manifest,
+        content: createRXC(obj.template),
+      };
+    },
+  },
+  resolver: {
+    async resolve(rxr: RXR): Promise<PromptTemplate> {
+      // Convert RXR to usable object
+      return {
+        template: await rxr.content.text(),
+        compile: (vars) => {
+          /* ... */
+        },
+      };
+    },
+  },
+});
+```
 
-### Built-in Handlers
+Query registered types:
 
-**Transport:**
+```typescript
+import { getResourceType, clearResourceTypes } from "@resourcexjs/core";
 
-- `httpsHandler` - HTTPS protocol (read-only)
-- `httpHandler` - HTTP protocol (read-only)
-- `fileHandler` - Local file system (read/write/list/delete)
-- `agentvmHandler(config?)` - AgentVM local storage (factory function, configurable parent directory)
+const type = getResourceType("text");
+const type = getResourceType("txt"); // Works with aliases
 
-**Semantic:**
+clearResourceTypes(); // For testing
+```
 
-- `textHandler` - Plain text (UTF-8 encoding)
-- `binaryHandler` - Raw binary (Buffer passthrough)
+### TypeHandlerChain
 
-### Error Classes
+Responsibility chain for type handling (used internally by Registry):
+
+```typescript
+import { createTypeHandlerChain, builtinTypes } from "@resourcexjs/core";
+
+// Create with initial types
+const chain = createTypeHandlerChain(builtinTypes);
+
+// Or start empty
+const chain = createTypeHandlerChain();
+chain.register(customType);
+chain.registerAll([type1, type2]);
+
+// Use the chain
+chain.canHandle("text"); // → boolean
+chain.getHandler("txt"); // → ResourceType (via alias)
+
+await chain.serialize(rxr); // → Buffer
+await chain.deserialize(buffer, manifest); // → RXR
+await chain.resolve<T>(rxr); // → T (usable object)
+```
+
+## Error Handling
 
 ```typescript
 import {
-  ResourceXError, // Base error
-  ParseError, // ARP URL parsing failed
-  TransportError, // Transport layer failed
-  SemanticError, // Semantic layer failed
+  ResourceXError,
+  LocatorError,
+  ManifestError,
+  ContentError,
+  ResourceTypeError,
 } from "@resourcexjs/core";
+
+try {
+  const rxl = parseRXL("invalid");
+} catch (error) {
+  if (error instanceof LocatorError) {
+    console.error("Invalid locator:", error.message);
+  }
+}
 ```
 
-### Types
+Error hierarchy:
+
+```
+Error
+└── ResourceXError
+    ├── LocatorError (RXL parsing)
+    ├── ManifestError (RXM validation)
+    ├── ContentError (RXC consumption)
+    └── ResourceTypeError (Type not found/duplicate)
+```
+
+## Complete Exports
 
 ```typescript
-import type {
-  ParsedARP,
-  Resource,
-  ResourceMeta,
-  SemanticContext,
-  TransportHandler,
-  TransportCapabilities,
-  ResourceStat,
-  SemanticHandler,
-  TextResource,
-  BinaryResource,
-  BinaryInput,
-  ResourceDefinition,
-  ResourceRegistry,
-} from "@resourcexjs/core";
+// Errors
+export { ResourceXError, LocatorError, ManifestError, ContentError, ResourceTypeError };
+
+// RXL (Locator)
+export { parseRXL };
+export type { RXL };
+
+// RXM (Manifest)
+export { createRXM };
+export type { RXM, ManifestData };
+
+// RXC (Content)
+export { createRXC, loadRXC };
+export type { RXC };
+
+// RXR (Resource)
+export type { RXR, ResourceType, ResourceSerializer, ResourceResolver };
+
+// ResourceType
+export { defineResourceType, getResourceType, clearResourceTypes };
+export { textType, jsonType, binaryType, builtinTypes };
+export { TypeHandlerChain, createTypeHandlerChain };
 ```
 
 ## License

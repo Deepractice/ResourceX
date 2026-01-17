@@ -1,43 +1,41 @@
 /**
- * resourcexjs - Agent Resource Protocol for AI Agents
+ * resourcexjs - AI Resource Management Protocol
+ *
+ * ResourceX is like npm for AI resources (prompts, tools, agents, etc.)
  *
  * @example
  * ```typescript
- * import { createResourceX } from "resourcexjs";
+ * import { parseRXL, createRXM } from "resourcexjs";
  *
- * const rx = createResourceX();
- * const resource = await rx.resolve("arp:text:https://example.com/file.txt");
+ * const rxl = parseRXL("deepractice.ai/sean/assistant.prompt@1.0.0");
+ * const rxm = createRXM({ domain: "deepractice.ai", name: "assistant", type: "prompt", version: "1.0.0" });
+ * ```
  *
- * console.log(resource.type);     // "text"
- * console.log(resource.content);  // "..."
- * console.log(resource.meta);     // { url, semantic, transport, ... }
+ * For low-level ARP protocol access:
+ * ```typescript
+ * import { createARP } from "resourcexjs/arp";
  * ```
  *
  * @packageDocumentation
  */
 
-// Factory
-export { createResourceX } from "./createResourceX.js";
+// Errors
+export { ResourceXError, LocatorError, ManifestError, ContentError } from "@resourcexjs/core";
 
-// Class (for advanced usage)
-export { ResourceX, type ResourceXConfig } from "./ResourceX.js";
+// RXL - ResourceX Locator
+export type { RXL } from "@resourcexjs/core";
+export { parseRXL } from "@resourcexjs/core";
 
-// Re-export types and errors from core
-export type {
-  Resource,
-  ResourceMeta,
-  ParsedARP,
-  SemanticContext,
-  TransportHandler,
-  TransportCapabilities,
-  ResourceStat,
-  SemanticHandler,
-  TextResource,
-  ResourceDefinition,
-  AgentVMConfig,
-} from "@resourcexjs/core";
+// RXM - ResourceX Manifest
+export type { RXM, ManifestData } from "@resourcexjs/core";
+export { createRXM } from "@resourcexjs/core";
 
-// Re-export built-in handlers
-export { agentvmHandler } from "@resourcexjs/core";
+// RXC - ResourceX Content
+export type { RXC } from "@resourcexjs/core";
+export { createRXC, loadRXC } from "@resourcexjs/core";
 
-export { ResourceXError, ParseError, TransportError, SemanticError } from "@resourcexjs/core";
+// TODO: Implement ResourceX protocol
+// - RXR (Resource)
+
+declare const __VERSION__: string | undefined;
+export const VERSION: string = typeof __VERSION__ !== "undefined" ? __VERSION__ : "0.0.0-dev";

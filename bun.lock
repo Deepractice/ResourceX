@@ -28,30 +28,38 @@
       "version": "0.1.0",
       "devDependencies": {
         "@cucumber/cucumber": "^11.2.0",
+        "@resourcexjs/core": "workspace:*",
+        "@resourcexjs/registry": "workspace:*",
         "@types/node": "^24.9.2",
         "resourcexjs": "workspace:*",
         "tsx": "^4.20.6",
         "typescript": "^5.9.3",
       },
     },
-    "packages/cli": {
-      "name": "@resourcexjs/cli",
-      "version": "0.0.1",
-      "bin": {
-        "rx": "./dist/index.js",
-      },
-      "dependencies": {
-        "resourcexjs": "workspace:*",
-      },
+    "packages/arp": {
+      "name": "@resourcexjs/arp",
+      "version": "0.1.0",
     },
     "packages/core": {
       "name": "@resourcexjs/core",
-      "version": "0.0.1",
+      "version": "0.6.0",
+      "dependencies": {
+        "@resourcexjs/arp": "workspace:*",
+      },
+    },
+    "packages/registry": {
+      "name": "@resourcexjs/registry",
+      "version": "0.1.0",
+      "dependencies": {
+        "@resourcexjs/arp": "workspace:*",
+        "@resourcexjs/core": "workspace:*",
+      },
     },
     "packages/resourcex": {
       "name": "resourcexjs",
-      "version": "0.0.1",
+      "version": "0.6.0",
       "dependencies": {
+        "@resourcexjs/arp": "workspace:*",
         "@resourcexjs/core": "workspace:*",
       },
     },
@@ -313,11 +321,13 @@
 
     "@pkgr/core": ["@pkgr/core@0.2.9", "", {}, "sha512-QNqXyfVS2wm9hweSYD2O7F0G06uurj9kZ96TRQE5Y9hU7+tgdZwIkbAKc5Ocy1HxEY2kuDQa6cQ1WRs/O5LFKA=="],
 
+    "@resourcexjs/arp": ["@resourcexjs/arp@workspace:packages/arp"],
+
     "@resourcexjs/bdd": ["@resourcexjs/bdd@workspace:bdd"],
 
-    "@resourcexjs/cli": ["@resourcexjs/cli@workspace:packages/cli"],
-
     "@resourcexjs/core": ["@resourcexjs/core@workspace:packages/core"],
+
+    "@resourcexjs/registry": ["@resourcexjs/registry@workspace:packages/registry"],
 
     "@teppeis/multimaps": ["@teppeis/multimaps@3.0.0", "", {}, "sha512-ID7fosbc50TbT0MK0EG12O+gAP3W3Aa/Pz4DaTtQtEvlc9Odaqi0de+xuZ7Li2GtK4HzEX7IuRWS/JmZLksR3Q=="],
 

@@ -1,0 +1,47 @@
+{
+  "name": "@resourcexjs/registry",
+  "version": "0.1.0",
+  "description": "ResourceX Registry - Resource storage and retrieval",
+  "keywords": [
+    "resourcex",
+    "registry",
+    "ai"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Deepractice/ResourceX.git",
+    "directory": "packages/registry"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "bun run build.ts",
+    "test": "bun test",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@resourcexjs/core": "workspace:*",
+    "@resourcexjs/arp": "workspace:*"
+  },
+  "devDependencies": {},
+  "publishConfig": {
+    "access": "public"
+  }
+}

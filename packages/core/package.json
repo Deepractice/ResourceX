@@ -1,13 +1,11 @@
 {
   "name": "@resourcexjs/core",
-  "version": "0.5.0",
-  "description": "ResourceX Core - ARP (Agent Resource Protocol) implementation",
+  "version": "0.6.0",
+  "description": "ResourceX Core - Resource management layer",
   "keywords": [
     "resourcex",
-    "arp",
-    "agent",
     "resource",
-    "protocol"
+    "ai"
   ],
   "repository": {
     "type": "git",
@@ -33,10 +31,13 @@
   ],
   "scripts": {
     "build": "bun run build.ts",
+    "test": "bun test",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "bun test",
     "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@resourcexjs/arp": "workspace:*"
   },
   "devDependencies": {},
   "publishConfig": {

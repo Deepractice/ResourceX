@@ -1,213 +1,287 @@
 # resourcexjs
 
-Agent Resource Protocol (ARP) for AI Agents.
+ResourceX - Resource management protocol for AI Agents. Like npm for AI resources.
 
 ## Installation
 
 ```bash
-npm install resourcexjs
+npm install resourcexjs @resourcexjs/registry
 # or
-bun add resourcexjs
+bun add resourcexjs @resourcexjs/registry
 ```
 
 ## Quick Start
 
 ```typescript
-import { createResourceX } from "resourcexjs";
+import { createRegistry } from "@resourcexjs/registry";
+import { createRXM, createRXC, parseRXL } from "resourcexjs";
 
-const rx = createResourceX();
+// Create registry
+const registry = createRegistry();
 
-// Resolve a remote text resource
-const resource = await rx.resolve("arp:text:https://example.com/file.txt");
-// Or use shorthand (@ is default)
-const resource = await rx.resolve("@text:https://example.com/file.txt");
-
-console.log(resource.type); // "text"
-console.log(resource.content); // file content as string
-console.log(resource.meta); // { url, semantic, transport, ... }
-
-// Deposit a local text resource
-await rx.deposit("@text:file://./data/config.txt", "hello world");
-
-// Binary resources
-await rx.deposit("@binary:file://./data/image.png", imageBuffer);
-const binary = await rx.resolve("@binary:file://./data/image.png");
-console.log(binary.content); // Buffer
-
-// Check if resource exists
-const exists = await rx.exists("@text:file://./data/config.txt");
-
-// Delete a resource
-await rx.delete("@text:file://./data/config.txt");
-```
-
-### URL Prefix
-
-- `arp:` - Standard prefix (always supported)
-- `@` - Shorthand alias (default, configurable via `alias` config)
-
-## ARP URL Format
-
-```
-arp:{semantic}:{transport}://{location}
-```
-
-- **semantic**: What the resource is (e.g., `text`, `binary`)
-- **transport**: How to access it (e.g., `https`, `http`, `file`)
-- **location**: Where to find it
-
-Examples:
-
-- `arp:text:https://example.com/readme.txt`
-- `arp:binary:file:///path/to/image.png`
-- `arp:text:file://./local/file.txt`
-
-## Resource Definition
-
-Define custom resources as shortcuts for commonly used ARP URLs:
-
-```typescript
-import { createResourceX } from "resourcexjs";
-import { join } from "path";
-import { homedir } from "os";
-
-const rx = createResourceX({
-  resources: [
-    {
-      name: "logs",
-      semantic: "text",
-      transport: "file",
-      basePath: join(homedir(), ".myapp", "logs"),
-    },
-    {
-      name: "cache",
-      semantic: "binary",
-      transport: "file",
-      basePath: join(homedir(), ".myapp", "cache"),
-    },
-  ],
+// Prepare a resource
+const manifest = createRXM({
+  domain: "localhost",
+  name: "my-prompt",
+  type: "text",
+  version: "1.0.0",
 });
 
-// Use resource URL
-await rx.deposit("logs://app.log", "log entry");
-await rx.deposit("cache://data.bin", buffer);
+const rxr = {
+  locator: parseRXL(manifest.toLocator()),
+  manifest,
+  content: createRXC("You are a helpful assistant."),
+};
 
-// Equivalent to full ARP URL
-await rx.deposit("arp:text:file://~/.myapp/logs/app.log", "log entry");
+// Link to local registry
+await registry.link(rxr);
+
+// Resolve resource
+const resource = await registry.resolve("localhost/my-prompt.text@1.0.0");
+console.log(await resource.content.text());
 ```
 
 ## API
 
-### `createResourceX(config?)`
+### RXL - Resource Locator
 
-Create a ResourceX instance.
+Parse resource locator strings. Format: `[domain/path/]name[.type][@version]`
 
 ```typescript
-const rx = createResourceX({
-  timeout: 5000, // request timeout in ms
-  transports: [], // custom transport handlers
-  semantics: [], // custom semantic handlers
-  resources: [], // resource definitions
+import { parseRXL } from "resourcexjs";
+
+const rxl = parseRXL("deepractice.ai/sean/assistant.prompt@1.0.0");
+
+rxl.domain; // "deepractice.ai"
+rxl.path; // "sean"
+rxl.name; // "assistant"
+rxl.type; // "prompt"
+rxl.version; // "1.0.0"
+rxl.toString(); // reconstructs the locator
+```
+
+### RXM - Resource Manifest
+
+Create resource metadata:
+
+```typescript
+import { createRXM } from "resourcexjs";
+
+const manifest = createRXM({
+  domain: "deepractice.ai",
+  path: "sean", // optional
+  name: "assistant",
+  type: "prompt",
+  version: "1.0.0",
+});
+
+manifest.toLocator(); // → "deepractice.ai/sean/assistant.prompt@1.0.0"
+manifest.toJSON(); // → plain object
+```
+
+### RXC - Resource Content
+
+Stream-based content (consumed once, like fetch Response):
+
+```typescript
+import { createRXC, loadRXC } from "resourcexjs";
+
+// Create from memory
+const content = createRXC("Hello");
+const content = createRXC(Buffer.from([1, 2, 3]));
+const content = createRXC(readableStream);
+
+// Load from file or URL
+const content = await loadRXC("./file.txt");
+const content = await loadRXC("https://example.com/data.txt");
+
+// Consume (can only use one method)
+await content.text(); // → string
+await content.buffer(); // → Buffer
+await content.json<T>(); // → T
+content.stream; // → ReadableStream<Uint8Array>
+```
+
+### RXR - Resource
+
+Complete resource object (pure interface):
+
+```typescript
+interface RXR {
+  locator: RXL;
+  manifest: RXM;
+  content: RXC;
+}
+
+// Create from literals
+const rxr: RXR = { locator, manifest, content };
+```
+
+### Registry
+
+Resource storage and retrieval (from `@resourcexjs/registry`):
+
+```typescript
+import { createRegistry } from "@resourcexjs/registry";
+
+const registry = createRegistry({
+  path: "~/.resourcex", // optional
+  types: [customType], // optional, defaults to built-in types
+});
+
+// Link (local development/cache)
+await registry.link(rxr);
+
+// Resolve (local-first, then remote)
+const rxr = await registry.resolve("deepractice.ai/assistant.prompt@1.0.0");
+
+// Check existence
+const exists = await registry.exists("localhost/test.text@1.0.0");
+
+// Delete
+await registry.delete("localhost/test.text@1.0.0");
+
+// Search (TODO)
+const results = await registry.search("assistant");
+```
+
+### Resource Types
+
+Built-in types:
+
+| Type     | Aliases          | Description    |
+| -------- | ---------------- | -------------- |
+| `text`   | txt, plaintext   | Plain text     |
+| `json`   | config, manifest | JSON content   |
+| `binary` | bin, blob, raw   | Binary content |
+
+Define custom types:
+
+```typescript
+import { defineResourceType } from "resourcexjs";
+
+defineResourceType({
+  name: "prompt",
+  aliases: ["deepractice-prompt"],
+  description: "AI Prompt template",
+  serializer: {
+    serialize: async (rxr) => Buffer.from(await rxr.content.text()),
+    deserialize: async (data, manifest) => ({
+      locator: parseRXL(manifest.toLocator()),
+      manifest,
+      content: createRXC(data.toString()),
+    }),
+  },
+  resolver: {
+    resolve: async (rxr) => ({
+      template: await rxr.content.text(),
+      // ... custom methods
+    }),
+  },
 });
 ```
 
-### `rx.resolve(url)`
+### TypeHandlerChain
 
-Resolve an ARP or Resource URL and return the resource.
+Responsibility chain for type handling (used internally):
 
 ```typescript
-const resource = await rx.resolve("arp:text:https://example.com/file.txt");
-// Returns: { type, content, meta }
+import { createTypeHandlerChain, builtinTypes } from "resourcexjs";
 
-const resource = await rx.resolve("myresource://file.txt");
-// Also works with resource URLs
+const chain = createTypeHandlerChain(builtinTypes);
+
+chain.serialize(rxr); // → Buffer
+chain.deserialize(buffer, manifest); // → RXR
+chain.resolve<T>(rxr); // → T (usable object)
 ```
 
-### `rx.deposit(url, data)`
+## ARP - Low-level I/O
 
-Deposit data to an ARP or Resource URL.
+For direct file/network operations:
 
 ```typescript
-await rx.deposit("arp:text:file://./data/config.txt", "content");
-await rx.deposit("arp:binary:file://./data/image.png", buffer);
+import { createARP } from "resourcexjs/arp";
+
+const arp = createARP(); // Defaults include file, http, https, text, binary
+
+// Parse URL
+const arl = arp.parse("arp:text:file://./config.txt");
+
+// Read
+const resource = await arl.resolve();
+console.log(resource.content); // string
+
+// Write
+await arl.deposit("hello world");
+
+// Operations
+await arl.exists(); // → boolean
+await arl.delete();
 ```
 
-### `rx.exists(url)`
+## Exports
 
-Check if a resource exists.
+### Main Package (`resourcexjs`)
 
 ```typescript
-const exists = await rx.exists("arp:text:file://./data/config.txt");
-// Returns: boolean
+// Errors
+export { ResourceXError, LocatorError, ManifestError, ContentError, ResourceTypeError };
+
+// RXL (Locator)
+export { parseRXL };
+export type { RXL };
+
+// RXM (Manifest)
+export { createRXM };
+export type { RXM, ManifestData };
+
+// RXC (Content)
+export { createRXC, loadRXC };
+export type { RXC };
+
+// RXR (Resource)
+export type { RXR, ResourceType, ResourceSerializer, ResourceResolver };
+
+// ResourceType
+export { defineResourceType, getResourceType, clearResourceTypes };
+export { textType, jsonType, binaryType, builtinTypes };
+export { TypeHandlerChain, createTypeHandlerChain };
 ```
 
-### `rx.delete(url)`
-
-Delete a resource.
+### Registry Package (`@resourcexjs/registry`)
 
 ```typescript
-await rx.delete("arp:text:file://./data/config.txt");
+export { createRegistry, ARPRegistry };
+export { RegistryError };
+export type { Registry, RegistryConfig };
 ```
 
-### `rx.parse(url)`
-
-Parse a URL without fetching.
+### ARP Package (`resourcexjs/arp`)
 
 ```typescript
-const parsed = rx.parse("arp:text:https://example.com/file.txt");
-// Returns: { semantic: "text", transport: "https", location: "example.com/file.txt" }
-
-const parsed = rx.parse("myresource://file.txt");
-// Also works with resource URLs (expanded to full location)
+export { createARP, ARP, type ARPConfig };
+export { ARPError, ParseError, TransportError, SemanticError };
+export type { ARI, ARL };
+export { fileTransport, httpTransport, httpsTransport };
+export { textSemantic, binarySemantic };
 ```
 
-## Built-in Semantic Types
+## Error Hierarchy
 
-| Type     | Content  | Description                    |
-| -------- | -------- | ------------------------------ |
-| `text`   | `string` | Plain text with UTF-8 encoding |
-| `binary` | `Buffer` | Raw binary, no transformation  |
-
-## Resource Object
-
-```typescript
-interface Resource {
-  type: string; // semantic type (e.g., "text", "binary")
-  content: unknown; // parsed content (string for text, Buffer for binary)
-  meta: {
-    url: string; // original URL
-    semantic: string; // semantic type
-    transport: string; // transport protocol
-    location: string; // resource location
-    size: number; // content size in bytes
-    encoding?: string; // content encoding (for text)
-    resolvedAt: string; // ISO timestamp
-  };
-}
 ```
+Error
+└── ResourceXError
+    ├── LocatorError (RXL parsing)
+    ├── ManifestError (RXM validation)
+    ├── ContentError (RXC consumption)
+    └── ResourceTypeError (Type registration)
 
-## Error Handling
+└── RegistryError (Registry operations)
 
-All errors extend `ResourceXError`:
-
-```typescript
-import { createResourceX, ResourceXError } from "resourcexjs";
-
-const rx = createResourceX();
-
-try {
-  await rx.resolve("arp:text:https://example.com/file.txt");
-} catch (error) {
-  if (error instanceof ResourceXError) {
-    console.error("ResourceX error:", error.message);
-  }
-}
-```
-
-For fine-grained error handling, import specific error types from `@resourcexjs/core`:
-
-```typescript
-import { ParseError, TransportError, SemanticError } from "@resourcexjs/core";
+└── ARPError
+    ├── ParseError (URL parsing)
+    ├── TransportError (Transport not found)
+    └── SemanticError (Semantic not found)
 ```
 
 ## License

@@ -1,52 +1,32 @@
 /**
  * @resourcexjs/core
- * ARP (Agent Resource Protocol) implementation
+ *
+ * ResourceX Core - Resource management layer
  */
 
-declare const __VERSION__: string;
-export const VERSION: string = __VERSION__;
-
 // Errors
-export { ResourceXError, ParseError, TransportError, SemanticError } from "./errors.js";
-
-// Parser
-export { parseARP, type ParsedARP } from "./parser.js";
-
-// Transport
 export {
-  type TransportHandler,
-  type TransportCapabilities,
-  type ResourceStat,
-  type AgentVMConfig,
-  getTransportHandler,
-  registerTransportHandler,
-  httpsHandler,
-  httpHandler,
-  fileHandler,
-  agentvmHandler,
-} from "./transport/index.js";
+  ResourceXError,
+  LocatorError,
+  ManifestError,
+  ContentError,
+  ResourceTypeError,
+} from "~/errors.js";
 
-// Semantic
-export {
-  type Resource,
-  type SemanticHandler,
-  type ResourceMeta,
-  type SemanticContext,
-  type TextResource,
-  type BinaryResource,
-  type BinaryInput,
-  getSemanticHandler,
-  registerSemanticHandler,
-  textHandler,
-  binaryHandler,
-} from "./semantic/index.js";
+// Locator (RXL)
+export type { RXL } from "~/locator/index.js";
+export { parseRXL } from "~/locator/index.js";
 
-// Resource Operations
-export { resolve, deposit, resourceExists, resourceDelete } from "./resolve.js";
+// Manifest (RXM)
+export type { RXM, ManifestData } from "~/manifest/index.js";
+export { createRXM } from "~/manifest/index.js";
 
-// Resource Definition
-export {
-  type ResourceDefinition,
-  type ResourceRegistry,
-  createResourceRegistry,
-} from "./resource/index.js";
+// Content (RXC)
+export type { RXC } from "~/content/index.js";
+export { createRXC, loadRXC } from "~/content/index.js";
+
+// Resource (RXR)
+export type { RXR, ResourceType, ResourceSerializer, ResourceResolver } from "~/resource/index.js";
+export { defineResourceType, getResourceType, clearResourceTypes } from "~/resource/index.js";
+export { textType, jsonType, binaryType, builtinTypes } from "~/resource/index.js";
+export { TypeHandlerChain, createTypeHandlerChain } from "~/resource/index.js";

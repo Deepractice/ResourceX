@@ -1,15 +1,15 @@
 <div align="center">
   <h1>ResourceX</h1>
   <p>
-    <strong>Unified resource manager for AI Agents based on ARP</strong>
+    <strong>npm for AI Resources - Resource management protocol for AI Agents</strong>
   </p>
-  <p>基于 ARP 协议的 AI Agent 统一资源管理器</p>
+  <p>像 npm 管理包一样，管理 AI 资源（prompts, tools, agents, etc.）</p>
 
   <p>
-    <b>Unified Access</b> · <b>Web Native</b> · <b>Fully Extensible</b>
+    <b>Unified Protocol</b> · <b>Type System</b> · <b>Local & Remote</b>
   </p>
   <p>
-    <b>统一访问</b> · <b>原生协议</b> · <b>完全可扩展</b>
+    <b>统一协议</b> · <b>类型系统</b> · <b>本地远程</b>
   </p>
 
   <p>
@@ -29,290 +29,372 @@
 
 ## Why ResourceX?
 
-AI Agents need to access resources from different sources: configuration from local files, prompts from remote URLs, training data from cloud storage. Each source requires different code:
+AI Agents need to manage various resources: prompts, tools, agents, configurations. Like npm for packages, ResourceX provides:
 
-```typescript
-// Reading from different sources = different code
-const localConfig = await fs.readFile("./config.txt", "utf-8");
-const remotePrompt = await fetch("https://api.example.com/prompt.txt").then((r) => r.text());
-const s3Data = await s3Client.getObject({ Bucket: "...", Key: "..." });
+- 📦 **Unified Locator** - `domain/path/name.type@version` format
+- 🏷️ **Type System** - Define custom resource types with serializer & resolver
+- 💾 **Registry** - Local cache + remote publishing (like npm registry)
+- 🔌 **Protocol Layer** - ARP (Agent Resource Protocol) for I/O primitives
+
+## Architecture
+
 ```
-
-**ResourceX solves this with a unified protocol**: one API for all resources, regardless of source or type.
-
-```typescript
-// One API for everything
-const config = await rx.resolve("arp:text:file://./config.txt");
-const prompt = await rx.resolve("arp:text:https://api.example.com/prompt.txt");
-const data = await rx.resolve("arp:binary:s3://bucket/data.bin");
+┌─────────────────────────────────────────────────────────────┐
+│                  ResourceX (High-level)                      │
+│                                                             │
+│  RXL (Locator)  → deepractice.ai/sean/assistant.prompt@1.0 │
+│  RXM (Manifest) → Resource metadata                         │
+│  RXC (Content)  → Stream-based content                      │
+│  RXR (Resource) → RXL + RXM + RXC                           │
+│                                                             │
+│  Registry       → link/resolve/exists/delete                │
+│  TypeSystem     → text/json/binary + custom types          │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────────────────┐
+│                   ARP (Low-level I/O)                        │
+│                                                             │
+│  Format: arp:semantic:transport://location                  │
+│  - semantic: text, binary                                   │
+│  - transport: file, https, http, agentvm                    │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ## Quick Start
 
+### Installation
+
 ```bash
-npm install resourcexjs
+npm install resourcexjs @resourcexjs/registry
+# or
+bun add resourcexjs @resourcexjs/registry
 ```
+
+### Basic Usage
 
 ```typescript
-import { createResourceX } from "resourcexjs";
+import { createRegistry } from "@resourcexjs/registry";
+import { parseRXL, createRXM, createRXC } from "resourcexjs";
 
-const rx = createResourceX();
+// Create a registry (default: ~/.resourcex)
+const registry = createRegistry();
 
-// Read a text file - standard format
-const resource = await rx.resolve("arp:text:file://./hello.txt");
-console.log(resource.content); // "Hello World"
-
-// Or use shorthand (@ is default alias)
-const resource = await rx.resolve("@text:file://./hello.txt");
-console.log(resource.content); // "Hello World"
-```
-
-### URL Prefix
-
-ResourceX supports two prefixes:
-
-- `arp:` - Standard prefix (always supported)
-- `@` - Shorthand alias (default, configurable)
-
-```typescript
-// Both work
-await rx.resolve("arp:text:file://./config.txt");
-await rx.resolve("@text:file://./config.txt");
-
-// Customize the alias
-const rx = createResourceX({ alias: "#" });
-await rx.resolve("#text:file://./config.txt");
-```
-
-## Core Features
-
-### Resolve (Read Resources)
-
-```typescript
-// Text from remote URL
-const text = await rx.resolve("arp:text:https://example.com/file.txt");
-console.log(text.content); // string
-
-// Binary from local file
-const image = await rx.resolve("arp:binary:file://./photo.png");
-console.log(image.content); // Buffer
-```
-
-### Deposit (Write Resources)
-
-```typescript
-// Write text to local file
-await rx.deposit("arp:text:file://./config.txt", "hello world");
-
-// Write binary data
-await rx.deposit("arp:binary:file://./image.png", imageBuffer);
-```
-
-### Exists & Delete
-
-```typescript
-// Check if resource exists
-const exists = await rx.exists("arp:text:file://./config.txt");
-
-// Delete a resource
-await rx.delete("arp:text:file://./config.txt");
-```
-
-## How it Works
-
-ResourceX uses **ARP (Agent Resource Protocol)**, a URL format that separates **what** a resource is from **how** to access it:
-
-```
-arp:{semantic}:{transport}://{location}
-```
-
-- **semantic**: What the resource is (`text`, `binary`)
-- **transport**: How to access it (`https`, `http`, `file`)
-- **location**: Where to find it
-
-### Semantic + Transport = Orthogonal
-
-You can mix and match any semantic with any transport:
-
-| Semantic | Transport | Example                                    |
-| -------- | --------- | ------------------------------------------ |
-| `text`   | `file`    | `arp:text:file://./config.txt`             |
-| `text`   | `https`   | `arp:text:https://example.com/data.txt`    |
-| `binary` | `file`    | `arp:binary:file://./image.png`            |
-| `binary` | `s3`      | `arp:binary:s3://bucket/data.bin` (custom) |
-
-### Built-in Handlers
-
-**Semantic:**
-
-| Name     | Content  | Description                    |
-| -------- | -------- | ------------------------------ |
-| `text`   | `string` | Plain text with UTF-8 encoding |
-| `binary` | `Buffer` | Raw binary, no transformation  |
-
-**Transport:**
-
-| Name      | Capabilities           | Description                        |
-| --------- | ---------------------- | ---------------------------------- |
-| `https`   | read                   | HTTPS protocol                     |
-| `http`    | read                   | HTTP protocol                      |
-| `file`    | read/write/list/delete | Local filesystem                   |
-| `agentvm` | read/write/list/delete | AgentVM local storage (~/.agentvm) |
-
-## Configuration and Custom
-
-ResourceX is fully configurable via the `createResourceX()` config object.
-
-### AgentVM Transport
-
-Built-in transport for AgentVM local storage, automatically maps to `~/.agentvm/`:
-
-```typescript
-import { createResourceX, agentvmHandler } from "resourcexjs";
-
-const rx = createResourceX({
-  transports: [agentvmHandler()],
+// Link a resource to local registry
+const manifest = createRXM({
+  domain: "localhost",
+  name: "my-prompt",
+  type: "text",
+  version: "1.0.0",
 });
 
-// Automatically maps to ~/.agentvm/sandbox/logs/app.log
-await rx.deposit("arp:text:agentvm://sandbox/logs/app.log", "log entry");
+const rxr = {
+  locator: parseRXL(manifest.toLocator()),
+  manifest,
+  content: createRXC("You are a helpful assistant."),
+};
 
-// Custom parent directory (for testing or custom installations)
-const rx = createResourceX({
-  transports: [agentvmHandler({ parentDir: "/var/data" })],
-});
-// → /var/data/.agentvm/sandbox/logs/app.log
+await registry.link(rxr);
+
+// Resolve the resource
+const resource = await registry.resolve("localhost/my-prompt.text@1.0.0");
+console.log(await resource.content.text()); // "You are a helpful assistant."
+
+// Check existence
+const exists = await registry.exists("localhost/my-prompt.text@1.0.0");
+
+// Delete resource
+await registry.delete("localhost/my-prompt.text@1.0.0");
 ```
 
-### Custom Resources (URL Shortcuts)
+## Core Concepts
 
-Tired of repeating long URLs? Define shortcuts:
+### RXL - Resource Locator
+
+Format: `[domain/path/]name[.type][@version]`
 
 ```typescript
-import { createResourceX } from "resourcexjs";
-import { join } from "path";
-import { homedir } from "os";
+import { parseRXL } from "resourcexjs";
 
-const rx = createResourceX({
-  resources: [
-    {
-      name: "app-config",
-      semantic: "text",
-      transport: "file",
-      basePath: join(homedir(), ".myapp", "config"),
+const rxl = parseRXL("deepractice.ai/sean/assistant.prompt@1.0.0");
+
+console.log(rxl.domain); // "deepractice.ai"
+console.log(rxl.path); // "sean"
+console.log(rxl.name); // "assistant"
+console.log(rxl.type); // "prompt"
+console.log(rxl.version); // "1.0.0"
+console.log(rxl.toString()); // "deepractice.ai/sean/assistant.prompt@1.0.0"
+```
+
+### RXM - Resource Manifest
+
+Resource metadata:
+
+```typescript
+import { createRXM } from "resourcexjs";
+
+const manifest = createRXM({
+  domain: "deepractice.ai",
+  path: "sean",
+  name: "assistant",
+  type: "prompt",
+  version: "1.0.0",
+});
+
+console.log(manifest.toLocator()); // "deepractice.ai/sean/assistant.prompt@1.0.0"
+console.log(manifest.toJSON()); // Plain object
+```
+
+### RXC - Resource Content
+
+Stream-based content that can only be consumed once (like fetch Response):
+
+```typescript
+import { createRXC, loadRXC } from "resourcexjs";
+
+// From string/Buffer/Stream
+const content = createRXC("Hello, World!");
+console.log(await content.text()); // "Hello, World!"
+
+// From file or URL
+const content = await loadRXC("./file.txt");
+const content = await loadRXC("https://example.com/data.txt");
+
+// Available methods
+await content.text(); // → string
+await content.buffer(); // → Buffer
+await content.json<T>(); // → T
+content.stream; // → ReadableStream<Uint8Array>
+```
+
+### RXR - Resource
+
+Complete resource object (pure DTO):
+
+```typescript
+interface RXR {
+  locator: RXL;
+  manifest: RXM;
+  content: RXC;
+}
+
+// Create from literals
+const rxr: RXR = {
+  locator: parseRXL("localhost/test.text@1.0.0"),
+  manifest: createRXM({ domain: "localhost", name: "test", type: "text", version: "1.0.0" }),
+  content: createRXC("content"),
+};
+```
+
+### Registry
+
+Resource storage and retrieval:
+
+```typescript
+import { createRegistry } from "@resourcexjs/registry";
+
+const registry = createRegistry({
+  path: "~/.resourcex", // optional, default
+  types: [textType, jsonType], // optional, defaults to built-in types
+});
+
+// Link to local (like npm link)
+await registry.link(rxr);
+
+// Resolve from local or remote (like npm install)
+const rxr = await registry.resolve("deepractice.ai/assistant.prompt@1.0.0");
+
+// Check existence
+await registry.exists("localhost/test.text@1.0.0");
+
+// Delete
+await registry.delete("localhost/test.text@1.0.0");
+
+// Search (TODO)
+await registry.search("assistant");
+```
+
+### Resource Types
+
+Define how different resource types are serialized and resolved:
+
+```typescript
+import { defineResourceType, textType, jsonType, binaryType } from "resourcexjs";
+
+// Built-in types
+console.log(textType.name); // "text"
+console.log(textType.aliases); // ["txt", "plaintext"]
+console.log(jsonType.aliases); // ["config", "manifest"]
+console.log(binaryType.aliases); // ["bin", "blob", "raw"]
+
+// Define custom type
+defineResourceType({
+  name: "prompt",
+  aliases: ["deepractice-prompt"],
+  description: "AI Prompt template",
+  serializer: {
+    async serialize(rxr) {
+      // Convert RXR to Buffer
+      return Buffer.from(JSON.stringify({ template: await rxr.content.text() }));
     },
-  ],
+    async deserialize(data, manifest) {
+      // Convert Buffer to RXR
+      const obj = JSON.parse(data.toString());
+      return {
+        locator: parseRXL(manifest.toLocator()),
+        manifest,
+        content: createRXC(obj.template),
+      };
+    },
+  },
+  resolver: {
+    async resolve(rxr) {
+      // Convert RXR to usable object
+      return {
+        template: await rxr.content.text(),
+        compile: (vars) => {
+          /* ... */
+        },
+      };
+    },
+  },
 });
-
-// Short and clean
-await rx.deposit("app-config://settings.txt", "theme=dark");
-
-// Instead of
-await rx.deposit("arp:text:file://~/.myapp/config/settings.txt", "theme=dark");
 ```
 
-### Custom Transport
+### TypeHandlerChain
 
-Add new transport protocols (S3, GCS, Redis, etc.):
+Responsibility chain for type handling (used internally by Registry):
 
 ```typescript
-const s3Transport = {
-  name: "s3",
-  capabilities: { canRead: true, canWrite: true, canList: true, canDelete: true, canStat: false },
-  async read(location: string): Promise<Buffer> {
-    // Your S3 implementation
-    return buffer;
-  },
-  async write(location: string, content: Buffer): Promise<void> {
-    // Your S3 implementation
-  },
-};
+import { createTypeHandlerChain, builtinTypes } from "resourcexjs";
 
-const rx = createResourceX({
-  transports: [s3Transport],
-});
+const chain = createTypeHandlerChain(builtinTypes);
 
-// Use it
-await rx.resolve("arp:text:s3://bucket/key.txt");
+// Serialize
+const buffer = await chain.serialize(rxr);
+
+// Deserialize
+const rxr = await chain.deserialize(buffer, manifest);
+
+// Resolve to usable object
+const result = await chain.resolve<string>(rxr);
 ```
 
-### Custom Semantic
+## ARP - Low-level Protocol
 
-Add new semantic types (JSON, YAML, Image, etc.):
+For direct file/network I/O without Registry:
 
 ```typescript
-const jsonSemantic = {
-  name: "json",
-  async resolve(transport, location, context) {
-    const buffer = await transport.read(location);
-    return {
-      type: "json",
-      content: JSON.parse(buffer.toString()),
-      meta: { ...context, size: buffer.length, resolvedAt: context.timestamp.toISOString() },
-    };
-  },
-  async deposit(transport, location, data, context) {
-    const buffer = Buffer.from(JSON.stringify(data));
-    await transport.write(location, buffer);
-  },
-};
+import { createARP } from "resourcexjs/arp";
 
-const rx = createResourceX({
-  semantics: [jsonSemantic],
-});
+const arp = createARP(); // Auto-registers file, http, https, text, binary
 
-// Use it
-const data = await rx.resolve("arp:json:https://api.example.com/data.json");
-console.log(data.content); // Parsed object
-```
+// Read
+const arl = arp.parse("arp:text:file://./config.txt");
+const resource = await arl.resolve();
+console.log(resource.content); // string
 
-### All Together
+// Write
+await arl.deposit("hello world");
 
-Combine everything in one config:
+// Check existence
+const exists = await arl.exists();
 
-```typescript
-const rx = createResourceX({
-  transports: [s3Transport, redisTransport],
-  semantics: [jsonSemantic, yamlSemantic],
-  resources: [
-    { name: "s3-data", semantic: "json", transport: "s3", basePath: "my-bucket/data" },
-    { name: "cache", semantic: "text", transport: "redis", basePath: "cache:" },
-  ],
-});
-```
-
-## CLI
-
-```bash
-npm install -g @resourcexjs/cli
-
-# Resolve and print content
-arp "arp:text:https://example.com/file.txt"
-
-# Parse URL components
-arp parse "arp:text:https://example.com/file.txt"
-
-# Output as JSON
-arp "arp:text:https://example.com/file.txt" --json
+// Delete
+await arl.delete();
 ```
 
 ## Packages
 
-| Package                                | Description         |
-| -------------------------------------- | ------------------- |
-| [`resourcexjs`](./packages/resourcex)  | Main package        |
-| [`@resourcexjs/core`](./packages/core) | Core implementation |
-| [`@resourcexjs/cli`](./packages/cli)   | CLI tool            |
+| Package                                        | Description                    |
+| ---------------------------------------------- | ------------------------------ |
+| [`resourcexjs`](./packages/resourcex)          | Main package (RXL/RXM/RXC/RXR) |
+| [`@resourcexjs/core`](./packages/core)         | Core types and implementations |
+| [`@resourcexjs/registry`](./packages/registry) | Resource registry              |
+| [`@resourcexjs/arp`](./packages/arp)           | ARP protocol (low-level I/O)   |
+
+## Storage Structure
+
+Resources are stored in:
+
+```
+~/.resourcex/
+├── {domain}/
+│   └── {path}/
+│       └── {name}.{type}@{version}/
+│           ├── manifest.json    # RXM serialized
+│           └── content          # RXC serialized (via type's serializer)
+```
+
+Example:
+
+```
+~/.resourcex/
+├── localhost/
+│   └── my-prompt.text@1.0.0/
+│       ├── manifest.json
+│       └── content
+└── deepractice.ai/
+    └── sean/
+        └── assistant.prompt@1.0.0/
+            ├── manifest.json
+            └── content
+```
+
+## Workflow
+
+### Maven-style Caching
+
+Like Maven's local repository (`~/.m2`):
+
+```
+1. resolve("deepractice.ai/assistant.prompt@1.0.0")
+2. Check ~/.resourcex/deepractice.ai/assistant.prompt@1.0.0
+3. If exists → return local (fast)
+4. If not exists → fetch from remote → cache locally → return
+```
+
+### Development Workflow
+
+```typescript
+// 1. Link local resource for development
+const registry = createRegistry();
+await registry.link(myPrompt);
+
+// 2. Use it
+const resource = await registry.resolve("localhost/my-prompt.text@1.0.0");
+
+// 3. Publish to remote (TODO)
+await registry.publish(myPrompt);
+
+// 4. Others can install
+await registry.resolve("deepractice.ai/sean/my-prompt.text@1.0.0");
+// → Downloads from remote → Caches to ~/.resourcex → Returns
+```
+
+## Error Handling
+
+```typescript
+import {
+  ResourceXError,
+  LocatorError,
+  ManifestError,
+  ContentError,
+  ResourceTypeError,
+} from "resourcexjs";
+
+import { RegistryError } from "@resourcexjs/registry";
+
+import { ARPError, ParseError, TransportError, SemanticError } from "resourcexjs/arp";
+```
 
 ## Ecosystem
 
-Part of the [Deepractice](https://github.com/Deepractice) AI Agent infrastructure:
+Part of the [Deepractice](https://github.com/Deepractice) AI infrastructure:
 
-- **[PromptX](https://github.com/Deepractice/PromptX)** - AI Agent context platform
-- **[AgentX](https://github.com/Deepractice/AgentX)** - AI Agent runtime platform
-- **[ToolX](https://github.com/Deepractice/ToolX)** - Tool integration
-- **[UIX](https://github.com/Deepractice/UIX)** - AI-to-UI protocol layer
-- **[SandboX](https://github.com/Deepractice/SandboX)** - Agent sandbox
+- **[AgentVM](https://github.com/Deepractice/AgentVM)** - AI Agent runtime environment
+- **[AgentX](https://github.com/Deepractice/AgentX)** - AI Agent execution runtime
+- **[ResourceX](https://github.com/Deepractice/ResourceX)** - Resource management (this project)
 
 ## Contributing
 

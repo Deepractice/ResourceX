@@ -1,10 +1,7 @@
 /**
- * ResourceX Error Types
+ * ResourceX Error hierarchy
  */
 
-/**
- * Base error class for all ResourceX errors
- */
 export class ResourceXError extends Error {
   constructor(message: string, options?: ErrorOptions) {
     super(message, options);
@@ -12,43 +9,33 @@ export class ResourceXError extends Error {
   }
 }
 
-/**
- * Error thrown when ARP URL parsing fails
- */
-export class ParseError extends ResourceXError {
+export class LocatorError extends ResourceXError {
   constructor(
     message: string,
-    public readonly url?: string
+    public readonly locator?: string
   ) {
     super(message);
-    this.name = "ParseError";
+    this.name = "LocatorError";
   }
 }
 
-/**
- * Error thrown when transport layer fails
- */
-export class TransportError extends ResourceXError {
-  constructor(
-    message: string,
-    public readonly transport?: string,
-    options?: ErrorOptions
-  ) {
-    super(message, options);
-    this.name = "TransportError";
+export class ManifestError extends ResourceXError {
+  constructor(message: string) {
+    super(message);
+    this.name = "ManifestError";
   }
 }
 
-/**
- * Error thrown when semantic layer fails
- */
-export class SemanticError extends ResourceXError {
-  constructor(
-    message: string,
-    public readonly semantic?: string,
-    options?: ErrorOptions
-  ) {
-    super(message, options);
-    this.name = "SemanticError";
+export class ContentError extends ResourceXError {
+  constructor(message: string) {
+    super(message);
+    this.name = "ContentError";
+  }
+}
+
+export class ResourceTypeError extends ResourceXError {
+  constructor(message: string) {
+    super(message);
+    this.name = "ResourceTypeError";
   }
 }

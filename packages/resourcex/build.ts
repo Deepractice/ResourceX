@@ -4,20 +4,24 @@
 
 import { dts } from "bun-dts";
 
+const pkg = await Bun.file("./package.json").json();
 const outdir = "./dist";
 
 await Bun.$`rm -rf ${outdir}`;
 
-console.log("Building resourcexjs\n");
+console.log(`Building resourcexjs v${pkg.version}\n`);
 
 const result = await Bun.build({
-  entrypoints: ["src/index.ts"],
+  entrypoints: ["src/index.ts", "src/arp.ts"],
   outdir,
   format: "esm",
   target: "node",
   sourcemap: "external",
   minify: false,
   plugins: [dts()],
+  define: {
+    __VERSION__: JSON.stringify(pkg.version),
+  },
 });
 
 if (!result.success) {
