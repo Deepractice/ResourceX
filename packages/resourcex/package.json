@@ -43,7 +43,8 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@resourcexjs/arp": "workspace:*"
+    "@resourcexjs/arp": "workspace:*",
+    "@resourcexjs/core": "workspace:*"
   },
   "devDependencies": {},
   "publishConfig": {

@@ -60,6 +60,7 @@
       "version": "0.6.0",
       "dependencies": {
         "@resourcexjs/arp": "workspace:*",
+        "@resourcexjs/core": "workspace:*",
       },
     },
   },

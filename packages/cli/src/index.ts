@@ -1,4 +1,12 @@
-import { createResourceX, ResourceXError } from "resourcexjs";
+import {
+  createARP,
+  fileTransport,
+  httpsTransport,
+  httpTransport,
+  textSemantic,
+  binarySemantic,
+  ARPError,
+} from "resourcexjs/arp";
 
 declare const __VERSION__: string;
 const VERSION = __VERSION__;
@@ -22,6 +30,13 @@ Examples:
   arp resolve "arp:text:file:///path/to/file.txt" --json
 `.trim();
 
+function createDefaultARP() {
+  return createARP({
+    transports: [fileTransport, httpsTransport, httpTransport],
+    semantics: [textSemantic, binarySemantic],
+  });
+}
+
 async function main() {
   const args = process.argv.slice(2);
 
@@ -39,7 +54,7 @@ async function main() {
   const filteredArgs = args.filter((a) => !a.startsWith("-"));
 
   const command = filteredArgs[0];
-  const rx = createResourceX();
+  const arp = createDefaultARP();
 
   try {
     if (command === "parse") {
@@ -48,13 +63,23 @@ async function main() {
         console.error("Error: Missing ARP URL");
         process.exit(1);
       }
-      const parsed = rx.parse(url);
+      const arl = arp.parse(url);
       if (jsonOutput) {
-        console.log(JSON.stringify(parsed, null, 2));
+        console.log(
+          JSON.stringify(
+            {
+              semantic: arl.semantic,
+              transport: arl.transport,
+              location: arl.location,
+            },
+            null,
+            2
+          )
+        );
       } else {
-        console.log(`semantic:  ${parsed.semantic}`);
-        console.log(`transport: ${parsed.transport}`);
-        console.log(`location:  ${parsed.location}`);
+        console.log(`semantic:  ${arl.semantic}`);
+        console.log(`transport: ${arl.transport}`);
+        console.log(`location:  ${arl.location}`);
       }
     } else if (command === "resolve") {
       const url = filteredArgs[1];
@@ -62,13 +87,13 @@ async function main() {
         console.error("Error: Missing ARP URL");
         process.exit(1);
       }
-      await resolve(rx, url, jsonOutput);
+      await resolve(arp, url, jsonOutput);
     } else {
       // Default: treat first arg as URL to resolve
-      await resolve(rx, command, jsonOutput);
+      await resolve(arp, command, jsonOutput);
     }
   } catch (error) {
-    if (error instanceof ResourceXError) {
+    if (error instanceof ARPError) {
       console.error(`Error: ${error.message}`);
     } else {
       console.error(`Error: ${(error as Error).message}`);
@@ -77,13 +102,28 @@ async function main() {
   }
 }
 
-async function resolve(rx: ReturnType<typeof createResourceX>, url: string, jsonOutput: boolean) {
-  const resource = await rx.resolve(url);
+async function resolve(arp: ReturnType<typeof createARP>, url: string, jsonOutput: boolean) {
+  const arl = arp.parse(url);
+  const resource = await arl.resolve();
 
   if (jsonOutput) {
-    console.log(JSON.stringify(resource, null, 2));
+    console.log(
+      JSON.stringify(
+        {
+          type: resource.type,
+          content: resource.type === "text" ? resource.content : "[binary data]",
+          meta: resource.meta,
+        },
+        null,
+        2
+      )
+    );
   } else {
-    console.log(resource.content);
+    if (resource.type === "text") {
+      console.log(resource.content);
+    } else {
+      console.log("[binary data]");
+    }
   }
 }
 

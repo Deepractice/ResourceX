@@ -5,14 +5,10 @@
  *
  * @example
  * ```typescript
- * import { createResourceX } from "resourcexjs";
+ * import { parseRXL, createRXM } from "resourcexjs";
  *
- * const rx = createResourceX({
- *   resourceDirs: ["./resources"],
- * });
- *
- * // Access resources by name
- * const resource = await rx.resolve("resourcex://my-prompt");
+ * const rxl = parseRXL("deepractice.ai/sean/assistant.prompt@1.0.0");
+ * const rxm = createRXM({ domain: "deepractice.ai", name: "assistant", type: "prompt", version: "1.0.0" });
  * ```
  *
  * For low-level ARP protocol access:
@@ -23,11 +19,20 @@
  * @packageDocumentation
  */
 
+// Errors
+export { ResourceXError, LocatorError, ManifestError, ContentError } from "@resourcexjs/core";
+
+// RXL - ResourceX Locator
+export type { RXL } from "@resourcexjs/core";
+export { parseRXL } from "@resourcexjs/core";
+
+// RXM - ResourceX Manifest
+export type { RXM, ManifestData } from "@resourcexjs/core";
+export { createRXM } from "@resourcexjs/core";
+
 // TODO: Implement ResourceX protocol
-// - createResourceX factory
-// - resource.json manifest support
-// - registry system
-// - resourcex:// URL scheme
+// - RXC (Content)
+// - RXR (Resource)
 
 declare const __VERSION__: string | undefined;
 export const VERSION: string = typeof __VERSION__ !== "undefined" ? __VERSION__ : "0.0.0-dev";
