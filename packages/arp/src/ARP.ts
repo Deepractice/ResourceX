@@ -7,6 +7,8 @@ import { ARL, type HandlerResolver } from "./ARL.js";
 import { ParseError, TransportError, SemanticError } from "./errors.js";
 import type { TransportHandler } from "./transport/types.js";
 import type { SemanticHandler } from "./semantic/types.js";
+import { fileTransport, httpTransport, httpsTransport } from "./transport/index.js";
+import { textSemantic, binarySemantic } from "./semantic/index.js";
 
 /**
  * ARP Configuration
@@ -34,7 +36,18 @@ export class ARP implements HandlerResolver {
     this.transports = new Map();
     this.semantics = new Map();
 
-    // Register provided handlers
+    // Register default handlers
+    const defaultTransports = [fileTransport, httpTransport, httpsTransport];
+    const defaultSemantics = [textSemantic, binarySemantic];
+
+    for (const handler of defaultTransports) {
+      this.transports.set(handler.name, handler);
+    }
+    for (const handler of defaultSemantics) {
+      this.semantics.set(handler.name, handler);
+    }
+
+    // Register custom handlers (override defaults if same name)
     if (config.transports) {
       for (const handler of config.transports) {
         this.transports.set(handler.name, handler);

@@ -17,7 +17,6 @@ describe("createRXM", () => {
       expect(rxm.type).toBe("prompt");
       expect(rxm.version).toBe("1.0.0");
       expect(rxm.path).toBeUndefined();
-      expect(rxm.resolver).toBeUndefined();
     });
 
     it("parses manifest with path", () => {
@@ -46,18 +45,6 @@ describe("createRXM", () => {
       expect(rxm.path).toBe("org/team");
     });
 
-    it("parses manifest with resolver", () => {
-      const rxm = createRXM({
-        domain: "deepractice.ai",
-        name: "assistant",
-        type: "prompt",
-        version: "1.0.0",
-        resolver: "openai",
-      });
-
-      expect(rxm.resolver).toBe("openai");
-    });
-
     it("parses full manifest", () => {
       const rxm = createRXM({
         domain: "deepractice.ai",
@@ -65,7 +52,6 @@ describe("createRXM", () => {
         name: "assistant",
         type: "prompt",
         version: "1.0.0",
-        resolver: "claude",
       });
 
       expect(rxm.domain).toBe("deepractice.ai");
@@ -73,7 +59,6 @@ describe("createRXM", () => {
       expect(rxm.name).toBe("assistant");
       expect(rxm.type).toBe("prompt");
       expect(rxm.version).toBe("1.0.0");
-      expect(rxm.resolver).toBe("claude");
     });
   });
 
@@ -192,7 +177,6 @@ describe("createRXM", () => {
         name: "assistant",
         type: "prompt",
         version: "1.0.0",
-        resolver: "openai",
       });
 
       expect(rxm.toJSON()).toEqual({
@@ -201,7 +185,6 @@ describe("createRXM", () => {
         name: "assistant",
         type: "prompt",
         version: "1.0.0",
-        resolver: "openai",
       });
     });
 
@@ -221,7 +204,6 @@ describe("createRXM", () => {
         version: "1.0.0",
       });
       expect("path" in json).toBe(false);
-      expect("resolver" in json).toBe(false);
     });
   });
 });

@@ -13,7 +13,6 @@ Feature: ResourceX Manifest (RXM)
     And rxm type should be "prompt"
     And rxm version should be "1.0.0"
     And rxm path should be undefined
-    And rxm resolver should be undefined
 
   @path
   Scenario: Parse manifest with path
@@ -22,21 +21,14 @@ Feature: ResourceX Manifest (RXM)
     And rxm path should be "sean"
     And rxm name should be "assistant"
 
-  @resolver
-  Scenario: Parse manifest with resolver
-    When I parse manifest with domain "deepractice.ai", name "assistant", type "prompt", version "1.0.0", resolver "openai"
-    Then rxm type should be "prompt"
-    And rxm resolver should be "openai"
-
   @full
   Scenario: Parse full manifest
-    When I parse manifest with domain "deepractice.ai", path "sean", name "assistant", type "prompt", version "1.0.0", resolver "claude"
+    When I parse manifest with domain "deepractice.ai", path "sean", name "assistant", type "prompt", version "1.0.0"
     Then rxm domain should be "deepractice.ai"
     And rxm path should be "sean"
     And rxm name should be "assistant"
     And rxm type should be "prompt"
     And rxm version should be "1.0.0"
-    And rxm resolver should be "claude"
 
   @toLocator
   Scenario: Convert manifest to locator string

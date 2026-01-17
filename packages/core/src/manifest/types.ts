@@ -7,7 +7,6 @@ export interface RXM {
   readonly name: string;
   readonly type: string;
   readonly version: string;
-  readonly resolver?: string;
   toLocator(): string;
   toJSON(): ManifestData;
 }
@@ -18,5 +17,4 @@ export interface ManifestData {
   name?: string;
   type?: string;
   version?: string;
-  resolver?: string;
 }

@@ -7,7 +7,6 @@ class RXMImpl implements RXM {
   readonly name: string;
   readonly type: string;
   readonly version: string;
-  readonly resolver?: string;
 
   constructor(data: {
     domain: string;
@@ -15,14 +14,12 @@ class RXMImpl implements RXM {
     name: string;
     type: string;
     version: string;
-    resolver?: string;
   }) {
     this.domain = data.domain;
     this.path = data.path;
     this.name = data.name;
     this.type = data.type;
     this.version = data.version;
-    this.resolver = data.resolver;
   }
 
   toLocator(): string {
@@ -45,9 +42,6 @@ class RXMImpl implements RXM {
     };
     if (this.path !== undefined) {
       json.path = this.path;
-    }
-    if (this.resolver !== undefined) {
-      json.resolver = this.resolver;
     }
     return json;
   }
@@ -76,6 +70,5 @@ export function createRXM(data: ManifestData): RXM {
     name: data.name,
     type: data.type,
     version: data.version,
-    resolver: data.resolver,
   });
 }

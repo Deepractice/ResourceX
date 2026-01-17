@@ -4,11 +4,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-ResourceX implements ARP (Agent Resource Protocol), a URL format for AI agents to reference and access resources. The URL format is: `arp:{semantic}:{transport}://{location}`
+ResourceX is a resource management protocol for AI Agents, similar to npm for packages.
 
-- **semantic**: What the resource is (text, binary)
-- **transport**: How to fetch it (https, http, file)
-- **location**: Where to find it
+**Two layers:**
+
+1. **ARP (Agent Resource Protocol)** - Low-level I/O primitives
+   - Format: `arp:{semantic}:{transport}://{location}`
+   - Provides: resolve, deposit, exists, delete
+
+2. **ResourceX** - High-level resource management
+   - RXL (Locator): `[domain/path/]name[.type][@version]`
+   - RXM (Manifest): Resource metadata
+   - RXC (Content): Stream-based content
+   - RXR (Resource): RXL + RXM + RXC
+   - Registry: Maven-style resource storage (link/resolve/exists/delete)
+   - TypeSystem: Custom resource types with serializer & resolver
 
 ## Commands
 
@@ -23,13 +33,13 @@ bun run build
 bun run test
 
 # Run a single test file
-bun test packages/core/tests/unit/parser.test.ts
+bun test packages/core/tests/unit/locator/parse.test.ts
 
 # Run BDD tests (Cucumber)
 bun run test:bdd
 
 # Run BDD tests with specific tags
-cd bdd && bun run test:tags "@tagname"
+cd bdd && bun run test:tags "@registry"
 
 # Lint
 bun run lint
@@ -47,98 +57,295 @@ bun run format
 
 ```
 packages/
-├── core/        # @resourcexjs/core - Parser, handlers, resolution logic
-├── resourcex/   # resourcexjs - Main API (depends on core)
-└── cli/         # @resourcexjs/cli - CLI tool (depends on resourcex)
+├── arp/         # @resourcexjs/arp - ARP protocol (low-level I/O)
+├── core/        # @resourcexjs/core - RXL, RXM, RXC, RXR, ResourceType
+├── registry/    # @resourcexjs/registry - Registry implementation
+└── resourcex/   # resourcexjs - Main package (re-exports)
 ```
 
-### Core Concepts
+### Core Objects
 
-**Transport** handles WHERE + I/O primitives:
+**RXL (Locator)** - Resource locator
 
-- `read(location)` - Read content
-- `write(location, content)` - Write content
-- `list(location)` - List directory
-- `exists(location)` - Check existence
-- `delete(location)` - Delete resource
+Format: `[domain/path/]name[.type][@version]`
 
-**Semantic** handles WHAT + HOW (orchestrates Transport):
+```typescript
+parseRXL("deepractice.ai/sean/assistant.prompt@1.0.0");
+// → { domain, path, name, type, version, toString() }
+```
 
-- `resolve(transport, location, context)` - Fetch and parse resource
-- `deposit(transport, location, data, context)` - Serialize and store resource
+**RXM (Manifest)** - Resource metadata
 
-**Resource Definition** provides URL shortcuts:
+```typescript
+createRXM({ domain, path?, name, type, version })
+// → { domain, path, name, type, version, toLocator(), toJSON() }
+```
 
-- Define `name`, `semantic`, `transport`, `basePath`
-- Use `name://location` instead of full ARP URL
+**RXC (Content)** - Stream-based content (consumed once)
+
+```typescript
+createRXC(data: string | Buffer | ReadableStream)
+loadRXC(source: string)  // file path or URL
+
+// Methods: text(), buffer(), json(), stream
+```
+
+**RXR (Resource)** - Complete resource (pure DTO)
+
+```typescript
+interface RXR {
+  locator: RXL;
+  manifest: RXM;
+  content: RXC;
+}
+
+// Create from literals
+const rxr: RXR = { locator, manifest, content };
+```
+
+### Type System
+
+**ResourceType** defines how resources are serialized and resolved:
+
+```typescript
+interface ResourceType<T> {
+  name: string;               // "text", "json", "prompt"
+  aliases?: string[];         // ["txt"], ["config"]
+  description: string;
+  serializer: ResourceSerializer;  // RXR ↔ Buffer (for storage)
+  resolver: ResourceResolver<T>;   // RXR → usable object
+}
+
+// Built-in types
+text   → aliases: [txt, plaintext]
+json   → aliases: [config, manifest]
+binary → aliases: [bin, blob, raw]
+```
+
+**TypeHandlerChain** - Responsibility chain for type handling:
+
+```typescript
+chain.register(type); // Register a type
+chain.canHandle(name); // Check if type supported
+chain.serialize(rxr); // RXR → Buffer
+chain.deserialize(data, manifest); // Buffer → RXR
+chain.resolve<T>(rxr); // RXR → usable object
+```
+
+Used by Registry to delegate serialization logic.
+
+### Registry
+
+**Registry Interface:**
+
+```typescript
+interface Registry {
+  link(resource: RXR): Promise<void>; // Link to local (~/.resourcex)
+  resolve(locator: string): Promise<RXR>; // Resolve (local-first)
+  exists(locator: string): Promise<boolean>;
+  delete(locator: string): Promise<void>;
+  search(query: string): Promise<RXL[]>; // TODO
+  publish(resource: RXR): Promise<void>; // TODO: remote publish
+}
+```
+
+**ARPRegistry Implementation:**
+
+- Uses ARP for atomic I/O (read/write via arp:text:file://)
+- Uses TypeHandlerChain for serialization/deserialization
+- Storage: `~/.resourcex/{domain}/{path}/{name}.{type}@{version}/`
+
+**Storage Structure:**
+
+```
+~/.resourcex/
+└── {domain}/
+    └── {path}/
+        └── {name}.{type}@{version}/
+            ├── manifest.json    # RXM as JSON
+            └── content          # RXC serialized by type's serializer
+```
 
 ### Resolution Flow
 
-The core resolution logic (see `packages/core/src/resolve.ts`):
-
 ```
-resolve(url):
-  1. Parse URL → { semantic, transport, location }
-  2. Get handlers → transport, semantic
-  3. Semantic orchestrates → semantic.resolve(transport, location, context)
-                              └── calls transport.read/list internally
-
-deposit(url, data):
-  1. Parse URL → { semantic, transport, location }
-  2. Get handlers → transport, semantic
-  3. Semantic orchestrates → semantic.deposit(transport, location, data, context)
-                              └── calls transport.write internally
-```
-
-### Handler System
-
-Transport handlers (`packages/core/src/transport/`) provide I/O primitives:
-
-- `https`, `http` - Read-only network access
-- `file` - Full filesystem access (read/write/list/delete)
-- `agentvm` - AgentVM local storage (~/.agentvm, configurable via factory function)
-
-Semantic handlers (`packages/core/src/semantic/`) orchestrate transport primitives:
-
-- `text` - Plain text (UTF-8 encoding/decoding)
-- `binary` - Raw binary (Buffer passthrough, no transformation)
-
-Custom handlers are registered via config when creating ResourceX instance:
-
-```typescript
-createResourceX({
-  transports: [customTransport],
-  semantics: [customSemantic],
-});
+registry.resolve("deepractice.ai/assistant.prompt@1.0.0")
+  ↓
+1. Check local: ~/.resourcex/deepractice.ai/assistant.prompt@1.0.0/manifest.json
+2. If exists:
+   - Read manifest.json → createRXM(json)
+   - Get ResourceType by manifest.type
+   - Read content → Buffer
+   - typeChain.deserialize(buffer, manifest) → RXR
+3. If not exists:
+   - TODO: Fetch from remote registry (domain-based)
+   - Cache to local
+   - Return RXR
 ```
 
-### Resource Definition System
+### ARP Layer
 
-Resource definitions (`packages/core/src/resource/`) provide URL shortcuts:
+ARP provides low-level I/O primitives:
 
-```typescript
-createResourceX({
-  resources: [{ name: "mydata", semantic: "text", transport: "file", basePath: "/path/to/data" }],
-});
+**Transport handlers:**
 
-// Then use: mydata://file.txt
-// Instead of: arp:text:file:///path/to/data/file.txt
-```
+- `file` - Local filesystem (read/write/delete/exists)
+- `http`, `https` - Network (read-only)
+- `agentvm` - AgentVM storage (~/.agentvm)
 
-### Main API
+**Semantic handlers:**
 
-The `resourcexjs` package exposes `createResourceX()` factory and `ResourceX` class:
+- `text` - UTF-8 text
+- `binary` - Raw bytes
 
-- `resolve(url)` - Read resource (supports ARP and Resource URLs)
-- `deposit(url, data)` - Write resource
-- `exists(url)` - Check existence
-- `delete(url)` - Delete resource
+**Default registration:** `createARP()` auto-registers all built-in handlers.
+
+## Development Workflow
+
+Follow `issues/000-unified-development-mode.md`:
+
+1. **Phase 1: Code Review** - Clarify requirements
+2. **Phase 2: BDD** - Write `.feature` files
+3. **Phase 3: Implementation** - TDD (tests → code)
 
 ## Conventions
 
 - Uses Bun as package manager and runtime
 - ESM modules only (`"type": "module"`)
 - TypeScript with strict mode
+- **Path aliases**: Use `~/` instead of `../` for imports within packages
+- Keep `.js` extensions in imports for ESM compatibility
 - Commits follow Conventional Commits (enforced by commitlint via lefthook)
 - Pre-commit hooks auto-format and lint staged files
-- Turborepo manages build orchestration across packages
+- Turborepo manages build orchestration
+
+## Testing
+
+- **Unit tests**: `packages/*/tests/unit/**/*.test.ts` (Bun test)
+- **BDD tests**: `bdd/features/**/*.feature` + `bdd/steps/**/*.steps.ts` (Cucumber)
+- **TDD approach**: Write tests first, then implement
+- **Tags**: @arp, @resourcex, @locator, @manifest, @resource-type, @registry
+
+## Key Implementation Details
+
+### TypeHandlerChain Pattern
+
+Registry delegates serialization to TypeHandlerChain, keeping concerns separated:
+
+```typescript
+// ARPRegistry (storage layer)
+class ARPRegistry implements Registry {
+  private typeChain: TypeHandlerChain;
+
+  async link(rxr: RXR) {
+    // Delegate to chain
+    const buffer = await this.typeChain.serialize(rxr);
+
+    // Store using ARP
+    await this.arp.parse(url).deposit(buffer);
+  }
+}
+```
+
+This allows swapping storage implementations without changing serialization logic.
+
+### Stream-based Content
+
+RXC can only be consumed once (like fetch Response):
+
+```typescript
+const content = createRXC("Hello");
+await content.text(); // ✅ "Hello"
+await content.text(); // ❌ Throws ContentError: already consumed
+```
+
+### Type Aliases
+
+Types support aliases for flexibility:
+
+```typescript
+// These are all equivalent:
+createRXM({ type: "text", ... })
+createRXM({ type: "txt", ... })
+createRXM({ type: "plaintext", ... })
+
+// Registry resolves via TypeHandlerChain
+registry.resolve("localhost/file.txt@1.0.0")    // ✅
+registry.resolve("localhost/file.text@1.0.0")   // ✅
+```
+
+## API Summary
+
+### Core Package (`@resourcexjs/core`)
+
+```typescript
+// Locator
+parseRXL(locator: string): RXL
+
+// Manifest
+createRXM(data: ManifestData): RXM
+
+// Content
+createRXC(data: string | Buffer | ReadableStream): RXC
+loadRXC(source: string): Promise<RXC>
+
+// ResourceType
+defineResourceType<T>(config: ResourceType<T>): ResourceType<T>
+getResourceType<T>(name: string): ResourceType<T> | undefined
+clearResourceTypes(): void
+
+// Built-in types
+textType, jsonType, binaryType, builtinTypes
+
+// TypeHandlerChain
+createTypeHandlerChain(types?: ResourceType[]): TypeHandlerChain
+```
+
+### Registry Package (`@resourcexjs/registry`)
+
+```typescript
+createRegistry(config?: { path?, types? }): Registry
+
+registry.link(rxr): Promise<void>
+registry.resolve(locator): Promise<RXR>
+registry.exists(locator): Promise<boolean>
+registry.delete(locator): Promise<void>
+registry.search(query): Promise<RXL[]>      // TODO
+registry.publish(rxr): Promise<void>        // TODO
+```
+
+### ARP Package (`@resourcexjs/arp`)
+
+```typescript
+createARP(config?: ARPConfig): ARP
+
+arp.parse(url: string): ARL
+
+arl.resolve(): Promise<Resource>
+arl.deposit(data: string | Buffer): Promise<void>
+arl.exists(): Promise<boolean>
+arl.delete(): Promise<void>
+```
+
+## Error Hierarchy
+
+```
+ResourceXError
+├── LocatorError (RXL parsing)
+├── ManifestError (RXM validation)
+├── ContentError (RXC consumption)
+└── ResourceTypeError (Type not found)
+
+RegistryError (Registry operations)
+
+ARPError
+├── ParseError (ARP URL parsing)
+├── TransportError (Transport not found)
+└── SemanticError (Semantic not found)
+```
+
+## TODO
+
+- [ ] Registry.search() - Requires ARP list operation
+- [ ] Registry.publish() - Remote publishing to domain-based registry
+- [ ] Remote resolution - Fetch from remote when not in local cache

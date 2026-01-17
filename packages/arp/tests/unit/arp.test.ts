@@ -173,36 +173,46 @@ describe("ARL.toString", () => {
 
 describe("ARP.registerTransport", () => {
   it("registers a custom transport handler", () => {
-    const arp = createARP({
-      semantics: [textSemantic],
-    });
+    const arp = createARP();
+
+    // Custom transport handler
+    const customTransport = {
+      name: "custom",
+      capabilities: { read: true, write: false, delete: false, list: false },
+      read: async () => Buffer.from("custom"),
+    };
 
     // Before registering, should throw
-    expect(() => arp.parse("arp:text:file://./test.txt")).toThrow(TransportError);
+    expect(() => arp.parse("arp:text:custom://./test.txt")).toThrow(TransportError);
 
     // Register transport
-    arp.registerTransport(fileTransport);
+    arp.registerTransport(customTransport);
 
     // After registering, should work
-    const arl = arp.parse("arp:text:file://./test.txt");
-    expect(arl.transport).toBe("file");
+    const arl = arp.parse("arp:text:custom://./test.txt");
+    expect(arl.transport).toBe("custom");
   });
 });
 
 describe("ARP.registerSemantic", () => {
   it("registers a custom semantic handler", () => {
-    const arp = createARP({
-      transports: [fileTransport],
-    });
+    const arp = createARP();
+
+    // Custom semantic handler
+    const customSemantic = {
+      name: "custom",
+      resolve: async () => ({ content: "custom", meta: {} }),
+      deposit: async () => {},
+    };
 
     // Before registering, should throw
-    expect(() => arp.parse("arp:text:file://./test.txt")).toThrow(SemanticError);
+    expect(() => arp.parse("arp:custom:file://./test.txt")).toThrow(SemanticError);
 
     // Register semantic
-    arp.registerSemantic(textSemantic);
+    arp.registerSemantic(customSemantic);
 
     // After registering, should work
-    const arl = arp.parse("arp:text:file://./test.txt");
-    expect(arl.semantic).toBe("text");
+    const arl = arp.parse("arp:custom:file://./test.txt");
+    expect(arl.semantic).toBe("custom");
   });
 });

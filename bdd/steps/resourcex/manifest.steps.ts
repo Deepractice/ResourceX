@@ -41,37 +41,6 @@ When(
   }
 );
 
-When(
-  "I parse manifest with domain {string}, name {string}, type {string}, version {string}, resolver {string}",
-  async function (
-    this: ManifestWorld,
-    domain: string,
-    name: string,
-    type: string,
-    version: string,
-    resolver: string
-  ) {
-    const { createRXM } = await import("resourcexjs");
-    this.rxm = createRXM({ domain, name, type, version, resolver });
-  }
-);
-
-When(
-  "I parse manifest with domain {string}, path {string}, name {string}, type {string}, version {string}, resolver {string}",
-  async function (
-    this: ManifestWorld,
-    domain: string,
-    path: string,
-    name: string,
-    type: string,
-    version: string,
-    resolver: string
-  ) {
-    const { createRXM } = await import("resourcexjs");
-    this.rxm = createRXM({ domain, path, name, type, version, resolver });
-  }
-);
-
 When("I parse manifest without domain", async function (this: ManifestWorld) {
   const { createRXM } = await import("resourcexjs");
   try {
@@ -136,16 +105,6 @@ Then("rxm type should be {string}", function (this: ManifestWorld, expected: str
 Then("rxm version should be {string}", function (this: ManifestWorld, expected: string) {
   assert.ok(this.rxm, "RXM should be defined");
   assert.equal(this.rxm.version, expected);
-});
-
-Then("rxm resolver should be {string}", function (this: ManifestWorld, expected: string) {
-  assert.ok(this.rxm, "RXM should be defined");
-  assert.equal(this.rxm.resolver, expected);
-});
-
-Then("rxm resolver should be undefined", function (this: ManifestWorld) {
-  assert.ok(this.rxm, "RXM should be defined");
-  assert.equal(this.rxm.resolver, undefined);
 });
 
 Then("rxm toLocator should return {string}", function (this: ManifestWorld, expected: string) {
