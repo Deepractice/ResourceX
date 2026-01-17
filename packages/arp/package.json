@@ -1,21 +1,19 @@
 {
-  "name": "resourcexjs",
-  "version": "0.6.0",
-  "description": "ResourceX - AI Resource Management Protocol",
+  "name": "@resourcexjs/arp",
+  "version": "0.1.0",
+  "description": "ARP (Agent Resource Protocol) - A URL protocol for AI agents to access resources",
   "keywords": [
-    "resourcex",
     "arp",
     "agent",
     "resource",
     "protocol",
-    "ai",
-    "npm-for-ai"
+    "ai"
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Deepractice/ResourceX.git"
+    "url": "git+https://github.com/Deepractice/ResourceX.git",
+    "directory": "packages/arp"
   },
-  "homepage": "https://github.com/Deepractice/ResourceX",
   "license": "MIT",
   "engines": {
     "node": ">=22.0.0"
@@ -27,23 +25,18 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
-    },
-    "./arp": {
-      "types": "./dist/arp.d.ts",
-      "default": "./dist/arp.js"
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md"
   ],
   "scripts": {
     "build": "bun run build.ts",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
+    "test": "bun test",
     "clean": "rm -rf dist"
-  },
-  "dependencies": {
-    "@resourcexjs/arp": "workspace:*"
   },
   "devDependencies": {},
   "publishConfig": {

@@ -34,9 +34,13 @@
         "typescript": "^5.9.3",
       },
     },
+    "packages/arp": {
+      "name": "@resourcexjs/arp",
+      "version": "0.1.0",
+    },
     "packages/cli": {
       "name": "@resourcexjs/cli",
-      "version": "0.0.1",
+      "version": "0.5.0",
       "bin": {
         "rx": "./dist/index.js",
       },
@@ -46,13 +50,16 @@
     },
     "packages/core": {
       "name": "@resourcexjs/core",
-      "version": "0.0.1",
+      "version": "0.6.0",
+      "dependencies": {
+        "@resourcexjs/arp": "workspace:*",
+      },
     },
     "packages/resourcex": {
       "name": "resourcexjs",
-      "version": "0.0.1",
+      "version": "0.6.0",
       "dependencies": {
-        "@resourcexjs/core": "workspace:*",
+        "@resourcexjs/arp": "workspace:*",
       },
     },
   },
@@ -312,6 +319,8 @@
     "@pkgjs/parseargs": ["@pkgjs/parseargs@0.11.0", "", {}, "sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg=="],
 
     "@pkgr/core": ["@pkgr/core@0.2.9", "", {}, "sha512-QNqXyfVS2wm9hweSYD2O7F0G06uurj9kZ96TRQE5Y9hU7+tgdZwIkbAKc5Ocy1HxEY2kuDQa6cQ1WRs/O5LFKA=="],
+
+    "@resourcexjs/arp": ["@resourcexjs/arp@workspace:packages/arp"],
 
     "@resourcexjs/bdd": ["@resourcexjs/bdd@workspace:bdd"],
 

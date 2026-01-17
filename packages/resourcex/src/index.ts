@@ -1,43 +1,33 @@
 /**
- * resourcexjs - Agent Resource Protocol for AI Agents
+ * resourcexjs - AI Resource Management Protocol
+ *
+ * ResourceX is like npm for AI resources (prompts, tools, agents, etc.)
  *
  * @example
  * ```typescript
  * import { createResourceX } from "resourcexjs";
  *
- * const rx = createResourceX();
- * const resource = await rx.resolve("arp:text:https://example.com/file.txt");
+ * const rx = createResourceX({
+ *   resourceDirs: ["./resources"],
+ * });
  *
- * console.log(resource.type);     // "text"
- * console.log(resource.content);  // "..."
- * console.log(resource.meta);     // { url, semantic, transport, ... }
+ * // Access resources by name
+ * const resource = await rx.resolve("resourcex://my-prompt");
+ * ```
+ *
+ * For low-level ARP protocol access:
+ * ```typescript
+ * import { createARP } from "resourcexjs/arp";
  * ```
  *
  * @packageDocumentation
  */
 
-// Factory
-export { createResourceX } from "./createResourceX.js";
+// TODO: Implement ResourceX protocol
+// - createResourceX factory
+// - resource.json manifest support
+// - registry system
+// - resourcex:// URL scheme
 
-// Class (for advanced usage)
-export { ResourceX, type ResourceXConfig } from "./ResourceX.js";
-
-// Re-export types and errors from core
-export type {
-  Resource,
-  ResourceMeta,
-  ParsedARP,
-  SemanticContext,
-  TransportHandler,
-  TransportCapabilities,
-  ResourceStat,
-  SemanticHandler,
-  TextResource,
-  ResourceDefinition,
-  AgentVMConfig,
-} from "@resourcexjs/core";
-
-// Re-export built-in handlers
-export { agentvmHandler } from "@resourcexjs/core";
-
-export { ResourceXError, ParseError, TransportError, SemanticError } from "@resourcexjs/core";
+declare const __VERSION__: string | undefined;
+export const VERSION: string = typeof __VERSION__ !== "undefined" ? __VERSION__ : "0.0.0-dev";

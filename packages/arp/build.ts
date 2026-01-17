@@ -1,5 +1,6 @@
 /**
- * Bun Build Script for resourcexjs
+ * Bun Build Script for arpjs
+ * ESM-only modern build
  */
 
 import { dts } from "bun-dts";
@@ -9,10 +10,10 @@ const outdir = "./dist";
 
 await Bun.$`rm -rf ${outdir}`;
 
-console.log(`Building resourcexjs v${pkg.version}\n`);
+console.log(`Building @resourcexjs/arp v${pkg.version}\n`);
 
 const result = await Bun.build({
-  entrypoints: ["src/index.ts", "src/arp.ts"],
+  entrypoints: ["src/index.ts"],
   outdir,
   format: "esm",
   target: "node",
