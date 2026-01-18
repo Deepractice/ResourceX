@@ -1,5 +1,14 @@
 # resourcexjs
 
+## 0.8.1
+
+### Patch Changes
+
+- Updated dependencies [3508c58]
+  - @resourcexjs/registry@0.8.1
+  - @resourcexjs/core@0.8.1
+  - @resourcexjs/arp@0.8.1
+
 ## 0.8.0
 
 ### Minor Changes
