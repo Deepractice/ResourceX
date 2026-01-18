@@ -38,18 +38,18 @@
     },
     "packages/arp": {
       "name": "@resourcexjs/arp",
-      "version": "0.1.0",
+      "version": "0.7.0",
     },
     "packages/core": {
       "name": "@resourcexjs/core",
-      "version": "0.6.0",
+      "version": "0.7.0",
       "dependencies": {
         "@resourcexjs/arp": "workspace:*",
       },
     },
     "packages/registry": {
       "name": "@resourcexjs/registry",
-      "version": "0.1.0",
+      "version": "0.7.0",
       "dependencies": {
         "@resourcexjs/arp": "workspace:*",
         "@resourcexjs/core": "workspace:*",
@@ -57,10 +57,11 @@
     },
     "packages/resourcex": {
       "name": "resourcexjs",
-      "version": "0.6.0",
+      "version": "0.7.0",
       "dependencies": {
         "@resourcexjs/arp": "workspace:*",
         "@resourcexjs/core": "workspace:*",
+        "@resourcexjs/registry": "workspace:*",
       },
     },
   },
