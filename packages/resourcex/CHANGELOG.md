@@ -1,5 +1,23 @@
 # resourcexjs
 
+## 0.8.0
+
+### Minor Changes
+
+- 0727b7b: Add missing exports to main package
+  - Export RXR, ResourceType, ResourceSerializer, ResourceResolver types
+  - Export defineResourceType, getResourceType, clearResourceTypes functions
+  - Export textType, jsonType, binaryType, builtinTypes
+  - Export TypeHandlerChain, createTypeHandlerChain
+  - Export Registry, RegistryConfig, createRegistry, ARPRegistry from registry
+  - Export ResourceTypeError, RegistryError errors
+
+### Patch Changes
+
+- @resourcexjs/core@0.8.0
+- @resourcexjs/arp@0.8.0
+- @resourcexjs/registry@0.8.0
+
 ## 0.7.1
 
 ### Patch Changes

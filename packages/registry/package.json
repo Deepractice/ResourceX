@@ -1,6 +1,6 @@
 {
   "name": "@resourcexjs/registry",
-  "version": "0.7.1",
+  "version": "0.8.0",
   "description": "ResourceX Registry - Resource storage and retrieval",
   "keywords": [
     "resourcex",
