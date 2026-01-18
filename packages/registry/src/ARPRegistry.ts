@@ -28,8 +28,8 @@ export class ARPRegistry implements Registry {
     this.arp = createARP();
     this.basePath = config?.path ?? DEFAULT_PATH;
 
-    // Create type handler chain with registered types
-    this.typeChain = createTypeHandlerChain(config?.types ?? builtinTypes);
+    // Create type handler chain with builtin types + custom types
+    this.typeChain = createTypeHandlerChain([...builtinTypes, ...(config?.types ?? [])]);
   }
 
   /**
