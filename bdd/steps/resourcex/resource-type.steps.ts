@@ -1,12 +1,6 @@
 import { Given, When, Then, After } from "@cucumber/cucumber";
 import { strict as assert } from "node:assert";
-import type {
-  ResourceType,
-  ResourceSerializer,
-  ResourceResolver,
-  RXR,
-  RXM,
-} from "@resourcexjs/core";
+import type { ResourceType, ResourceSerializer, ResourceResolver, RXR, RXM } from "resourcexjs";
 
 interface ResourceTypeWorld {
   typeDefinition: Partial<ResourceType> | null;
@@ -45,7 +39,7 @@ function createMockResolver(world: ResourceTypeWorld): ResourceResolver<string> 
 
 After({ tags: "@resource-type" }, async function () {
   // Clear resource types after each scenario
-  const { clearResourceTypes } = await import("@resourcexjs/core");
+  const { clearResourceTypes } = await import("resourcexjs");
   clearResourceTypes();
 });
 
@@ -106,7 +100,7 @@ Given(
 Given(
   "a resource type {string} is already registered",
   async function (this: ResourceTypeWorld, name: string) {
-    const { defineResourceType } = await import("@resourcexjs/core");
+    const { defineResourceType } = await import("resourcexjs");
 
     this.serializerCalled = false;
     this.deserializerCalled = false;
@@ -134,7 +128,7 @@ Given(
     this: ResourceTypeWorld,
     dataTable: { hashes: () => Array<{ name: string; description: string }> }
   ) {
-    const { defineResourceType } = await import("@resourcexjs/core");
+    const { defineResourceType } = await import("resourcexjs");
     const rows = dataTable.hashes();
 
     this.serializerCalled = false;
@@ -153,7 +147,7 @@ Given(
 );
 
 When("I define the resource type", async function (this: ResourceTypeWorld) {
-  const { defineResourceType } = await import("@resourcexjs/core");
+  const { defineResourceType } = await import("resourcexjs");
 
   try {
     this.registeredType = defineResourceType(this.typeDefinition as ResourceType);
@@ -166,7 +160,7 @@ When("I define the resource type", async function (this: ResourceTypeWorld) {
 When(
   "I try to define another type with name {string}",
   async function (this: ResourceTypeWorld, _name: string) {
-    const { defineResourceType } = await import("@resourcexjs/core");
+    const { defineResourceType } = await import("resourcexjs");
 
     try {
       this.registeredType = defineResourceType(this.typeDefinition as ResourceType);
@@ -178,14 +172,14 @@ When(
 );
 
 When("I get resource type {string}", async function (this: ResourceTypeWorld, name: string) {
-  const { getResourceType } = await import("@resourcexjs/core");
+  const { getResourceType } = await import("resourcexjs");
   this.retrievedType = getResourceType(name);
 });
 
 When(
   "I resolve a resource of type {string}",
   async function (this: ResourceTypeWorld, _type: string) {
-    const { createRXM, createRXC, parseRXL } = await import("@resourcexjs/core");
+    const { createRXM, createRXC, parseRXL } = await import("resourcexjs");
 
     const manifest = createRXM({
       domain: "localhost",
@@ -214,7 +208,7 @@ Then("the resource type should be registered", async function (this: ResourceTyp
 Then(
   "I can retrieve the type by name {string}",
   async function (this: ResourceTypeWorld, name: string) {
-    const { getResourceType } = await import("@resourcexjs/core");
+    const { getResourceType } = await import("resourcexjs");
     const type = getResourceType(name);
     assert.ok(type, `Should be able to retrieve type "${name}"`);
     assert.equal(type?.name, name);
@@ -224,7 +218,7 @@ Then(
 Then("the serializer should be used for serialization", async function (this: ResourceTypeWorld) {
   // Call serialize to verify it works
   if (this.registeredType?.serializer) {
-    const { createRXM, createRXC, parseRXL } = await import("@resourcexjs/core");
+    const { createRXM, createRXC, parseRXL } = await import("resourcexjs");
     const manifest = createRXM({
       domain: "localhost",
       name: "test",
@@ -244,7 +238,7 @@ Then("the serializer should be used for serialization", async function (this: Re
 Then("the serializer should be used for deserialization", async function (this: ResourceTypeWorld) {
   // Call deserialize to verify it works
   if (this.registeredType?.serializer) {
-    const { createRXM } = await import("@resourcexjs/core");
+    const { createRXM } = await import("resourcexjs");
     const manifest = createRXM({
       domain: "localhost",
       name: "test",
@@ -265,7 +259,7 @@ Then(
 );
 
 Then("it should throw a ResourceTypeError", async function (this: ResourceTypeWorld) {
-  const { ResourceTypeError } = await import("@resourcexjs/core");
+  const { ResourceTypeError } = await import("resourcexjs");
   assert.ok(this.error, "Error should have been thrown");
   assert.ok(
     this.error instanceof ResourceTypeError,

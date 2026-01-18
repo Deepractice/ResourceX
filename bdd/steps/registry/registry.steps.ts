@@ -2,8 +2,7 @@ import { Given, When, Then, After } from "@cucumber/cucumber";
 import { strict as assert } from "node:assert";
 import { join } from "node:path";
 import { mkdir, rm, stat } from "node:fs/promises";
-import type { Registry } from "@resourcexjs/registry";
-import type { RXR, RXL } from "@resourcexjs/core";
+import type { Registry, RXR, RXL } from "resourcexjs";
 
 const TEST_DIR = join(process.cwd(), ".test-bdd-registry");
 
@@ -27,14 +26,14 @@ After({ tags: "@registry" }, async function () {
 });
 
 Given("a registry with default configuration", async function (this: RegistryWorld) {
-  const { createRegistry } = await import("@resourcexjs/registry");
+  const { createRegistry } = await import("resourcexjs");
   await mkdir(TEST_DIR, { recursive: true });
   this.registry = createRegistry({ path: TEST_DIR });
   this.error = null;
 });
 
 Given("a registry with path {string}", async function (this: RegistryWorld, path: string) {
-  const { createRegistry } = await import("@resourcexjs/registry");
+  const { createRegistry } = await import("resourcexjs");
   this.customPath = join(process.cwd(), path);
   await mkdir(this.customPath, { recursive: true });
   this.registry = createRegistry({ path: this.customPath });
@@ -49,7 +48,7 @@ Given(
       hashes: () => Array<{ domain: string; name: string; type: string; version: string }>;
     }
   ) {
-    const { createRXM, createRXC, parseRXL } = await import("@resourcexjs/core");
+    const { createRXM, createRXC, parseRXL } = await import("resourcexjs");
     const rows = dataTable.hashes();
     const row = rows[0];
 
@@ -69,7 +68,7 @@ Given(
 );
 
 Given("resource content {string}", async function (this: RegistryWorld, content: string) {
-  const { createRXC } = await import("@resourcexjs/core");
+  const { createRXC } = await import("resourcexjs");
   if (this.resource) {
     this.resource.content = createRXC(content);
   }
@@ -78,7 +77,7 @@ Given("resource content {string}", async function (this: RegistryWorld, content:
 Given(
   "a linked resource {string} with content {string}",
   async function (this: RegistryWorld, locator: string, content: string) {
-    const { createRXM, createRXC, parseRXL } = await import("@resourcexjs/core");
+    const { createRXM, createRXC, parseRXL } = await import("resourcexjs");
 
     const rxl = parseRXL(locator);
     const manifest = createRXM({
@@ -99,7 +98,7 @@ Given(
 );
 
 Given("a linked resource {string}", async function (this: RegistryWorld, locator: string) {
-  const { createRXM, createRXC, parseRXL } = await import("@resourcexjs/core");
+  const { createRXM, createRXC, parseRXL } = await import("resourcexjs");
 
   const rxl = parseRXL(locator);
   const manifest = createRXM({
@@ -121,7 +120,7 @@ Given("a linked resource {string}", async function (this: RegistryWorld, locator
 Given(
   "linked resources:",
   async function (this: RegistryWorld, dataTable: { hashes: () => Array<{ locator: string }> }) {
-    const { createRXM, createRXC, parseRXL } = await import("@resourcexjs/core");
+    const { createRXM, createRXC, parseRXL } = await import("resourcexjs");
     const rows = dataTable.hashes();
 
     for (const row of rows) {
@@ -154,7 +153,7 @@ When("I link the resource", async function (this: RegistryWorld) {
 });
 
 When("I link a resource {string}", async function (this: RegistryWorld, locator: string) {
-  const { createRXM, createRXC, parseRXL } = await import("@resourcexjs/core");
+  const { createRXM, createRXC, parseRXL } = await import("resourcexjs");
 
   const rxl = parseRXL(locator);
   const manifest = createRXM({
@@ -257,7 +256,7 @@ Then("the content should be {string}", async function (this: RegistryWorld, expe
 });
 
 Then("it should throw a RegistryError", async function (this: RegistryWorld) {
-  const { RegistryError } = await import("@resourcexjs/registry");
+  const { RegistryError } = await import("resourcexjs");
   assert.ok(this.error, "Error should have been thrown");
   assert.ok(
     this.error instanceof RegistryError,

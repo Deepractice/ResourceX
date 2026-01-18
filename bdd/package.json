@@ -10,8 +10,6 @@
   },
   "devDependencies": {
     "resourcexjs": "workspace:*",
-    "@resourcexjs/core": "workspace:*",
-    "@resourcexjs/registry": "workspace:*",
     "@cucumber/cucumber": "^11.2.0",
     "@types/node": "^24.9.2",
     "tsx": "^4.20.6",

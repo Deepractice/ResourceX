@@ -66,15 +66,15 @@ AI Agents need to manage various resources: prompts, tools, agents, configuratio
 ### Installation
 
 ```bash
-npm install resourcexjs @resourcexjs/registry
+npm install resourcexjs
 # or
-bun add resourcexjs @resourcexjs/registry
+bun add resourcexjs
 ```
 
 ### Basic Usage
 
 ```typescript
-import { createRegistry } from "@resourcexjs/registry";
+import { createRegistry } from "resourcexjs";
 import { parseRXL, createRXM, createRXC } from "resourcexjs";
 
 // Create a registry (default: ~/.resourcex)
@@ -105,6 +105,60 @@ const exists = await registry.exists("localhost/my-prompt.text@1.0.0");
 
 // Delete resource
 await registry.delete("localhost/my-prompt.text@1.0.0");
+```
+
+### Load from Folder
+
+Organize resources in folders and load them easily:
+
+```typescript
+import { loadResource, createRegistry } from "resourcexjs";
+
+// Create a resource folder:
+// my-prompt/
+// ├── resource.json    # Resource metadata
+// └── content          # Resource content
+
+// resource.json format:
+// {
+//   "name": "assistant",
+//   "type": "text",
+//   "version": "1.0.0",
+//   "domain": "localhost"  // optional, defaults to "localhost"
+// }
+
+// Load and link in one step
+const rxr = await loadResource("./my-prompt");
+const registry = createRegistry();
+await registry.link(rxr);
+
+// Now you can resolve it
+const resource = await registry.resolve("localhost/assistant.text@1.0.0");
+```
+
+### Custom Loaders
+
+Support different source formats via custom loaders:
+
+```typescript
+import { loadResource, type ResourceLoader, type RXR } from "resourcexjs";
+
+// Example: ZIP loader
+class ZipLoader implements ResourceLoader {
+  canLoad(source: string): boolean {
+    return source.endsWith(".zip");
+  }
+
+  async load(source: string): Promise<RXR> {
+    // Extract ZIP to temp folder
+    // Use FolderLoader internally
+    // Return RXR
+  }
+}
+
+const rxr = await loadResource("resource.zip", {
+  loader: new ZipLoader(),
+});
 ```
 
 ## Core Concepts
@@ -191,7 +245,7 @@ const rxr: RXR = {
 Resource storage and retrieval:
 
 ```typescript
-import { createRegistry } from "@resourcexjs/registry";
+import { createRegistry } from "resourcexjs";
 
 const registry = createRegistry({
   path: "~/.resourcex", // optional, default
@@ -383,7 +437,7 @@ import {
   ResourceTypeError,
 } from "resourcexjs";
 
-import { RegistryError } from "@resourcexjs/registry";
+import { RegistryError } from "resourcexjs";
 
 import { ARPError, ParseError, TransportError, SemanticError } from "resourcexjs/arp";
 ```

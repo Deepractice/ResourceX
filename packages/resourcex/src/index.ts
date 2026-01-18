@@ -54,7 +54,13 @@ export { createRXC, loadRXC } from "@resourcexjs/core";
 // ============================================
 // RXR - ResourceX Resource
 // ============================================
-export type { RXR, ResourceType, ResourceSerializer, ResourceResolver } from "@resourcexjs/core";
+export type {
+  RXR,
+  ResourceType,
+  ResourceSerializer,
+  ResourceResolver,
+  ResourceLoader,
+} from "@resourcexjs/core";
 
 // ============================================
 // Resource Type System
@@ -62,6 +68,12 @@ export type { RXR, ResourceType, ResourceSerializer, ResourceResolver } from "@r
 export { defineResourceType, getResourceType, clearResourceTypes } from "@resourcexjs/core";
 export { textType, jsonType, binaryType, builtinTypes } from "@resourcexjs/core";
 export { TypeHandlerChain, createTypeHandlerChain } from "@resourcexjs/core";
+
+// ============================================
+// Resource Loading
+// ============================================
+export { loadResource, FolderLoader } from "@resourcexjs/core";
+export type { LoadResourceConfig } from "@resourcexjs/core";
 
 // ============================================
 // Registry

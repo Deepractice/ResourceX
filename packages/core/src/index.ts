@@ -26,7 +26,15 @@ export type { RXC } from "~/content/index.js";
 export { createRXC, loadRXC } from "~/content/index.js";
 
 // Resource (RXR)
-export type { RXR, ResourceType, ResourceSerializer, ResourceResolver } from "~/resource/index.js";
+export type {
+  RXR,
+  ResourceType,
+  ResourceSerializer,
+  ResourceResolver,
+  ResourceLoader,
+} from "~/resource/index.js";
 export { defineResourceType, getResourceType, clearResourceTypes } from "~/resource/index.js";
 export { textType, jsonType, binaryType, builtinTypes } from "~/resource/index.js";
 export { TypeHandlerChain, createTypeHandlerChain } from "~/resource/index.js";
+export { FolderLoader, loadResource } from "~/resource/index.js";
+export type { LoadResourceConfig } from "~/resource/index.js";
