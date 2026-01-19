@@ -1,6 +1,7 @@
-import type { ResourceLoader, RXR } from "./types.js";
+import type { ResourceLoader } from "./types.js";
+import type { RXR } from "@resourcexjs/core";
 import { FolderLoader } from "./FolderLoader.js";
-import { ResourceXError } from "~/errors.js";
+import { ResourceXError } from "@resourcexjs/core";
 
 /**
  * Configuration options for loadResource.

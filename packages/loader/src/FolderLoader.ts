@@ -1,10 +1,8 @@
 import { join } from "node:path";
 import { stat, readFile } from "node:fs/promises";
-import type { ResourceLoader, RXR } from "./types.js";
-import { createRXM } from "~/manifest/index.js";
-import { createRXC } from "~/content/index.js";
-import { parseRXL } from "~/locator/index.js";
-import { ResourceXError } from "~/errors.js";
+import type { ResourceLoader } from "./types.js";
+import type { RXR } from "@resourcexjs/core";
+import { createRXM, createRXC, parseRXL, ResourceXError } from "@resourcexjs/core";
 
 /**
  * Default ResourceLoader implementation for loading resources from folders.

@@ -1,7 +1,6 @@
-import type { ResourceType, ResourceSerializer, ResourceResolver, RXR } from "./types.js";
-import type { RXM } from "~/manifest/types.js";
-import { createRXC } from "~/content/createRXC.js";
-import { parseRXL } from "~/locator/parseRXL.js";
+import type { ResourceType, ResourceSerializer, ResourceResolver } from "./types.js";
+import type { RXR, RXM } from "@resourcexjs/core";
+import { createRXC, parseRXL } from "@resourcexjs/core";
 
 /**
  * Text serializer - stores content as UTF-8 text

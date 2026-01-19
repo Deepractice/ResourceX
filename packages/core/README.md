@@ -1,6 +1,6 @@
 # @resourcexjs/core
 
-Core types and implementations for ResourceX.
+Core data structures for ResourceX.
 
 > **Note**: For most use cases, use the main [`resourcexjs`](https://www.npmjs.com/package/resourcexjs) package. This package is for advanced usage.
 
@@ -14,14 +14,12 @@ bun add @resourcexjs/core
 
 ## What's Inside
 
-Core building blocks for ResourceX:
+Core building blocks - pure data structures:
 
-- **RXL** (Locator) - Parse locator strings
-- **RXM** (Manifest) - Create resource metadata
+- **RXL** (Locator) - Resource locator string parser
+- **RXM** (Manifest) - Resource metadata
 - **RXC** (Content) - Stream-based content
 - **RXR** (Resource) - Complete resource type
-- **ResourceType** - Type system with serializer & resolver
-- **TypeHandlerChain** - Responsibility chain for type handling
 - **Errors** - Error hierarchy
 
 ## API
@@ -43,6 +41,13 @@ rxl.version; // "1.0.0"
 rxl.toString(); // "deepractice.ai/sean/assistant.prompt@1.0.0"
 ```
 
+**Minimal locator:**
+
+```typescript
+parseRXL("name.text@1.0.0");
+// → domain: "localhost", path: undefined, name: "name", type: "text", version: "1.0.0"
+```
+
 ### RXM - Resource Manifest
 
 Create and validate resource metadata:
@@ -56,13 +61,17 @@ const manifest = createRXM({
   name: "assistant",
   type: "prompt",
   version: "1.0.0",
+  description: "Optional description", // optional
+  tags: ["optional", "tags"], // optional
 });
 
 manifest.toLocator(); // → "deepractice.ai/sean/assistant.prompt@1.0.0"
 manifest.toJSON(); // → plain object
 ```
 
-Required fields: domain, name, type, version
+**Required fields**: `name`, `type`, `version`
+
+**Optional fields**: `domain` (default: "localhost"), `path`, `description`, `tags`
 
 ### RXC - Resource Content
 
@@ -87,9 +96,17 @@ const json = await content.json<T>(); // → T
 const stream = content.stream; // → ReadableStream<Uint8Array>
 ```
 
+**Important**: Content can only be consumed once!
+
+```typescript
+const content = createRXC("Hello");
+await content.text(); // ✅ "Hello"
+await content.text(); // ❌ ContentError: already consumed
+```
+
 ### RXR - Resource
 
-Complete resource object (pure interface, no factory):
+Complete resource object (pure interface):
 
 ```typescript
 import type { RXR } from "@resourcexjs/core";
@@ -101,156 +118,141 @@ interface RXR {
 }
 
 // Create from literals
-const rxr: RXR = {
-  locator: parseRXL("localhost/test.text@1.0.0"),
-  manifest: createRXM({ domain: "localhost", name: "test", type: "text", version: "1.0.0" }),
-  content: createRXC("content"),
-};
+const rxr: RXR = { locator, manifest, content };
 ```
 
-### Resource Types
-
-Built-in types:
-
-```typescript
-import { textType, jsonType, binaryType, builtinTypes } from "@resourcexjs/core";
-
-console.log(textType.name); // "text"
-console.log(textType.aliases); // ["txt", "plaintext"]
-console.log(jsonType.aliases); // ["config", "manifest"]
-console.log(binaryType.aliases); // ["bin", "blob", "raw"]
-```
-
-Define custom types:
-
-```typescript
-import { defineResourceType } from "@resourcexjs/core";
-
-defineResourceType({
-  name: "prompt",
-  aliases: ["deepractice-prompt"],
-  description: "AI Prompt template",
-  serializer: {
-    async serialize(rxr: RXR): Promise<Buffer> {
-      // Convert RXR to Buffer for storage
-      const text = await rxr.content.text();
-      return Buffer.from(JSON.stringify({ template: text }));
-    },
-    async deserialize(data: Buffer, manifest: RXM): Promise<RXR> {
-      // Convert Buffer back to RXR
-      const obj = JSON.parse(data.toString());
-      return {
-        locator: parseRXL(manifest.toLocator()),
-        manifest,
-        content: createRXC(obj.template),
-      };
-    },
-  },
-  resolver: {
-    async resolve(rxr: RXR): Promise<PromptTemplate> {
-      // Convert RXR to usable object
-      return {
-        template: await rxr.content.text(),
-        compile: (vars) => {
-          /* ... */
-        },
-      };
-    },
-  },
-});
-```
-
-Query registered types:
-
-```typescript
-import { getResourceType, clearResourceTypes } from "@resourcexjs/core";
-
-const type = getResourceType("text");
-const type = getResourceType("txt"); // Works with aliases
-
-clearResourceTypes(); // For testing
-```
-
-### TypeHandlerChain
-
-Responsibility chain for type handling (used internally by Registry):
-
-```typescript
-import { createTypeHandlerChain, builtinTypes } from "@resourcexjs/core";
-
-// Create with initial types
-const chain = createTypeHandlerChain(builtinTypes);
-
-// Or start empty
-const chain = createTypeHandlerChain();
-chain.register(customType);
-chain.registerAll([type1, type2]);
-
-// Use the chain
-chain.canHandle("text"); // → boolean
-chain.getHandler("txt"); // → ResourceType (via alias)
-
-await chain.serialize(rxr); // → Buffer
-await chain.deserialize(buffer, manifest); // → RXR
-await chain.resolve<T>(rxr); // → T (usable object)
-```
+RXR is a pure DTO (Data Transfer Object) - no factory function needed.
 
 ## Error Handling
 
 ```typescript
-import {
-  ResourceXError,
-  LocatorError,
-  ManifestError,
-  ContentError,
-  ResourceTypeError,
-} from "@resourcexjs/core";
+import { ResourceXError, LocatorError, ManifestError, ContentError } from "@resourcexjs/core";
 
 try {
-  const rxl = parseRXL("invalid");
+  parseRXL("invalid-locator");
 } catch (error) {
   if (error instanceof LocatorError) {
-    console.error("Invalid locator:", error.message);
+    console.error("Invalid locator format");
+  }
+}
+
+try {
+  createRXM({ name: "test" }); // Missing required fields
+} catch (error) {
+  if (error instanceof ManifestError) {
+    console.error("Invalid manifest");
+  }
+}
+
+try {
+  await content.text();
+  await content.text(); // Second consumption
+} catch (error) {
+  if (error instanceof ContentError) {
+    console.error("Content already consumed");
   }
 }
 ```
 
-Error hierarchy:
+### Error Hierarchy
 
 ```
-Error
-└── ResourceXError
-    ├── LocatorError (RXL parsing)
-    ├── ManifestError (RXM validation)
-    ├── ContentError (RXC consumption)
-    └── ResourceTypeError (Type not found/duplicate)
+ResourceXError (base)
+├── LocatorError
+├── ManifestError
+└── ContentError
 ```
 
-## Complete Exports
+## Examples
+
+### Complete Resource Creation
 
 ```typescript
-// Errors
-export { ResourceXError, LocatorError, ManifestError, ContentError, ResourceTypeError };
+import { parseRXL, createRXM, createRXC } from "@resourcexjs/core";
+import type { RXR } from "@resourcexjs/core";
 
-// RXL (Locator)
-export { parseRXL };
-export type { RXL };
+// Create manifest
+const manifest = createRXM({
+  domain: "deepractice.ai",
+  name: "assistant",
+  type: "prompt",
+  version: "1.0.0",
+});
 
-// RXM (Manifest)
-export { createRXM };
-export type { RXM, ManifestData };
+// Create locator from manifest
+const locator = parseRXL(manifest.toLocator());
 
-// RXC (Content)
-export { createRXC, loadRXC };
-export type { RXC };
+// Create content
+const content = createRXC("You are a helpful assistant.");
 
-// RXR (Resource)
-export type { RXR, ResourceType, ResourceSerializer, ResourceResolver };
+// Assemble RXR
+const rxr: RXR = {
+  locator,
+  manifest,
+  content,
+};
+```
 
-// ResourceType
-export { defineResourceType, getResourceType, clearResourceTypes };
-export { textType, jsonType, binaryType, builtinTypes };
-export { TypeHandlerChain, createTypeHandlerChain };
+### Load Content from File
+
+```typescript
+import { loadRXC } from "@resourcexjs/core";
+
+// Load from local file
+const content = await loadRXC("./prompt.txt");
+const text = await content.text();
+
+// Load from URL
+const remoteContent = await loadRXC("https://example.com/prompt.txt");
+const remoteText = await remoteContent.text();
+```
+
+### Manifest Serialization
+
+```typescript
+const manifest = createRXM({
+  name: "assistant",
+  type: "prompt",
+  version: "1.0.0",
+});
+
+// To JSON (for storage)
+const json = manifest.toJSON();
+/*
+{
+  "domain": "localhost",
+  "name": "assistant",
+  "type": "prompt",
+  "version": "1.0.0"
+}
+*/
+
+// To locator string
+const locator = manifest.toLocator();
+// "localhost/assistant.prompt@1.0.0"
+```
+
+## Related Packages
+
+This package provides only data structures. For full functionality:
+
+- **[@resourcexjs/type](../type)** - Type system and handlers
+- **[@resourcexjs/loader](../loader)** - Resource loading
+- **[@resourcexjs/registry](../registry)** - Storage and retrieval
+- **[@resourcexjs/arp](../arp)** - Low-level I/O
+- **[resourcexjs](../resourcex)** - Main package (all-in-one)
+
+## Type Safety
+
+All types are fully typed with TypeScript:
+
+```typescript
+import type { RXL, RXM, RXC, RXR } from "@resourcexjs/core";
+
+const locator: RXL = parseRXL("...");
+const manifest: RXM = createRXM({ ... });
+const content: RXC = createRXC("...");
+const resource: RXR = { locator, manifest, content };
 ```
 
 ## License

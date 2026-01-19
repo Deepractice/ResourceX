@@ -1,13 +1,8 @@
 import { homedir } from "node:os";
 import type { Registry, RegistryConfig } from "./types.js";
 import type { RXR, RXL } from "@resourcexjs/core";
-import {
-  parseRXL,
-  createRXM,
-  builtinTypes,
-  createTypeHandlerChain,
-  TypeHandlerChain,
-} from "@resourcexjs/core";
+import { parseRXL, createRXM } from "@resourcexjs/core";
+import { globalTypeHandlerChain } from "@resourcexjs/type";
 import { createARP } from "@resourcexjs/arp";
 import type { ARP } from "@resourcexjs/arp";
 import { RegistryError } from "./errors.js";
@@ -17,19 +12,22 @@ const DEFAULT_PATH = `${homedir()}/.resourcex`;
 /**
  * ARP-based registry implementation.
  * Uses ARP protocol for atomic I/O operations.
- * Uses TypeHandlerChain for serialization/deserialization.
+ * Uses global TypeHandlerChain for serialization/deserialization.
  */
 export class ARPRegistry implements Registry {
   private readonly arp: ARP;
   private readonly basePath: string;
-  private readonly typeChain: TypeHandlerChain;
 
   constructor(config?: RegistryConfig) {
     this.arp = createARP();
     this.basePath = config?.path ?? DEFAULT_PATH;
 
-    // Create type handler chain with builtin types + custom types
-    this.typeChain = createTypeHandlerChain([...builtinTypes, ...(config?.types ?? [])]);
+    // Register extension types to global chain
+    if (config?.types) {
+      for (const type of config.types) {
+        globalTypeHandlerChain.register(type);
+      }
+    }
   }
 
   /**
@@ -64,10 +62,10 @@ export class ARPRegistry implements Registry {
     const manifestArl = this.arp.parse(manifestUrl);
     await manifestArl.deposit(JSON.stringify(resource.manifest.toJSON(), null, 2));
 
-    // Serialize content using type handler chain
+    // Serialize content using global type handler chain
     const contentUrl = this.buildUrl(locator, "content").replace("arp:text:", "arp:binary:");
     const contentArl = this.arp.parse(contentUrl);
-    const serialized = await this.typeChain.serialize(resource);
+    const serialized = await globalTypeHandlerChain.serialize(resource);
     await contentArl.deposit(serialized);
   }
 
@@ -90,8 +88,8 @@ export class ARPRegistry implements Registry {
     const contentResult = await contentArl.resolve();
     const data = contentResult.content as Buffer;
 
-    // Deserialize using type handler chain
-    return this.typeChain.deserialize(data, manifest);
+    // Deserialize using global type handler chain
+    return globalTypeHandlerChain.deserialize(data, manifest);
   }
 
   async exists(locator: string): Promise<boolean> {

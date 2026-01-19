@@ -1,13 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { join } from "node:path";
 import { mkdir, writeFile, rm } from "node:fs/promises";
-import {
-  loadResource,
-  FolderLoader,
-  ResourceXError,
-  type ResourceLoader,
-  type RXR,
-} from "../../../src/index.js";
+import { loadResource, FolderLoader, type ResourceLoader } from "../../src/index.js";
+import { ResourceXError } from "@resourcexjs/core";
+import type { RXR } from "@resourcexjs/core";
 
 const TEST_DIR = join(process.cwd(), ".test-load-resource");
 
@@ -198,7 +194,7 @@ describe("loadResource", () => {
         }
 
         async load(source: string): Promise<RXR> {
-          const { createRXM, createRXC, parseRXL } = await import("../../../src/index.js");
+          const { createRXM, createRXC, parseRXL } = await import("@resourcexjs/core");
           const manifest = createRXM({
             domain: "mock.com",
             name: source,

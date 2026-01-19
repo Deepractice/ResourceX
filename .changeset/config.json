@@ -2,7 +2,16 @@
   "$schema": "https://unpkg.com/@changesets/config@3.0.0/schema.json",
   "changelog": "@changesets/cli/changelog",
   "commit": false,
-  "fixed": [["resourcexjs", "@resourcexjs/core", "@resourcexjs/arp", "@resourcexjs/registry"]],
+  "fixed": [
+    [
+      "resourcexjs",
+      "@resourcexjs/core",
+      "@resourcexjs/type",
+      "@resourcexjs/loader",
+      "@resourcexjs/arp",
+      "@resourcexjs/registry"
+    ]
+  ],
   "linked": [],
   "access": "public",
   "baseBranch": "main",
