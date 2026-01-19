@@ -1,21 +1,18 @@
 {
-  "name": "resourcexjs",
+  "name": "@resourcexjs/type",
   "version": "0.9.0",
-  "description": "ResourceX - AI Resource Management Protocol",
+  "description": "ResourceX Type System - Type handlers and serialization",
   "keywords": [
     "resourcex",
-    "arp",
-    "agent",
     "resource",
-    "protocol",
-    "ai",
-    "npm-for-ai"
+    "type",
+    "serialization"
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Deepractice/ResourceX.git"
+    "url": "git+https://github.com/Deepractice/ResourceX.git",
+    "directory": "packages/type"
   },
-  "homepage": "https://github.com/Deepractice/ResourceX",
   "license": "MIT",
   "engines": {
     "node": ">=22.0.0"
@@ -27,27 +24,21 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
-    },
-    "./arp": {
-      "types": "./dist/arp.d.ts",
-      "default": "./dist/arp.js"
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md"
   ],
   "scripts": {
     "build": "bun run build.ts",
+    "test": "bun test",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@resourcexjs/arp": "workspace:*",
-    "@resourcexjs/core": "workspace:*",
-    "@resourcexjs/loader": "workspace:*",
-    "@resourcexjs/registry": "workspace:*",
-    "@resourcexjs/type": "workspace:*"
+    "@resourcexjs/core": "workspace:*"
   },
   "devDependencies": {},
   "publishConfig": {

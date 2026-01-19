@@ -1,4 +1,5 @@
-import type { RXR, RXL, ResourceType } from "@resourcexjs/core";
+import type { RXR, RXL } from "@resourcexjs/core";
+import type { ResourceType } from "@resourcexjs/type";
 
 /**
  * Registry configuration options.

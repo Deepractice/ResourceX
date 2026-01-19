@@ -28,8 +28,6 @@
       "version": "0.1.0",
       "devDependencies": {
         "@cucumber/cucumber": "^11.2.0",
-        "@resourcexjs/core": "workspace:*",
-        "@resourcexjs/registry": "workspace:*",
         "@types/node": "^24.9.2",
         "resourcexjs": "workspace:*",
         "tsx": "^4.20.6",
@@ -38,30 +36,47 @@
     },
     "packages/arp": {
       "name": "@resourcexjs/arp",
-      "version": "0.7.0",
+      "version": "0.9.0",
     },
     "packages/core": {
       "name": "@resourcexjs/core",
-      "version": "0.7.0",
+      "version": "0.9.0",
       "dependencies": {
         "@resourcexjs/arp": "workspace:*",
+      },
+    },
+    "packages/loader": {
+      "name": "@resourcexjs/loader",
+      "version": "0.9.0",
+      "dependencies": {
+        "@resourcexjs/core": "workspace:*",
       },
     },
     "packages/registry": {
       "name": "@resourcexjs/registry",
-      "version": "0.7.0",
+      "version": "0.9.0",
       "dependencies": {
         "@resourcexjs/arp": "workspace:*",
         "@resourcexjs/core": "workspace:*",
+        "@resourcexjs/type": "workspace:*",
       },
     },
     "packages/resourcex": {
       "name": "resourcexjs",
-      "version": "0.7.0",
+      "version": "0.9.0",
       "dependencies": {
         "@resourcexjs/arp": "workspace:*",
         "@resourcexjs/core": "workspace:*",
+        "@resourcexjs/loader": "workspace:*",
         "@resourcexjs/registry": "workspace:*",
+        "@resourcexjs/type": "workspace:*",
+      },
+    },
+    "packages/type": {
+      "name": "@resourcexjs/type",
+      "version": "0.9.0",
+      "dependencies": {
+        "@resourcexjs/core": "workspace:*",
       },
     },
   },
@@ -328,7 +343,11 @@
 
     "@resourcexjs/core": ["@resourcexjs/core@workspace:packages/core"],
 
+    "@resourcexjs/loader": ["@resourcexjs/loader@workspace:packages/loader"],
+
     "@resourcexjs/registry": ["@resourcexjs/registry@workspace:packages/registry"],
+
+    "@resourcexjs/type": ["@resourcexjs/type@workspace:packages/type"],
 
     "@teppeis/multimaps": ["@teppeis/multimaps@3.0.0", "", {}, "sha512-ID7fosbc50TbT0MK0EG12O+gAP3W3Aa/Pz4DaTtQtEvlc9Odaqi0de+xuZ7Li2GtK4HzEX7IuRWS/JmZLksR3Q=="],
 
