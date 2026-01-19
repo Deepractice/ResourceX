@@ -41,7 +41,8 @@ describe("loadResource", () => {
       expect(rxr.manifest.type).toBe("text");
       expect(rxr.manifest.version).toBe("1.0.0");
       expect(rxr.locator.toString()).toBe("localhost/test-resource.text@1.0.0");
-      expect(await rxr.content.text()).toBe("Hello, World!");
+      const contentBuffer = await rxr.content.file("content");
+      expect(contentBuffer.toString()).toBe("Hello, World!");
     });
 
     it("loads resource with custom domain", async () => {
@@ -98,7 +99,7 @@ describe("loadResource", () => {
       await expect(loadResource(resourceDir)).rejects.toThrow("Cannot load resource from");
     });
 
-    it("throws error if content is missing", async () => {
+    it("throws error if no content files exist", async () => {
       const resourceDir = join(TEST_DIR, "no-content");
       await mkdir(resourceDir, { recursive: true });
       await writeFile(
@@ -111,7 +112,7 @@ describe("loadResource", () => {
       );
 
       await expect(loadResource(resourceDir)).rejects.toThrow(ResourceXError);
-      await expect(loadResource(resourceDir)).rejects.toThrow("Cannot load resource from");
+      await expect(loadResource(resourceDir)).rejects.toThrow("No content files found");
     });
 
     it("throws error if resource.json has invalid JSON", async () => {
@@ -184,6 +185,54 @@ describe("loadResource", () => {
       await expect(loadResource(filePath)).rejects.toThrow(ResourceXError);
       await expect(loadResource(filePath)).rejects.toThrow("Cannot load resource from");
     });
+
+    it("loads resource with multiple files", async () => {
+      const resourceDir = join(TEST_DIR, "multi-file");
+      await mkdir(resourceDir, { recursive: true });
+
+      await writeFile(
+        join(resourceDir, "resource.json"),
+        JSON.stringify({
+          name: "multi",
+          type: "text",
+          version: "1.0.0",
+        })
+      );
+
+      await writeFile(join(resourceDir, "index.ts"), "export default 1");
+      await writeFile(join(resourceDir, "styles.css"), "body {}");
+
+      const rxr = await loadResource(resourceDir);
+
+      const files = await rxr.content.files();
+      expect(files.size).toBe(2);
+      expect(files.get("index.ts")?.toString()).toBe("export default 1");
+      expect(files.get("styles.css")?.toString()).toBe("body {}");
+    });
+
+    it("loads resource with nested directory", async () => {
+      const resourceDir = join(TEST_DIR, "nested");
+      await mkdir(join(resourceDir, "src", "utils"), { recursive: true });
+
+      await writeFile(
+        join(resourceDir, "resource.json"),
+        JSON.stringify({
+          name: "nested",
+          type: "text",
+          version: "1.0.0",
+        })
+      );
+
+      await writeFile(join(resourceDir, "src", "index.ts"), "main");
+      await writeFile(join(resourceDir, "src", "utils", "helper.ts"), "helper");
+
+      const rxr = await loadResource(resourceDir);
+
+      const files = await rxr.content.files();
+      expect(files.size).toBe(2);
+      expect(files.get("src/index.ts")?.toString()).toBe("main");
+      expect(files.get("src/utils/helper.ts")?.toString()).toBe("helper");
+    });
   });
 
   describe("with custom loader", () => {
@@ -205,7 +254,7 @@ describe("loadResource", () => {
           return {
             locator: parseRXL(manifest.toLocator()),
             manifest,
-            content: createRXC("mocked content"),
+            content: await createRXC({ content: "mocked content" }),
           };
         }
       }
@@ -214,7 +263,8 @@ describe("loadResource", () => {
 
       expect(rxr.manifest.domain).toBe("mock.com");
       expect(rxr.manifest.name).toBe("any-source");
-      expect(await rxr.content.text()).toBe("mocked content");
+      const contentBuffer = await rxr.content.file("content");
+      expect(contentBuffer.toString()).toBe("mocked content");
     });
 
     it("throws error if custom loader cannot load source", async () => {
@@ -248,11 +298,21 @@ describe("FolderLoader", () => {
   });
 
   describe("canLoad", () => {
-    it("returns true for valid resource folder", async () => {
+    it("returns true for valid resource folder with resource.json", async () => {
       const resourceDir = join(TEST_DIR, "valid-resource");
       await mkdir(resourceDir, { recursive: true });
       await writeFile(join(resourceDir, "resource.json"), "{}");
       await writeFile(join(resourceDir, "content"), "content");
+
+      const loader = new FolderLoader();
+      expect(await loader.canLoad(resourceDir)).toBe(true);
+    });
+
+    it("returns true even without content file (only needs resource.json)", async () => {
+      const resourceDir = join(TEST_DIR, "manifest-only");
+      await mkdir(resourceDir, { recursive: true });
+      await writeFile(join(resourceDir, "resource.json"), "{}");
+      // Note: load() will fail later if no content files exist
 
       const loader = new FolderLoader();
       expect(await loader.canLoad(resourceDir)).toBe(true);
@@ -270,15 +330,6 @@ describe("FolderLoader", () => {
       const resourceDir = join(TEST_DIR, "no-manifest");
       await mkdir(resourceDir, { recursive: true });
       await writeFile(join(resourceDir, "content"), "content");
-
-      const loader = new FolderLoader();
-      expect(await loader.canLoad(resourceDir)).toBe(false);
-    });
-
-    it("returns false if content is missing", async () => {
-      const resourceDir = join(TEST_DIR, "no-content");
-      await mkdir(resourceDir, { recursive: true });
-      await writeFile(join(resourceDir, "resource.json"), "{}");
 
       const loader = new FolderLoader();
       expect(await loader.canLoad(resourceDir)).toBe(false);
@@ -310,8 +361,8 @@ describe("FolderLoader", () => {
       const loader = new FolderLoader();
       const rxr = await loader.load(resourceDir);
 
-      const buffer = await rxr.content.buffer();
-      expect(buffer).toEqual(binaryData);
+      const contentBuffer = await rxr.content.file("content");
+      expect(contentBuffer).toEqual(binaryData);
     });
   });
 });

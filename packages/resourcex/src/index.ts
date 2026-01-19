@@ -43,8 +43,8 @@ export { createRXM } from "@resourcexjs/core";
 // ============================================
 // RXC - ResourceX Content
 // ============================================
-export type { RXC } from "@resourcexjs/core";
-export { createRXC, loadRXC } from "@resourcexjs/core";
+export type { RXC, RXCInput } from "@resourcexjs/core";
+export { createRXC } from "@resourcexjs/core";
 
 // ============================================
 // RXR - ResourceX Resource

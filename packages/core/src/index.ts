@@ -16,8 +16,8 @@ export type { RXM, ManifestData } from "~/manifest/index.js";
 export { createRXM } from "~/manifest/index.js";
 
 // Content (RXC)
-export type { RXC } from "~/content/index.js";
-export { createRXC, loadRXC } from "~/content/index.js";
+export type { RXC, RXCInput } from "~/content/index.js";
+export { createRXC } from "~/content/index.js";
 
 // Resource (RXR)
 export type { RXR } from "~/resource/index.js";
