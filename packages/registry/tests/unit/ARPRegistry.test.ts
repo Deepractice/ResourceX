@@ -7,7 +7,7 @@ import type { RXR } from "@resourcexjs/core";
 
 const TEST_DIR = join(process.cwd(), ".test-registry");
 
-function createTestRXR(name: string, content: string): RXR {
+async function createTestRXR(name: string, content: string): Promise<RXR> {
   const manifest = createRXM({
     domain: "localhost",
     name,
@@ -18,7 +18,7 @@ function createTestRXR(name: string, content: string): RXR {
   return {
     locator: parseRXL(manifest.toLocator()),
     manifest,
-    content: createRXC(content),
+    content: await createRXC({ content }),
   };
 }
 
@@ -34,7 +34,7 @@ describe("ARPRegistry", () => {
   describe("link", () => {
     it("links a resource to local registry", async () => {
       const registry = createRegistry({ path: TEST_DIR });
-      const rxr = createTestRXR("test-prompt", "Hello, {{name}}!");
+      const rxr = await createTestRXR("test-prompt", "Hello, {{name}}!");
 
       await registry.link(rxr);
 
@@ -46,7 +46,7 @@ describe("ARPRegistry", () => {
   describe("resolve", () => {
     it("resolves a linked resource", async () => {
       const registry = createRegistry({ path: TEST_DIR });
-      const rxr = createTestRXR("hello", "Hello World!");
+      const rxr = await createTestRXR("hello", "Hello World!");
 
       await registry.link(rxr);
 
@@ -54,7 +54,8 @@ describe("ARPRegistry", () => {
 
       expect(resolved.manifest.name).toBe("hello");
       expect(resolved.manifest.type).toBe("text");
-      expect(await resolved.content.text()).toBe("Hello World!");
+      const contentBuffer = await resolved.content.file("content");
+      expect(contentBuffer.toString()).toBe("Hello World!");
     });
 
     it("throws error for non-existent resource", async () => {
@@ -70,7 +71,7 @@ describe("ARPRegistry", () => {
   describe("exists", () => {
     it("returns true for existing resource", async () => {
       const registry = createRegistry({ path: TEST_DIR });
-      const rxr = createTestRXR("exists-test", "content");
+      const rxr = await createTestRXR("exists-test", "content");
 
       await registry.link(rxr);
 
@@ -89,7 +90,7 @@ describe("ARPRegistry", () => {
   describe("delete", () => {
     it("deletes a linked resource", async () => {
       const registry = createRegistry({ path: TEST_DIR });
-      const rxr = createTestRXR("to-delete", "content");
+      const rxr = await createTestRXR("to-delete", "content");
 
       await registry.link(rxr);
       expect(await registry.exists("localhost/to-delete.text@1.0.0")).toBe(true);
@@ -111,13 +112,14 @@ describe("ARPRegistry", () => {
       const rxr: RXR = {
         locator: parseRXL(manifest.toLocator()),
         manifest,
-        content: createRXC("Hello via alias!"),
+        content: await createRXC({ content: "Hello via alias!" }),
       };
 
       await registry.link(rxr);
 
       const resolved = await registry.resolve("localhost/alias-test.txt@1.0.0");
-      expect(await resolved.content.text()).toBe("Hello via alias!");
+      const contentBuffer = await resolved.content.file("content");
+      expect(contentBuffer.toString()).toBe("Hello via alias!");
     });
 
     it("supports config as alias for json", async () => {
@@ -131,13 +133,14 @@ describe("ARPRegistry", () => {
       const rxr: RXR = {
         locator: parseRXL(manifest.toLocator()),
         manifest,
-        content: createRXC('{"key": "value"}'),
+        content: await createRXC({ content: '{"key": "value"}' }),
       };
 
       await registry.link(rxr);
 
       const resolved = await registry.resolve("localhost/config-test.config@1.0.0");
-      const json = await resolved.content.json<{ key: string }>();
+      const contentBuffer = await resolved.content.file("content");
+      const json = JSON.parse(contentBuffer.toString());
       expect(json.key).toBe("value");
     });
 
@@ -153,14 +156,14 @@ describe("ARPRegistry", () => {
       const rxr: RXR = {
         locator: parseRXL(manifest.toLocator()),
         manifest,
-        content: createRXC(binaryData),
+        content: await createRXC({ content: binaryData }),
       };
 
       await registry.link(rxr);
 
       const resolved = await registry.resolve("localhost/binary-test.bin@1.0.0");
-      const buffer = await resolved.content.buffer();
-      expect(buffer).toEqual(binaryData);
+      const contentBuffer = await resolved.content.file("content");
+      expect(contentBuffer).toEqual(binaryData);
     });
   });
 });

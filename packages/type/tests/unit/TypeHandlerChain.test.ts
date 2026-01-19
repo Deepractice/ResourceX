@@ -115,12 +115,14 @@ describe("TypeHandlerChain (global singleton)", () => {
       const rxr: RXR = {
         locator: parseRXL(manifest.toLocator()),
         manifest,
-        content: createRXC("Hello, World!"),
+        content: await createRXC({ content: "Hello, World!" }),
       };
 
       const buffer = await globalTypeHandlerChain.serialize(rxr);
 
-      expect(buffer.toString("utf-8")).toBe("Hello, World!");
+      // Buffer is tar.gz format, check it's valid gzip
+      expect(buffer[0]).toBe(0x1f);
+      expect(buffer[1]).toBe(0x8b);
     });
 
     it("serializes json resource", async () => {
@@ -133,13 +135,14 @@ describe("TypeHandlerChain (global singleton)", () => {
       const rxr: RXR = {
         locator: parseRXL(manifest.toLocator()),
         manifest,
-        content: createRXC('{"key": "value"}'),
+        content: await createRXC({ content: '{"key": "value"}' }),
       };
 
       const buffer = await globalTypeHandlerChain.serialize(rxr);
-      const json = JSON.parse(buffer.toString("utf-8"));
 
-      expect(json.key).toBe("value");
+      // Buffer is tar.gz format
+      expect(buffer[0]).toBe(0x1f);
+      expect(buffer[1]).toBe(0x8b);
     });
 
     it("throws error for unsupported type", async () => {
@@ -152,7 +155,7 @@ describe("TypeHandlerChain (global singleton)", () => {
       const rxr: RXR = {
         locator: parseRXL(manifest.toLocator()),
         manifest,
-        content: createRXC("test"),
+        content: await createRXC({ content: "test" }),
       };
 
       await expect(globalTypeHandlerChain.serialize(rxr)).rejects.toThrow(ResourceTypeError);
@@ -170,11 +173,14 @@ describe("TypeHandlerChain (global singleton)", () => {
         type: "text",
         version: "1.0.0",
       });
-      const data = Buffer.from("Hello, World!", "utf-8");
+      // Create a proper tar.gz buffer
+      const originalRxc = await createRXC({ content: "Hello, World!" });
+      const data = await originalRxc.buffer();
 
       const rxr = await globalTypeHandlerChain.deserialize(data, manifest);
 
-      expect(await rxr.content.text()).toBe("Hello, World!");
+      const contentBuffer = await rxr.content.file("content");
+      expect(contentBuffer.toString()).toBe("Hello, World!");
     });
 
     it("deserializes using alias", async () => {
@@ -184,11 +190,13 @@ describe("TypeHandlerChain (global singleton)", () => {
         type: "txt", // Using alias
         version: "1.0.0",
       });
-      const data = Buffer.from("Via alias", "utf-8");
+      const originalRxc = await createRXC({ content: "Via alias" });
+      const data = await originalRxc.buffer();
 
       const rxr = await globalTypeHandlerChain.deserialize(data, manifest);
 
-      expect(await rxr.content.text()).toBe("Via alias");
+      const contentBuffer = await rxr.content.file("content");
+      expect(contentBuffer.toString()).toBe("Via alias");
     });
 
     it("throws error for unsupported type", async () => {
@@ -198,10 +206,12 @@ describe("TypeHandlerChain (global singleton)", () => {
         type: "unknown",
         version: "1.0.0",
       });
+      const originalRxc = await createRXC({ content: "test" });
+      const data = await originalRxc.buffer();
 
-      await expect(
-        globalTypeHandlerChain.deserialize(Buffer.from("test"), manifest)
-      ).rejects.toThrow(ResourceTypeError);
+      await expect(globalTypeHandlerChain.deserialize(data, manifest)).rejects.toThrow(
+        ResourceTypeError
+      );
     });
   });
 
@@ -216,7 +226,7 @@ describe("TypeHandlerChain (global singleton)", () => {
       const rxr: RXR = {
         locator: parseRXL(manifest.toLocator()),
         manifest,
-        content: createRXC("Hello"),
+        content: await createRXC({ content: "Hello" }),
       };
 
       const result = await globalTypeHandlerChain.resolve<string>(rxr);
@@ -234,7 +244,7 @@ describe("TypeHandlerChain (global singleton)", () => {
       const rxr: RXR = {
         locator: parseRXL(manifest.toLocator()),
         manifest,
-        content: createRXC('{"key": "value"}'),
+        content: await createRXC({ content: '{"key": "value"}' }),
       };
 
       const result = await globalTypeHandlerChain.resolve<{ key: string }>(rxr);
@@ -252,7 +262,7 @@ describe("TypeHandlerChain (global singleton)", () => {
       const rxr: RXR = {
         locator: parseRXL(manifest.toLocator()),
         manifest,
-        content: createRXC("test"),
+        content: await createRXC({ content: "test" }),
       };
 
       await expect(globalTypeHandlerChain.resolve(rxr)).rejects.toThrow(ResourceTypeError);

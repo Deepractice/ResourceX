@@ -81,13 +81,19 @@ createRXM({ domain, path?, name, type, version })
 // → { domain, path, name, type, version, toLocator(), toJSON() }
 ```
 
-**RXC (Content)** - Stream-based content (consumed once)
+**RXC (Content)** - Archive-based content (tar.gz internally)
 
 ```typescript
-createRXC(data: string | Buffer | ReadableStream)
-loadRXC(source: string)  // file path or URL
+// Create from files
+await createRXC({ content: "Hello" })                    // single file
+await createRXC({ 'index.ts': '...', 'styles.css': '...' }) // multi-file
+await createRXC({ archive: tarGzBuffer })                // from existing archive
 
-// Methods: text(), buffer(), json(), stream
+// Methods
+rxc.file(path): Promise<Buffer>        // read single file
+rxc.files(): Promise<Map<string, Buffer>> // read all files
+rxc.buffer(): Promise<Buffer>          // raw tar.gz buffer
+rxc.stream: ReadableStream             // tar.gz stream
 ```
 
 **RXR (Resource)** - Complete resource (pure DTO)
@@ -163,7 +169,7 @@ interface Registry {
     └── {path}/
         └── {name}.{type}@{version}/
             ├── manifest.json    # RXM as JSON
-            └── content          # RXC serialized by type's serializer
+            └── content          # RXC as tar.gz archive
 ```
 
 ### Resolution Flow
@@ -249,14 +255,22 @@ class ARPRegistry implements Registry {
 
 This allows swapping storage implementations without changing serialization logic.
 
-### Stream-based Content
+### Archive-based Content
 
-RXC can only be consumed once (like fetch Response):
+RXC stores content as tar.gz archive internally, supporting single or multi-file resources:
 
 ```typescript
-const content = createRXC("Hello");
-await content.text(); // ✅ "Hello"
-await content.text(); // ❌ Throws ContentError: already consumed
+// Single file resource
+const content = await createRXC({ content: "Hello" });
+const buffer = await content.file("content"); // ✅ Buffer
+buffer.toString(); // "Hello"
+
+// Multi-file resource
+const content = await createRXC({
+  "src/index.ts": "main code",
+  "src/utils.ts": "helper code",
+});
+const files = await content.files(); // Map<string, Buffer>
 ```
 
 ### Type Aliases
@@ -286,8 +300,8 @@ parseRXL(locator: string): RXL
 createRXM(data: ManifestData): RXM
 
 // Content
-createRXC(data: string | Buffer | ReadableStream): RXC
-loadRXC(source: string): Promise<RXC>
+createRXC(files: Record<string, Buffer | string>): Promise<RXC>
+createRXC({ archive: Buffer }): Promise<RXC>
 
 // ResourceType
 defineResourceType<T>(config: ResourceType<T>): ResourceType<T>

@@ -36,25 +36,26 @@
     },
     "packages/arp": {
       "name": "@resourcexjs/arp",
-      "version": "0.9.0",
+      "version": "1.0.0",
     },
     "packages/core": {
       "name": "@resourcexjs/core",
-      "version": "0.9.0",
+      "version": "1.0.0",
       "dependencies": {
         "@resourcexjs/arp": "workspace:*",
+        "modern-tar": "^0.7.3",
       },
     },
     "packages/loader": {
       "name": "@resourcexjs/loader",
-      "version": "0.9.0",
+      "version": "1.0.0",
       "dependencies": {
         "@resourcexjs/core": "workspace:*",
       },
     },
     "packages/registry": {
       "name": "@resourcexjs/registry",
-      "version": "0.9.0",
+      "version": "1.0.0",
       "dependencies": {
         "@resourcexjs/arp": "workspace:*",
         "@resourcexjs/core": "workspace:*",
@@ -63,7 +64,7 @@
     },
     "packages/resourcex": {
       "name": "resourcexjs",
-      "version": "0.9.0",
+      "version": "1.0.0",
       "dependencies": {
         "@resourcexjs/arp": "workspace:*",
         "@resourcexjs/core": "workspace:*",
@@ -74,7 +75,7 @@
     },
     "packages/type": {
       "name": "@resourcexjs/type",
-      "version": "0.9.0",
+      "version": "1.0.0",
       "dependencies": {
         "@resourcexjs/core": "workspace:*",
       },
@@ -718,6 +719,8 @@
     "minipass": ["minipass@7.1.2", "", {}, "sha512-qOOzS1cBTWYF4BH8fVePDBOO9iptMnGUEZwNc/cMWnTV2nVLZ7VoNWEPHkYczZA0pdoA7dl6e7FL659nX9S2aw=="],
 
     "mkdirp": ["mkdirp@2.1.6", "", { "bin": { "mkdirp": "dist/cjs/src/bin.js" } }, "sha512-+hEnITedc8LAtIP9u3HJDFIdcLV2vXP33sqLLIzkv1Db1zO/1OxbvYf0Y1OC/S/Qo5dxHXepofhmxL02PsKe+A=="],
+
+    "modern-tar": ["modern-tar@0.7.3", "", {}, "sha512-4W79zekKGyYU4JXVmB78DOscMFaJth2gGhgfTl2alWE4rNe3nf4N2pqenQ0rEtIewrnD79M687Ouba3YGTLOvg=="],
 
     "mri": ["mri@1.2.0", "", {}, "sha512-tzzskb3bG8LvYGFF/mDTpq3jpI6Q9wc3LEmBaghu+DdCssd1FakN7Bc0hVNmEyGq1bq3RgfkCb3cmQLpNPOroA=="],
 

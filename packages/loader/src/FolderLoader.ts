@@ -1,5 +1,5 @@
-import { join } from "node:path";
-import { stat, readFile } from "node:fs/promises";
+import { join, relative } from "node:path";
+import { stat, readFile, readdir } from "node:fs/promises";
 import type { ResourceLoader } from "./types.js";
 import type { RXR } from "@resourcexjs/core";
 import { createRXM, createRXC, parseRXL, ResourceXError } from "@resourcexjs/core";
@@ -11,7 +11,7 @@ import { createRXM, createRXC, parseRXL, ResourceXError } from "@resourcexjs/cor
  * ```
  * folder/
  * ├── resource.json    # Resource metadata (required)
- * └── content          # Resource content (required)
+ * └── ...              # Any other files/directories (content)
  * ```
  *
  * resource.json format:
@@ -24,6 +24,8 @@ import { createRXM, createRXC, parseRXL, ResourceXError } from "@resourcexjs/cor
  *   "path": "optional/path"       // optional
  * }
  * ```
+ *
+ * All files in the folder (except resource.json) will be packaged into the RXC.
  */
 export class FolderLoader implements ResourceLoader {
   async canLoad(source: string): Promise<boolean> {
@@ -33,14 +35,11 @@ export class FolderLoader implements ResourceLoader {
         return false;
       }
 
-      // Check if required files exist
+      // Check if resource.json exists
       const manifestPath = join(source, "resource.json");
-      const contentPath = join(source, "content");
-
       const manifestStats = await stat(manifestPath);
-      const contentStats = await stat(contentPath);
 
-      return manifestStats.isFile() && contentStats.isFile();
+      return manifestStats.isFile();
     } catch {
       return false;
     }
@@ -59,7 +58,7 @@ export class FolderLoader implements ResourceLoader {
     }
 
     // 2. Parse JSON
-    let manifestData: any;
+    let manifestData: Record<string, unknown>;
     try {
       manifestData = JSON.parse(manifestJson);
     } catch (error) {
@@ -81,26 +80,22 @@ export class FolderLoader implements ResourceLoader {
 
     // 4. Create RXM with defaults
     const manifest = createRXM({
-      domain: manifestData.domain ?? "localhost",
-      path: manifestData.path,
-      name: manifestData.name,
-      type: manifestData.type,
-      version: manifestData.version,
+      domain: (manifestData.domain as string) ?? "localhost",
+      path: manifestData.path as string | undefined,
+      name: manifestData.name as string,
+      type: manifestData.type as string,
+      version: manifestData.version as string,
     });
 
-    // 5. Read content file
-    const contentPath = join(folderPath, "content");
-    let contentBuffer: Buffer;
-    try {
-      contentBuffer = await readFile(contentPath);
-    } catch (error) {
-      throw new ResourceXError(
-        `Failed to read content file: ${error instanceof Error ? error.message : String(error)}`
-      );
+    // 5. Read all files in folder (except resource.json)
+    const files = await this.readFolderFiles(folderPath);
+
+    if (Object.keys(files).length === 0) {
+      throw new ResourceXError("No content files found in resource folder");
     }
 
     // 6. Create RXC
-    const content = createRXC(contentBuffer);
+    const content = await createRXC(files);
 
     // 7. Assemble RXR
     const locator = parseRXL(manifest.toLocator());
@@ -110,5 +105,36 @@ export class FolderLoader implements ResourceLoader {
       manifest,
       content,
     };
+  }
+
+  /**
+   * Recursively read all files in a folder, returning a map of relative paths to buffers.
+   */
+  private async readFolderFiles(
+    folderPath: string,
+    basePath: string = folderPath
+  ): Promise<Record<string, Buffer>> {
+    const files: Record<string, Buffer> = {};
+    const entries = await readdir(folderPath, { withFileTypes: true });
+
+    for (const entry of entries) {
+      const fullPath = join(folderPath, entry.name);
+      const relativePath = relative(basePath, fullPath);
+
+      // Skip resource.json
+      if (relativePath === "resource.json") {
+        continue;
+      }
+
+      if (entry.isFile()) {
+        files[relativePath] = await readFile(fullPath);
+      } else if (entry.isDirectory()) {
+        // Recursively read subdirectory
+        const subFiles = await this.readFolderFiles(fullPath, basePath);
+        Object.assign(files, subFiles);
+      }
+    }
+
+    return files;
   }
 }

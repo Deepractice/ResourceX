@@ -75,33 +75,35 @@ manifest.toJSON(); // → plain object
 
 ### RXC - Resource Content
 
-Stream-based content (can only be consumed once, like fetch Response):
+Archive-based content (internally tar.gz), supports single or multi-file resources:
 
 ```typescript
-import { createRXC, loadRXC } from "@resourcexjs/core";
+import { createRXC } from "@resourcexjs/core";
 
-// Create from memory
-const content = createRXC("Hello, World!");
-const content = createRXC(Buffer.from([1, 2, 3]));
-const content = createRXC(readableStream);
+// Single file
+const content = await createRXC({ content: "Hello, World!" });
 
-// Load from file or URL (async)
-const content = await loadRXC("./file.txt");
-const content = await loadRXC("https://example.com/data.txt");
+// Multiple files
+const content = await createRXC({
+  "index.ts": "export default 1",
+  "styles.css": "body {}",
+});
 
-// Consume (choose one, can only use once)
-const text = await content.text(); // → string
-const buffer = await content.buffer(); // → Buffer
-const json = await content.json<T>(); // → T
-const stream = content.stream; // → ReadableStream<Uint8Array>
-```
+// Nested directories
+const content = await createRXC({
+  "src/index.ts": "main code",
+  "src/utils/helper.ts": "helper code",
+});
 
-**Important**: Content can only be consumed once!
+// From existing tar.gz archive (for deserialization)
+const content = await createRXC({ archive: tarGzBuffer });
 
-```typescript
-const content = createRXC("Hello");
-await content.text(); // ✅ "Hello"
-await content.text(); // ❌ ContentError: already consumed
+// Read files
+const buffer = await content.file("content"); // → Buffer
+const buffer = await content.file("src/index.ts"); // → Buffer
+const files = await content.files(); // → Map<string, Buffer>
+const archiveBuffer = await content.buffer(); // → raw tar.gz Buffer
+const stream = content.stream; // → ReadableStream (tar.gz)
 ```
 
 ### RXR - Resource
@@ -182,8 +184,8 @@ const manifest = createRXM({
 // Create locator from manifest
 const locator = parseRXL(manifest.toLocator());
 
-// Create content
-const content = createRXC("You are a helpful assistant.");
+// Create content (single file)
+const content = await createRXC({ content: "You are a helpful assistant." });
 
 // Assemble RXR
 const rxr: RXR = {
@@ -193,18 +195,26 @@ const rxr: RXR = {
 };
 ```
 
-### Load Content from File
+### Multi-file Resource
 
 ```typescript
-import { loadRXC } from "@resourcexjs/core";
+import { createRXC } from "@resourcexjs/core";
 
-// Load from local file
-const content = await loadRXC("./prompt.txt");
-const text = await content.text();
+// Create multi-file content
+const content = await createRXC({
+  "prompt.md": "# System Prompt\nYou are...",
+  "config.json": '{"temperature": 0.7}',
+});
 
-// Load from URL
-const remoteContent = await loadRXC("https://example.com/prompt.txt");
-const remoteText = await remoteContent.text();
+// Read individual files
+const promptBuffer = await content.file("prompt.md");
+const configBuffer = await content.file("config.json");
+
+// Read all files
+const allFiles = await content.files();
+for (const [path, buffer] of allFiles) {
+  console.log(path, buffer.toString());
+}
 ```
 
 ### Manifest Serialization

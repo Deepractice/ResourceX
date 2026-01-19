@@ -91,14 +91,15 @@ const manifest = createRXM({
 const rxr = {
   locator: parseRXL(manifest.toLocator()),
   manifest,
-  content: createRXC("You are a helpful assistant."),
+  content: await createRXC({ content: "You are a helpful assistant." }),
 };
 
 await registry.link(rxr);
 
 // Resolve the resource
 const resource = await registry.resolve("localhost/my-prompt.text@1.0.0");
-console.log(await resource.content.text()); // "You are a helpful assistant."
+const contentBuffer = await resource.content.file("content");
+console.log(contentBuffer.toString()); // "You are a helpful assistant."
 
 // Check existence
 const exists = await registry.exists("localhost/my-prompt.text@1.0.0");
@@ -117,7 +118,7 @@ import { loadResource, createRegistry } from "resourcexjs";
 // Create a resource folder:
 // my-prompt/
 // ├── resource.json    # Resource metadata
-// └── content          # Resource content
+// └── content          # Resource content (or any file names)
 
 // resource.json format:
 // {
@@ -201,24 +202,30 @@ console.log(manifest.toJSON()); // Plain object
 
 ### RXC - Resource Content
 
-Stream-based content that can only be consumed once (like fetch Response):
+Archive-based content (internally tar.gz), supports single or multi-file resources:
 
 ```typescript
-import { createRXC, loadRXC } from "resourcexjs";
+import { createRXC } from "resourcexjs";
 
-// From string/Buffer/Stream
-const content = createRXC("Hello, World!");
-console.log(await content.text()); // "Hello, World!"
+// Single file
+const content = await createRXC({ content: "Hello, World!" });
 
-// From file or URL
-const content = await loadRXC("./file.txt");
-const content = await loadRXC("https://example.com/data.txt");
+// Multiple files
+const content = await createRXC({
+  "index.ts": "export default 1",
+  "styles.css": "body {}",
+});
 
-// Available methods
-await content.text(); // → string
-await content.buffer(); // → Buffer
-await content.json<T>(); // → T
-content.stream; // → ReadableStream<Uint8Array>
+// Nested directories
+const content = await createRXC({
+  "src/index.ts": "main code",
+  "src/utils/helper.ts": "helper code",
+});
+
+// Read files
+const buffer = await content.file("content"); // single file
+const files = await content.files(); // Map<string, Buffer>
+const archiveBuffer = await content.buffer(); // raw tar.gz
 ```
 
 ### RXR - Resource
@@ -236,7 +243,7 @@ interface RXR {
 const rxr: RXR = {
   locator: parseRXL("localhost/test.text@1.0.0"),
   manifest: createRXM({ domain: "localhost", name: "test", type: "text", version: "1.0.0" }),
-  content: createRXC("content"),
+  content: await createRXC({ content: "Hello" }),
 };
 ```
 
@@ -288,24 +295,24 @@ defineResourceType({
   description: "AI Prompt template",
   serializer: {
     async serialize(rxr) {
-      // Convert RXR to Buffer
-      return Buffer.from(JSON.stringify({ template: await rxr.content.text() }));
+      // Convert RXR to Buffer (returns tar.gz archive)
+      return rxr.content.buffer();
     },
     async deserialize(data, manifest) {
-      // Convert Buffer to RXR
-      const obj = JSON.parse(data.toString());
+      // Convert Buffer to RXR (data is tar.gz archive)
       return {
         locator: parseRXL(manifest.toLocator()),
         manifest,
-        content: createRXC(obj.template),
+        content: await createRXC({ archive: data }),
       };
     },
   },
   resolver: {
     async resolve(rxr) {
       // Convert RXR to usable object
+      const buffer = await rxr.content.file("content");
       return {
-        template: await rxr.content.text(),
+        template: buffer.toString(),
         compile: (vars) => {
           /* ... */
         },
@@ -377,7 +384,7 @@ Resources are stored in:
 │   └── {path}/
 │       └── {name}.{type}@{version}/
 │           ├── manifest.json    # RXM serialized
-│           └── content          # RXC serialized (via type's serializer)
+│           └── content          # RXC as tar.gz archive
 ```
 
 Example:

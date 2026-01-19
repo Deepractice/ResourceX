@@ -2,38 +2,100 @@ import { describe, it, expect } from "bun:test";
 import { createRXC } from "../../../src/content/index.js";
 
 describe("createRXC", () => {
-  describe("from string", () => {
-    it("creates RXC from string", () => {
-      const rxc = createRXC("Hello, World!");
+  describe("from files record", () => {
+    it("creates RXC from single file", async () => {
+      const rxc = await createRXC({ content: "Hello, World!" });
       expect(rxc).toBeDefined();
     });
 
-    it("returns text content", async () => {
-      const rxc = createRXC("Hello, World!");
-      const text = await rxc.text();
-      expect(text).toBe("Hello, World!");
-    });
-
-    it("returns buffer content", async () => {
-      const rxc = createRXC("Hello, World!");
-      const buffer = await rxc.buffer();
-      expect(Buffer.isBuffer(buffer)).toBe(true);
+    it("returns file content", async () => {
+      const rxc = await createRXC({ content: "Hello, World!" });
+      const buffer = await rxc.file("content");
       expect(buffer.toString()).toBe("Hello, World!");
     });
 
-    it("returns json content", async () => {
-      const rxc = createRXC('{"name": "test"}');
-      const json = await rxc.json<{ name: string }>();
-      expect(json).toEqual({ name: "test" });
+    it("returns all files", async () => {
+      const rxc = await createRXC({
+        "index.ts": "export default 1",
+        "styles.css": "body {}",
+      });
+      const files = await rxc.files();
+      expect(files.size).toBe(2);
+      expect(files.get("index.ts")?.toString()).toBe("export default 1");
+      expect(files.get("styles.css")?.toString()).toBe("body {}");
     });
 
-    it("has stream property", () => {
-      const rxc = createRXC("Hello, World!");
+    it("supports nested paths", async () => {
+      const rxc = await createRXC({
+        "src/index.ts": "main",
+        "src/utils/helper.ts": "helper",
+      });
+      const files = await rxc.files();
+      expect(files.size).toBe(2);
+      expect(files.get("src/index.ts")?.toString()).toBe("main");
+      expect(files.get("src/utils/helper.ts")?.toString()).toBe("helper");
+    });
+
+    it("supports Buffer values", async () => {
+      const data = Buffer.from([0x01, 0x02, 0x03]);
+      const rxc = await createRXC({ content: data });
+      const buffer = await rxc.file("content");
+      expect(buffer).toEqual(data);
+    });
+
+    it("supports Uint8Array values", async () => {
+      const data = new Uint8Array([0x01, 0x02, 0x03]);
+      const rxc = await createRXC({ content: data });
+      const buffer = await rxc.file("content");
+      expect(buffer).toEqual(Buffer.from(data));
+    });
+  });
+
+  describe("from archive buffer", () => {
+    it("creates RXC from existing archive", async () => {
+      // First create an archive
+      const original = await createRXC({ content: "Hello" });
+      const archiveBuffer = await original.buffer();
+
+      // Then restore from archive
+      const restored = await createRXC({ archive: archiveBuffer });
+      const buffer = await restored.file("content");
+      expect(buffer.toString()).toBe("Hello");
+    });
+
+    it("preserves all files when restoring from archive", async () => {
+      const original = await createRXC({
+        "a.txt": "aaa",
+        "b.txt": "bbb",
+      });
+      const archiveBuffer = await original.buffer();
+
+      const restored = await createRXC({ archive: archiveBuffer });
+      const files = await restored.files();
+      expect(files.size).toBe(2);
+      expect(files.get("a.txt")?.toString()).toBe("aaa");
+      expect(files.get("b.txt")?.toString()).toBe("bbb");
+    });
+  });
+
+  describe("buffer()", () => {
+    it("returns tar.gz buffer", async () => {
+      const rxc = await createRXC({ content: "test" });
+      const buffer = await rxc.buffer();
+      // Check gzip magic bytes
+      expect(buffer[0]).toBe(0x1f);
+      expect(buffer[1]).toBe(0x8b);
+    });
+  });
+
+  describe("stream", () => {
+    it("has stream property", async () => {
+      const rxc = await createRXC({ content: "Hello" });
       expect(rxc.stream).toBeDefined();
     });
 
     it("can read from stream", async () => {
-      const rxc = createRXC("Hello, World!");
+      const rxc = await createRXC({ content: "Hello" });
       const reader = rxc.stream.getReader();
       const chunks: Uint8Array[] = [];
 
@@ -43,69 +105,17 @@ describe("createRXC", () => {
         chunks.push(value);
       }
 
-      const result = Buffer.concat(chunks).toString();
-      expect(result).toBe("Hello, World!");
+      const result = Buffer.concat(chunks);
+      // Should be gzip format
+      expect(result[0]).toBe(0x1f);
+      expect(result[1]).toBe(0x8b);
     });
   });
 
-  describe("from Buffer", () => {
-    it("creates RXC from Buffer", () => {
-      const buffer = Buffer.from("Hello, Buffer!");
-      const rxc = createRXC(buffer);
-      expect(rxc).toBeDefined();
-    });
-
-    it("returns text content", async () => {
-      const buffer = Buffer.from("Hello, Buffer!");
-      const rxc = createRXC(buffer);
-      const text = await rxc.text();
-      expect(text).toBe("Hello, Buffer!");
-    });
-
-    it("returns buffer content", async () => {
-      const buffer = Buffer.from([0x01, 0x02, 0x03]);
-      const rxc = createRXC(buffer);
-      const result = await rxc.buffer();
-      expect(result).toEqual(buffer);
-    });
-  });
-
-  describe("from ReadableStream", () => {
-    it("creates RXC from ReadableStream", () => {
-      const stream = new ReadableStream({
-        start(controller) {
-          controller.enqueue(new TextEncoder().encode("Hello, Stream!"));
-          controller.close();
-        },
-      });
-      const rxc = createRXC(stream);
-      expect(rxc).toBeDefined();
-    });
-
-    it("returns text content", async () => {
-      const stream = new ReadableStream({
-        start(controller) {
-          controller.enqueue(new TextEncoder().encode("Hello, Stream!"));
-          controller.close();
-        },
-      });
-      const rxc = createRXC(stream);
-      const text = await rxc.text();
-      expect(text).toBe("Hello, Stream!");
-    });
-  });
-
-  describe("content can only be consumed once", () => {
-    it("throws error on second text() call", async () => {
-      const rxc = createRXC("Hello");
-      await rxc.text();
-      await expect(rxc.text()).rejects.toThrow();
-    });
-
-    it("throws error if stream already consumed", async () => {
-      const rxc = createRXC("Hello");
-      await rxc.text();
-      expect(() => rxc.stream.getReader()).toThrow();
+  describe("error handling", () => {
+    it("throws error for non-existent file", async () => {
+      const rxc = await createRXC({ content: "Hello" });
+      await expect(rxc.file("not-exist")).rejects.toThrow("file not found");
     });
   });
 });

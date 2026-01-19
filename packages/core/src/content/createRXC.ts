@@ -1,76 +1,122 @@
-import type { RXC } from "./types.js";
+import { gzip, gunzip } from "node:zlib";
+import { promisify } from "node:util";
+import { packTar, unpackTar } from "modern-tar";
+import type { RXC, RXCInput } from "./types.js";
 import { ContentError } from "~/errors.js";
 
-class RXCImpl implements RXC {
-  private _stream: ReadableStream<Uint8Array>;
-  private _consumed = false;
+const gzipAsync = promisify(gzip);
+const gunzipAsync = promisify(gunzip);
 
-  constructor(stream: ReadableStream<Uint8Array>) {
-    this._stream = stream;
+class RXCImpl implements RXC {
+  private _buffer: Buffer;
+  private _filesCache: Map<string, Buffer> | null = null;
+
+  constructor(buffer: Buffer) {
+    this._buffer = buffer;
   }
 
   get stream(): ReadableStream<Uint8Array> {
-    if (this._consumed) {
-      throw new ContentError("Content has already been consumed");
-    }
-    this._consumed = true;
-    return this._stream;
-  }
-
-  async text(): Promise<string> {
-    const buffer = await this.buffer();
-    return buffer.toString("utf-8");
+    const buffer = this._buffer;
+    return new ReadableStream({
+      start(controller) {
+        controller.enqueue(new Uint8Array(buffer));
+        controller.close();
+      },
+    });
   }
 
   async buffer(): Promise<Buffer> {
-    if (this._consumed) {
-      throw new ContentError("Content has already been consumed");
-    }
-    this._consumed = true;
-
-    const reader = this._stream.getReader();
-    const chunks: Uint8Array[] = [];
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      chunks.push(value);
-    }
-
-    return Buffer.concat(chunks);
+    return this._buffer;
   }
 
-  async json<T>(): Promise<T> {
-    const text = await this.text();
-    return JSON.parse(text) as T;
+  async file(path: string): Promise<Buffer> {
+    const filesMap = await this.files();
+    const content = filesMap.get(path);
+    if (!content) {
+      throw new ContentError(`file not found: ${path}`);
+    }
+    return content;
+  }
+
+  async files(): Promise<Map<string, Buffer>> {
+    if (this._filesCache) {
+      return this._filesCache;
+    }
+
+    // Decompress gzip
+    const tarBuffer = await gunzipAsync(this._buffer);
+
+    // Unpack tar
+    const entries = await unpackTar(tarBuffer);
+
+    const filesMap = new Map<string, Buffer>();
+    for (const entry of entries) {
+      if ((entry.header.type === "file" || entry.header.type === undefined) && entry.data) {
+        filesMap.set(entry.header.name, Buffer.from(entry.data));
+      }
+    }
+
+    this._filesCache = filesMap;
+    return filesMap;
   }
 }
 
 /**
- * Create RXC from string, Buffer, or ReadableStream.
+ * Create RXC from a record of file paths to their content.
+ *
+ * @example
+ * ```typescript
+ * // Single file
+ * const content = await createRXC({ 'content': Buffer.from('Hello') });
+ *
+ * // Multiple files
+ * const content = await createRXC({
+ *   'index.ts': Buffer.from('export default 1'),
+ *   'styles.css': Buffer.from('body {}'),
+ * });
+ *
+ * // Nested directories
+ * const content = await createRXC({
+ *   'src/index.ts': Buffer.from('main'),
+ *   'src/utils/helper.ts': Buffer.from('helper'),
+ * });
+ * ```
  */
-export function createRXC(data: string | Buffer | ReadableStream<Uint8Array>): RXC {
-  let stream: ReadableStream<Uint8Array>;
+/**
+ * Check if input is an archive input
+ */
+function isArchiveInput(input: RXCInput): input is { archive: Buffer } {
+  return "archive" in input && Buffer.isBuffer(input.archive);
+}
 
-  if (typeof data === "string") {
-    const encoded = new TextEncoder().encode(data);
-    stream = new ReadableStream({
-      start(controller) {
-        controller.enqueue(encoded);
-        controller.close();
-      },
-    });
-  } else if (Buffer.isBuffer(data)) {
-    stream = new ReadableStream({
-      start(controller) {
-        controller.enqueue(new Uint8Array(data));
-        controller.close();
-      },
-    });
-  } else {
-    // Already a ReadableStream
-    stream = data;
+export async function createRXC(input: RXCInput): Promise<RXC> {
+  // If archive buffer provided, use it directly
+  if (isArchiveInput(input)) {
+    return new RXCImpl(input.archive);
   }
 
-  return new RXCImpl(stream);
+  // Otherwise, pack files into tar.gz
+  const entries = Object.entries(input).map(([name, content]) => {
+    const body =
+      typeof content === "string"
+        ? content
+        : content instanceof Uint8Array
+          ? content
+          : new Uint8Array(content);
+
+    const size = typeof content === "string" ? Buffer.byteLength(content) : content.length;
+
+    return {
+      header: { name, size, type: "file" as const },
+      body,
+    };
+  });
+
+  // Pack to tar
+  const tarBuffer = await packTar(entries);
+
+  // Compress with gzip
+  const gzipBuffer = await gzipAsync(Buffer.from(tarBuffer));
+
+  return new RXCImpl(gzipBuffer);
 }

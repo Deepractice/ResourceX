@@ -62,7 +62,7 @@ Given(
     this.resource = {
       locator: parseRXL(manifest.toLocator()),
       manifest,
-      content: createRXC("default content"),
+      content: await createRXC({ content: "default content" }),
     };
   }
 );
@@ -70,7 +70,7 @@ Given(
 Given("resource content {string}", async function (this: RegistryWorld, content: string) {
   const { createRXC } = await import("resourcexjs");
   if (this.resource) {
-    this.resource.content = createRXC(content);
+    this.resource.content = await createRXC({ content });
   }
 });
 
@@ -90,7 +90,7 @@ Given(
     const rxr: RXR = {
       locator: rxl,
       manifest,
-      content: createRXC(content),
+      content: await createRXC({ content }),
     };
 
     await this.registry!.link(rxr);
@@ -111,7 +111,7 @@ Given("a linked resource {string}", async function (this: RegistryWorld, locator
   const rxr: RXR = {
     locator: rxl,
     manifest,
-    content: createRXC("test content"),
+    content: await createRXC({ content: "test content" }),
   };
 
   await this.registry!.link(rxr);
@@ -135,7 +135,7 @@ Given(
       const rxr: RXR = {
         locator: rxl,
         manifest,
-        content: createRXC("test content"),
+        content: await createRXC({ content: "test content" }),
       };
 
       await this.registry!.link(rxr);
@@ -166,7 +166,7 @@ When("I link a resource {string}", async function (this: RegistryWorld, locator:
   this.resource = {
     locator: rxl,
     manifest,
-    content: createRXC("test content"),
+    content: await createRXC({ content: "test content" }),
   };
 
   try {
@@ -251,8 +251,8 @@ Then("I should receive an RXR object", async function (this: RegistryWorld) {
 });
 
 Then("the content should be {string}", async function (this: RegistryWorld, expected: string) {
-  const content = await this.resolvedResource!.content.text();
-  assert.equal(content, expected);
+  const buffer = await this.resolvedResource!.content.file("content");
+  assert.equal(buffer.toString(), expected);
 });
 
 Then("it should throw a RegistryError", async function (this: RegistryWorld) {
