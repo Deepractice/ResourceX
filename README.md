@@ -44,10 +44,10 @@ AI Agents need to manage various resources: prompts, tools, agents, configuratio
 │                                                             │
 │  RXL (Locator)  → deepractice.ai/sean/assistant.prompt@1.0 │
 │  RXM (Manifest) → Resource metadata                         │
-│  RXC (Content)  → Stream-based content                      │
+│  RXC (Content)  → Archive-based content (tar.gz)            │
 │  RXR (Resource) → RXL + RXM + RXC                           │
 │                                                             │
-│  Registry       → link/resolve/exists/delete                │
+│  Registry       → link/resolve/exists/delete/search         │
 │  TypeSystem     → text/json/binary + custom types          │
 └──────────────────────┬──────────────────────────────────────┘
                        │
@@ -271,8 +271,8 @@ await registry.exists("localhost/test.text@1.0.0");
 // Delete
 await registry.delete("localhost/test.text@1.0.0");
 
-// Search (TODO)
-await registry.search("assistant");
+// Search
+const results = await registry.search({ query: "assistant", limit: 10 });
 ```
 
 ### Resource Types

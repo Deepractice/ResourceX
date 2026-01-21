@@ -81,25 +81,31 @@ manifest.toJSON(); // → plain object
 
 ### RXC - Resource Content
 
-Stream-based content (consumed once, like fetch Response):
+Archive-based content (internally tar.gz), supports single or multi-file resources:
 
 ```typescript
-import { createRXC, loadRXC } from "resourcexjs";
+import { createRXC } from "resourcexjs";
 
-// Create from memory
-const content = createRXC("Hello");
-const content = createRXC(Buffer.from([1, 2, 3]));
-const content = createRXC(readableStream);
+// Single file
+const content = await createRXC({ content: "Hello, World!" });
 
-// Load from file or URL
-const content = await loadRXC("./file.txt");
-const content = await loadRXC("https://example.com/data.txt");
+// Multiple files
+const content = await createRXC({
+  "index.ts": "export default 1",
+  "styles.css": "body {}",
+});
 
-// Consume (can only use one method)
-await content.text(); // → string
-await content.buffer(); // → Buffer
-await content.json<T>(); // → T
-content.stream; // → ReadableStream<Uint8Array>
+// Nested directories
+const content = await createRXC({
+  "src/index.ts": "main code",
+  "src/utils/helper.ts": "helper code",
+});
+
+// Read files
+const buffer = await content.file("content"); // single file → Buffer
+const files = await content.files(); // all files → Map<string, Buffer>
+const archiveBuffer = await content.buffer(); // raw tar.gz
+const stream = content.stream; // tar.gz ReadableStream
 ```
 
 ### RXR - Resource
@@ -141,8 +147,8 @@ const exists = await registry.exists("localhost/test.text@1.0.0");
 // Delete
 await registry.delete("localhost/test.text@1.0.0");
 
-// Search (TODO)
-const results = await registry.search("assistant");
+// Search
+const results = await registry.search({ query: "assistant", limit: 10 });
 ```
 
 ### Resource Types
@@ -210,6 +216,10 @@ const arl = arp.parse("arp:text:file://./config.txt");
 // Read
 const resource = await arl.resolve();
 console.log(resource.content); // string
+
+// Read with params (e.g., directory listing)
+const dirArl = arp.parse("arp:text:file://./data");
+const dir = await dirArl.resolve({ recursive: "true", pattern: "*.json" });
 
 // Write
 await arl.deposit("hello world");

@@ -175,9 +175,29 @@ await registry.delete("localhost/my-prompt.text@1.0.0");
 
 Publish resource to remote registry (TODO: not yet implemented).
 
-#### `search(query: string): Promise<RXL[]>`
+#### `search(options?): Promise<RXL[]>`
 
-Search for resources (TODO: not yet implemented).
+Search for resources in local registry.
+
+**Parameters:**
+
+- `options?: SearchOptions`
+  - `query?: string` - Filter by locator substring
+  - `limit?: number` - Max results to return
+  - `offset?: number` - Skip first N results
+
+**Returns**: `Promise<RXL[]>` - Array of matching locators
+
+```typescript
+// Search by name
+const results = await registry.search({ query: "assistant" });
+
+// With pagination
+const page = await registry.search({ query: "prompt", limit: 10, offset: 20 });
+
+// List all resources
+const all = await registry.search();
+```
 
 ## Storage Structure
 

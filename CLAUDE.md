@@ -15,9 +15,9 @@ ResourceX is a resource management protocol for AI Agents, similar to npm for pa
 2. **ResourceX** - High-level resource management
    - RXL (Locator): `[domain/path/]name[.type][@version]`
    - RXM (Manifest): Resource metadata
-   - RXC (Content): Stream-based content
+   - RXC (Content): Archive-based content (tar.gz internally)
    - RXR (Resource): RXL + RXM + RXC
-   - Registry: Maven-style resource storage (link/resolve/exists/delete)
+   - Registry: Maven-style resource storage (link/resolve/exists/delete/search)
    - TypeSystem: Custom resource types with serializer & resolver
 
 ## Commands
@@ -150,8 +150,14 @@ interface Registry {
   resolve(locator: string): Promise<RXR>; // Resolve (local-first)
   exists(locator: string): Promise<boolean>;
   delete(locator: string): Promise<void>;
-  search(query: string): Promise<RXL[]>; // TODO
+  search(options?: SearchOptions): Promise<RXL[]>;
   publish(resource: RXR): Promise<void>; // TODO: remote publish
+}
+
+interface SearchOptions {
+  query?: string; // Filter by locator substring
+  limit?: number; // Max results
+  offset?: number; // Skip first N results
 }
 ```
 
@@ -193,16 +199,42 @@ registry.resolve("deepractice.ai/assistant.prompt@1.0.0")
 
 ARP provides low-level I/O primitives:
 
-**Transport handlers:**
+**Transport Interface:**
 
-- `file` - Local filesystem (read/write/delete/exists)
+```typescript
+interface TransportHandler {
+  readonly name: string;
+  get(location: string, params?: TransportParams): Promise<TransportResult>;
+  set(location: string, content: Buffer, params?: TransportParams): Promise<void>;
+  exists(location: string): Promise<boolean>;
+  delete(location: string): Promise<void>;
+}
+
+type TransportParams = Record<string, string>;
+
+interface TransportResult {
+  content: Buffer;
+  metadata?: {
+    type?: "file" | "directory";
+    size?: number;
+    modifiedAt?: Date;
+  };
+}
+```
+
+**Built-in Transports:**
+
+- `file` - Local filesystem
+  - `get`: Returns file content or directory listing (JSON array)
+  - Params: `recursive="true"`, `pattern="*.json"`
 - `http`, `https` - Network (read-only)
-- `agentvm` - AgentVM storage (~/.agentvm)
+  - Merges URL query params with runtime params
+  - `set`/`delete` throw "read-only" error
 
 **Semantic handlers:**
 
 - `text` - UTF-8 text
-- `binary` - Raw bytes
+- `binary` - Raw bytes (Buffer, Uint8Array, ArrayBuffer, number[])
 
 **Default registration:** `createARP()` auto-registers all built-in handlers.
 
@@ -324,8 +356,8 @@ registry.link(rxr): Promise<void>
 registry.resolve(locator): Promise<RXR>
 registry.exists(locator): Promise<boolean>
 registry.delete(locator): Promise<void>
-registry.search(query): Promise<RXL[]>      // TODO
-registry.publish(rxr): Promise<void>        // TODO
+registry.search(options?): Promise<RXL[]>   // { query?, limit?, offset? }
+registry.publish(rxr): Promise<void>        // TODO: remote publish
 ```
 
 ### ARP Package (`@resourcexjs/arp`)
@@ -335,10 +367,15 @@ createARP(config?: ARPConfig): ARP
 
 arp.parse(url: string): ARL
 
-arl.resolve(): Promise<Resource>
-arl.deposit(data: string | Buffer): Promise<void>
+arl.resolve(params?: TransportParams): Promise<Resource>
+arl.deposit(data: unknown, params?: TransportParams): Promise<void>
 arl.exists(): Promise<boolean>
 arl.delete(): Promise<void>
+
+// Transports (for direct use)
+fileTransport: TransportHandler
+httpTransport: TransportHandler
+httpsTransport: TransportHandler
 ```
 
 ## Error Hierarchy
@@ -360,6 +397,6 @@ ARPError
 
 ## TODO
 
-- [ ] Registry.search() - Requires ARP list operation
+- [x] Registry.search() - Implemented with query/limit/offset options
 - [ ] Registry.publish() - Remote publishing to domain-based registry
 - [ ] Remote resolution - Fetch from remote when not in local cache

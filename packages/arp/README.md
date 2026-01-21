@@ -119,9 +119,13 @@ const arl = arp.parse("arp:text:file://./data.txt");
 
 ### ARL Operations
 
-#### `resolve(): Promise<Resource>`
+#### `resolve(params?): Promise<Resource>`
 
 Read resource from location.
+
+**Parameters:**
+
+- `params?: TransportParams` - Optional parameters passed to transport
 
 **Returns**: `Promise<Resource>`
 
@@ -133,15 +137,19 @@ Read resource from location.
 ```typescript
 const resource = await arl.resolve();
 console.log(resource.content);
+
+// With params (e.g., directory listing)
+const dirResource = await arl.resolve({ recursive: "true", pattern: "*.json" });
 ```
 
-#### `deposit(data: string | Buffer): Promise<void>`
+#### `deposit(data: unknown, params?): Promise<void>`
 
 Write resource to location.
 
 **Parameters:**
 
-- `data: string | Buffer` - Content to write
+- `data: unknown` - Content to write (string, Buffer, Uint8Array, ArrayBuffer, number[])
+- `params?: TransportParams` - Optional parameters passed to transport
 
 **Throws**: `TransportError` if operation fails
 
@@ -202,6 +210,29 @@ const { content } = await arl.resolve(); // Buffer
 
 ## Transport Handlers
 
+Transport handlers implement a unified interface:
+
+```typescript
+interface TransportHandler {
+  readonly name: string;
+  get(location: string, params?: TransportParams): Promise<TransportResult>;
+  set(location: string, content: Buffer, params?: TransportParams): Promise<void>;
+  exists(location: string): Promise<boolean>;
+  delete(location: string): Promise<void>;
+}
+
+type TransportParams = Record<string, string>;
+
+interface TransportResult {
+  content: Buffer;
+  metadata?: {
+    type?: "file" | "directory";
+    size?: number;
+    modifiedAt?: Date;
+  };
+}
+```
+
 ### File Transport (`file`)
 
 Local filesystem operations.
@@ -219,10 +250,19 @@ arp.parse("arp:text:file://~/file.txt");
 
 **Operations:**
 
-- ✅ resolve (read)
-- ✅ deposit (write)
+- ✅ get (read file or directory listing)
+- ✅ set (write)
 - ✅ exists
 - ✅ delete
+
+**Params for directory listing:**
+
+```typescript
+// List directory with params
+const arl = arp.parse("arp:text:file://./data");
+const result = await arl.resolve({ recursive: "true", pattern: "*.json" });
+// Returns JSON array of matching file paths
+```
 
 ### HTTP/HTTPS Transport
 
@@ -235,10 +275,19 @@ arp.parse("arp:binary:https://example.com/image.png");
 
 **Operations:**
 
-- ✅ resolve (read)
-- ❌ deposit (not supported)
+- ✅ get (read)
+- ❌ set (read-only, throws error)
 - ❌ exists (not supported)
-- ❌ delete (not supported)
+- ❌ delete (read-only, throws error)
+
+**Params handling:**
+
+```typescript
+// URL params are merged with runtime params
+const arl = arp.parse("arp:text:https://api.example.com/data?format=json");
+const result = await arl.resolve({ lang: "en" });
+// Fetches: https://api.example.com/data?format=json&lang=en
+```
 
 ### AgentVM Transport (`agentvm`)
 
@@ -251,8 +300,8 @@ arp.parse("arp:text:agentvm://sandbox/config.json");
 
 **Operations:**
 
-- ✅ resolve (read)
-- ✅ deposit (write)
+- ✅ get (read)
+- ✅ set (write)
 - ✅ exists
 - ✅ delete
 
@@ -326,23 +375,37 @@ if (!(await arl.exists())) {
 ### Custom Transport
 
 ```typescript
-import type { TransportHandler } from "@resourcexjs/arp";
+import type { TransportHandler, TransportParams, TransportResult } from "@resourcexjs/arp";
 
 class S3Transport implements TransportHandler {
-  protocol = "s3";
+  readonly name = "s3";
 
-  async resolve(location: string) {
+  async get(location: string, params?: TransportParams): Promise<TransportResult> {
     // Fetch from S3
     const data = await s3.getObject({ Bucket: "...", Key: location });
-    return data.Body;
+    return {
+      content: data.Body as Buffer,
+      metadata: { type: "file", size: data.ContentLength },
+    };
   }
 
-  async deposit(location: string, data: Buffer) {
+  async set(location: string, content: Buffer, params?: TransportParams): Promise<void> {
     // Upload to S3
-    await s3.putObject({ Bucket: "...", Key: location, Body: data });
+    await s3.putObject({ Bucket: "...", Key: location, Body: content });
   }
 
-  // ... other methods
+  async exists(location: string): Promise<boolean> {
+    try {
+      await s3.headObject({ Bucket: "...", Key: location });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  async delete(location: string): Promise<void> {
+    await s3.deleteObject({ Bucket: "...", Key: location });
+  }
 }
 
 // Register
