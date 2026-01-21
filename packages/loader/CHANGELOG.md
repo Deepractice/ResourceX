@@ -1,5 +1,11 @@
 # @resourcexjs/loader
 
+## 1.4.0
+
+### Patch Changes
+
+- @resourcexjs/core@1.4.0
+
 ## 1.3.0
 
 ### Patch Changes
