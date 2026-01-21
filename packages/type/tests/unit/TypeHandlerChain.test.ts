@@ -216,7 +216,7 @@ describe("TypeHandlerChain (global singleton)", () => {
   });
 
   describe("resolve", () => {
-    it("resolves text resource to string", async () => {
+    it("resolves text resource to callable function", async () => {
       const manifest = createRXM({
         domain: "localhost",
         name: "test",
@@ -229,12 +229,13 @@ describe("TypeHandlerChain (global singleton)", () => {
         content: await createRXC({ content: "Hello" }),
       };
 
-      const result = await globalTypeHandlerChain.resolve<string>(rxr);
+      const fn = await globalTypeHandlerChain.resolve<void, string>(rxr);
 
-      expect(result).toBe("Hello");
+      expect(typeof fn).toBe("function");
+      expect(await fn()).toBe("Hello");
     });
 
-    it("resolves json resource to object", async () => {
+    it("resolves json resource to callable function", async () => {
       const manifest = createRXM({
         domain: "localhost",
         name: "test",
@@ -247,9 +248,10 @@ describe("TypeHandlerChain (global singleton)", () => {
         content: await createRXC({ content: '{"key": "value"}' }),
       };
 
-      const result = await globalTypeHandlerChain.resolve<{ key: string }>(rxr);
+      const fn = await globalTypeHandlerChain.resolve<void, { key: string }>(rxr);
 
-      expect(result).toEqual({ key: "value" });
+      expect(typeof fn).toBe("function");
+      expect(await fn()).toEqual({ key: "value" });
     });
 
     it("throws error for unsupported type", async () => {

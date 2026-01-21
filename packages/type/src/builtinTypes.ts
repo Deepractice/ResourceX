@@ -1,4 +1,9 @@
-import type { ResourceType, ResourceSerializer, ResourceResolver } from "./types.js";
+import type {
+  ResourceType,
+  ResourceSerializer,
+  ResourceResolver,
+  ResolvedResource,
+} from "./types.js";
 import type { RXR, RXM } from "@resourcexjs/core";
 import { createRXC, parseRXL } from "@resourcexjs/core";
 
@@ -20,19 +25,21 @@ const textSerializer: ResourceSerializer = {
 };
 
 /**
- * Text resolver - returns content as string
+ * Text resolver - returns callable that loads content as string (lazy)
  */
-const textResolver: ResourceResolver<string> = {
-  async resolve(rxr: RXR): Promise<string> {
-    const buffer = await rxr.content.file("content");
-    return buffer.toString("utf-8");
+const textResolver: ResourceResolver<void, string> = {
+  async resolve(rxr: RXR): Promise<ResolvedResource<void, string>> {
+    return async () => {
+      const buffer = await rxr.content.file("content");
+      return buffer.toString("utf-8");
+    };
   },
 };
 
 /**
  * Text resource type
  */
-export const textType: ResourceType<string> = {
+export const textType: ResourceType<void, string> = {
   name: "text",
   aliases: ["txt", "plaintext"],
   description: "Plain text content",
@@ -58,19 +65,21 @@ const jsonSerializer: ResourceSerializer = {
 };
 
 /**
- * JSON resolver - returns content as parsed object
+ * JSON resolver - returns callable that loads content as parsed object (lazy)
  */
-const jsonResolver: ResourceResolver<unknown> = {
-  async resolve(rxr: RXR): Promise<unknown> {
-    const buffer = await rxr.content.file("content");
-    return JSON.parse(buffer.toString("utf-8"));
+const jsonResolver: ResourceResolver<void, unknown> = {
+  async resolve(rxr: RXR): Promise<ResolvedResource<void, unknown>> {
+    return async () => {
+      const buffer = await rxr.content.file("content");
+      return JSON.parse(buffer.toString("utf-8"));
+    };
   },
 };
 
 /**
  * JSON resource type
  */
-export const jsonType: ResourceType<unknown> = {
+export const jsonType: ResourceType<void, unknown> = {
   name: "json",
   aliases: ["config", "manifest"],
   description: "JSON content",
@@ -96,18 +105,20 @@ const binarySerializer: ResourceSerializer = {
 };
 
 /**
- * Binary resolver - returns content as Buffer
+ * Binary resolver - returns callable that loads content as Buffer (lazy)
  */
-const binaryResolver: ResourceResolver<Buffer> = {
-  async resolve(rxr: RXR): Promise<Buffer> {
-    return rxr.content.file("content");
+const binaryResolver: ResourceResolver<void, Buffer> = {
+  async resolve(rxr: RXR): Promise<ResolvedResource<void, Buffer>> {
+    return async () => {
+      return rxr.content.file("content");
+    };
   },
 };
 
 /**
  * Binary resource type
  */
-export const binaryType: ResourceType<Buffer> = {
+export const binaryType: ResourceType<void, Buffer> = {
   name: "binary",
   aliases: ["bin", "blob", "raw"],
   description: "Binary content",
@@ -118,4 +129,4 @@ export const binaryType: ResourceType<Buffer> = {
 /**
  * All built-in types
  */
-export const builtinTypes: ResourceType[] = [textType, jsonType, binaryType];
+export const builtinTypes: ResourceType<void, unknown>[] = [textType, jsonType, binaryType];

@@ -3,7 +3,12 @@
  */
 
 // Types
-export type { ResourceType, ResourceSerializer, ResourceResolver } from "./types.js";
+export type {
+  ResourceType,
+  ResourceSerializer,
+  ResourceResolver,
+  ResolvedResource,
+} from "./types.js";
 
 // Errors
 export { ResourceTypeError } from "./errors.js";

@@ -16,19 +16,29 @@ export interface ResourceSerializer {
 }
 
 /**
- * ResourceResolver - Transforms RXR into usable object.
+ * ResolvedResource - A callable function returned by resolver.
+ * - For static resources (text/json/binary): call with no arguments
+ * - For dynamic resources (tool): call with arguments
  */
-export interface ResourceResolver<T = unknown> {
+export type ResolvedResource<TArgs = void, TResult = unknown> = (
+  args?: TArgs
+) => TResult | Promise<TResult>;
+
+/**
+ * ResourceResolver - Transforms RXR into a callable function.
+ * The function is lazy-loaded: content is only read when called.
+ */
+export interface ResourceResolver<TArgs = void, TResult = unknown> {
   /**
-   * Resolve RXR content into a usable object.
+   * Resolve RXR into a callable function.
    */
-  resolve(rxr: RXR): Promise<T>;
+  resolve(rxr: RXR): Promise<ResolvedResource<TArgs, TResult>>;
 }
 
 /**
  * ResourceType - Defines how a resource type is handled.
  */
-export interface ResourceType<T = unknown> {
+export interface ResourceType<TArgs = void, TResult = unknown> {
   /**
    * Type name (e.g., "text", "json", "binary").
    */
@@ -50,7 +60,7 @@ export interface ResourceType<T = unknown> {
   serializer: ResourceSerializer;
 
   /**
-   * Resolver to transform RXR into usable object.
+   * Resolver to transform RXR into callable function.
    */
-  resolver: ResourceResolver<T>;
+  resolver: ResourceResolver<TArgs, TResult>;
 }

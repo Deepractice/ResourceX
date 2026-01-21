@@ -1,4 +1,4 @@
-import type { ResourceType } from "./types.js";
+import type { ResourceType, ResolvedResource } from "./types.js";
 import type { RXR, RXM } from "@resourcexjs/core";
 import { ResourceTypeError } from "./errors.js";
 import { builtinTypes } from "./builtinTypes.js";
@@ -111,10 +111,12 @@ export class TypeHandlerChain {
   }
 
   /**
-   * Resolve RXR content into usable object using the appropriate type handler.
+   * Resolve RXR content into callable function using the appropriate type handler.
    * @throws ResourceTypeError if type is not supported
    */
-  async resolve<T = unknown>(rxr: RXR): Promise<T> {
+  async resolve<TArgs = void, TResult = unknown>(
+    rxr: RXR
+  ): Promise<ResolvedResource<TArgs, TResult>> {
     const typeName = rxr.manifest.type;
     const handler = this.handlers.get(typeName);
 
@@ -122,7 +124,7 @@ export class TypeHandlerChain {
       throw new ResourceTypeError(`Unsupported resource type: ${typeName}`);
     }
 
-    return handler.resolver.resolve(rxr) as Promise<T>;
+    return handler.resolver.resolve(rxr) as Promise<ResolvedResource<TArgs, TResult>>;
   }
 
   /**

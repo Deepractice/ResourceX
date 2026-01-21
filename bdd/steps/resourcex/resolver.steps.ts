@@ -1,0 +1,411 @@
+import { Given, When, Then } from "@cucumber/cucumber";
+import { strict as assert } from "node:assert";
+
+// Types for World context
+interface ResolverWorld {
+  rxr?: unknown;
+  resolvedFn?: (args?: unknown) => unknown | Promise<unknown>;
+  resolvedResult?: unknown;
+  contentLoaded?: boolean;
+  customTypes?: Map<string, unknown>;
+}
+
+Given("I have access to resourcexjs type system", async function (this: ResolverWorld) {
+  const { globalTypeHandlerChain } = await import("resourcexjs");
+  assert.ok(globalTypeHandlerChain, "globalTypeHandlerChain should exist");
+  this.customTypes = new Map();
+});
+
+Given(
+  "a text resource with content {string}",
+  async function (this: ResolverWorld, content: string) {
+    const { createRXM, createRXC, parseRXL } = await import("resourcexjs");
+
+    const manifest = createRXM({
+      domain: "localhost",
+      name: "test-text",
+      type: "text",
+      version: "1.0.0",
+    });
+
+    this.rxr = {
+      locator: parseRXL(manifest.toLocator()),
+      manifest,
+      content: await createRXC({ content }),
+    };
+  }
+);
+
+Given(
+  "a json resource with content {string}",
+  async function (this: ResolverWorld, content: string) {
+    const { createRXM, createRXC, parseRXL } = await import("resourcexjs");
+
+    const manifest = createRXM({
+      domain: "localhost",
+      name: "test-json",
+      type: "json",
+      version: "1.0.0",
+    });
+
+    this.rxr = {
+      locator: parseRXL(manifest.toLocator()),
+      manifest,
+      content: await createRXC({ content }),
+    };
+  }
+);
+
+Given(
+  "a binary resource with bytes {string}",
+  async function (this: ResolverWorld, bytesStr: string) {
+    const { createRXM, createRXC, parseRXL } = await import("resourcexjs");
+
+    // Parse "1,2,3,4" to actual array
+    const bytes = bytesStr.split(",").map((s) => parseInt(s.trim(), 10));
+    const buffer = Buffer.from(bytes);
+
+    const manifest = createRXM({
+      domain: "localhost",
+      name: "test-binary",
+      type: "binary",
+      version: "1.0.0",
+    });
+
+    this.rxr = {
+      locator: parseRXL(manifest.toLocator()),
+      manifest,
+      content: await createRXC({ content: buffer }),
+    };
+  }
+);
+
+Given(
+  "a text resource {string} with content {string}",
+  async function (this: ResolverWorld, locator: string, content: string) {
+    const { createRXM, createRXC, parseRXL } = await import("resourcexjs");
+
+    const rxl = parseRXL(locator);
+    const manifest = createRXM({
+      domain: rxl.domain || "localhost",
+      path: rxl.path,
+      name: rxl.name,
+      type: rxl.type || "text",
+      version: rxl.version || "1.0.0",
+    });
+
+    this.rxr = {
+      locator: rxl,
+      manifest,
+      content: await createRXC({ content }),
+    };
+  }
+);
+
+Given(
+  "a custom {string} type that accepts arguments",
+  async function (this: ResolverWorld, typeName: string) {
+    const { globalTypeHandlerChain, textType } = await import("resourcexjs");
+
+    // Register a custom type that accepts arguments
+    const customType = {
+      name: typeName,
+      description: `Custom ${typeName} type`,
+      serializer: textType.serializer,
+      resolver: {
+        async resolve(rxr: unknown) {
+          return async (args?: { a: number; b: number }) => {
+            const content = await (
+              rxr as { content: { file: (name: string) => Promise<Buffer> } }
+            ).content.file("content");
+            const code = content.toString("utf-8");
+            // Simple eval for "return args.a + args.b"
+            if (code === "return args.a + args.b" && args) {
+              return args.a + args.b;
+            }
+            return code;
+          };
+        },
+      },
+    };
+
+    try {
+      globalTypeHandlerChain.register(customType as never);
+    } catch {
+      // Type may already be registered
+    }
+    this.customTypes?.set(typeName, customType);
+  }
+);
+
+Given(
+  "a custom {string} type that accepts no arguments",
+  async function (this: ResolverWorld, typeName: string) {
+    const { globalTypeHandlerChain, textType } = await import("resourcexjs");
+
+    const customType = {
+      name: typeName,
+      description: `Custom ${typeName} type`,
+      serializer: textType.serializer,
+      resolver: {
+        async resolve(rxr: unknown) {
+          return async () => {
+            const content = await (
+              rxr as { content: { file: (name: string) => Promise<Buffer> } }
+            ).content.file("content");
+            return content.toString("utf-8");
+          };
+        },
+      },
+    };
+
+    try {
+      globalTypeHandlerChain.register(customType as never);
+    } catch {
+      // Type may already be registered
+    }
+    this.customTypes?.set(typeName, customType);
+  }
+);
+
+Given("a tool resource with code {string}", async function (this: ResolverWorld, code: string) {
+  const { createRXM, createRXC, parseRXL } = await import("resourcexjs");
+
+  const manifest = createRXM({
+    domain: "localhost",
+    name: "test-tool",
+    type: "tool",
+    version: "1.0.0",
+  });
+
+  this.rxr = {
+    locator: parseRXL(manifest.toLocator()),
+    manifest,
+    content: await createRXC({ content: code }),
+  };
+});
+
+Given(
+  "a prompt resource with template {string}",
+  async function (this: ResolverWorld, template: string) {
+    const { createRXM, createRXC, parseRXL } = await import("resourcexjs");
+
+    const manifest = createRXM({
+      domain: "localhost",
+      name: "test-prompt",
+      type: "prompt",
+      version: "1.0.0",
+    });
+
+    this.rxr = {
+      locator: parseRXL(manifest.toLocator()),
+      manifest,
+      content: await createRXC({ content: template }),
+    };
+  }
+);
+
+Given(
+  "a custom {string} type with async resolver",
+  async function (this: ResolverWorld, typeName: string) {
+    const { globalTypeHandlerChain, textType } = await import("resourcexjs");
+
+    const customType = {
+      name: typeName,
+      description: `Custom ${typeName} type with async resolver`,
+      serializer: textType.serializer,
+      resolver: {
+        async resolve(rxr: unknown) {
+          return async () => {
+            const content = await (
+              rxr as { content: { file: (name: string) => Promise<Buffer> } }
+            ).content.file("content");
+            return content.toString("utf-8");
+          };
+        },
+      },
+    };
+
+    try {
+      globalTypeHandlerChain.register(customType as never);
+    } catch {
+      // Type may already be registered
+    }
+    this.customTypes?.set(typeName, customType);
+  }
+);
+
+Given(
+  "an async-text resource with content {string}",
+  async function (this: ResolverWorld, content: string) {
+    const { createRXM, createRXC, parseRXL } = await import("resourcexjs");
+
+    const manifest = createRXM({
+      domain: "localhost",
+      name: "test-async",
+      type: "async-text",
+      version: "1.0.0",
+    });
+
+    this.rxr = {
+      locator: parseRXL(manifest.toLocator()),
+      manifest,
+      content: await createRXC({ content }),
+    };
+  }
+);
+
+Given(
+  "a custom {string} type with sync resolver",
+  async function (this: ResolverWorld, typeName: string) {
+    const { globalTypeHandlerChain, textType } = await import("resourcexjs");
+
+    const customType = {
+      name: typeName,
+      description: `Custom ${typeName} type with sync resolver`,
+      serializer: textType.serializer,
+      resolver: {
+        async resolve(rxr: unknown) {
+          // Pre-load content during resolve
+          const content = await (
+            rxr as { content: { file: (name: string) => Promise<Buffer> } }
+          ).content.file("content");
+          const text = content.toString("utf-8");
+          // Return sync function
+          return () => text;
+        },
+      },
+    };
+
+    try {
+      globalTypeHandlerChain.register(customType as never);
+    } catch {
+      // Type may already be registered
+    }
+    this.customTypes?.set(typeName, customType);
+  }
+);
+
+Given(
+  "a sync-text resource with content {string}",
+  async function (this: ResolverWorld, content: string) {
+    const { createRXM, createRXC, parseRXL } = await import("resourcexjs");
+
+    const manifest = createRXM({
+      domain: "localhost",
+      name: "test-sync",
+      type: "sync-text",
+      version: "1.0.0",
+    });
+
+    this.rxr = {
+      locator: parseRXL(manifest.toLocator()),
+      manifest,
+      content: await createRXC({ content }),
+    };
+  }
+);
+
+When("I resolve the resource", async function (this: ResolverWorld) {
+  const { globalTypeHandlerChain } = await import("resourcexjs");
+
+  this.resolvedFn = await globalTypeHandlerChain.resolve(this.rxr as never);
+});
+
+When("I call the resolved function", async function (this: ResolverWorld) {
+  if (this.resolvedFn) {
+    this.resolvedResult = await this.resolvedFn();
+    this.contentLoaded = true;
+  }
+});
+
+When("I resolve through TypeHandlerChain", async function (this: ResolverWorld) {
+  const { globalTypeHandlerChain } = await import("resourcexjs");
+
+  this.resolvedFn = await globalTypeHandlerChain.resolve(this.rxr as never);
+});
+
+Then("I should get a callable function", function (this: ResolverWorld) {
+  assert.strictEqual(typeof this.resolvedFn, "function");
+});
+
+Then(
+  "calling the function should return {string}",
+  async function (this: ResolverWorld, expected: string) {
+    const result = await this.resolvedFn!();
+    assert.strictEqual(result, expected);
+  }
+);
+
+Then(
+  "calling the function should return object with key {string} and value {string}",
+  async function (this: ResolverWorld, key: string, value: string) {
+    const result = (await this.resolvedFn!()) as Record<string, unknown>;
+    assert.strictEqual(result[key], value);
+  }
+);
+
+Then(
+  "calling the function should return a Buffer with bytes {string}",
+  async function (this: ResolverWorld, bytesStr: string) {
+    // Parse "1,2,3,4" to array
+    const expected = bytesStr.split(",").map((s) => parseInt(s.trim(), 10));
+    const result = (await this.resolvedFn!()) as Buffer;
+    assert.ok(Buffer.isBuffer(result), "result should be a Buffer");
+    assert.deepStrictEqual(Array.from(result), expected);
+  }
+);
+
+Then(
+  "calling the function with args {string} should return {int}",
+  async function (this: ResolverWorld, argsStr: string, expected: number) {
+    // Parse "a=1,b=2" to { a: 1, b: 2 }
+    const args: Record<string, number> = {};
+    argsStr.split(",").forEach((pair) => {
+      const [key, value] = pair.split("=");
+      args[key.trim()] = parseInt(value.trim(), 10);
+    });
+    const result = await this.resolvedFn!(args);
+    assert.strictEqual(result, expected);
+  }
+);
+
+Then(
+  "calling the function without arguments should return {string}",
+  async function (this: ResolverWorld, expected: string) {
+    const result = await this.resolvedFn!();
+    assert.strictEqual(result, expected);
+  }
+);
+
+Then("the content should not be loaded yet", function (this: ResolverWorld) {
+  // Content is lazy loaded - we just check that we have a function
+  assert.strictEqual(typeof this.resolvedFn, "function");
+  assert.notStrictEqual(this.contentLoaded, true);
+});
+
+Then("the content should be loaded", function (this: ResolverWorld) {
+  assert.strictEqual(this.contentLoaded, true);
+});
+
+Then("calling the function should return a Promise", async function (this: ResolverWorld) {
+  const result = this.resolvedFn!();
+  assert.ok(result instanceof Promise, "result should be a Promise");
+  this.resolvedResult = await result;
+});
+
+Then(
+  "awaiting the Promise should return {string}",
+  function (this: ResolverWorld, expected: string) {
+    assert.strictEqual(this.resolvedResult, expected);
+  }
+);
+
+Then(
+  "calling the function should return {string} directly",
+  function (this: ResolverWorld, expected: string) {
+    const result = this.resolvedFn!();
+    // Sync function returns value directly (not a Promise)
+    assert.strictEqual(result, expected);
+  }
+);

@@ -43,15 +43,14 @@ globalTypeHandlerChain.canHandle("config"); // true (alias for json)
 import { globalTypeHandlerChain } from "@resourcexjs/type";
 import type { ResourceType } from "@resourcexjs/type";
 
-// Define custom type
-const promptType: ResourceType<string> = {
+// Define custom type - resolver returns a callable function
+const promptType: ResourceType<void, string> = {
   name: "prompt",
   aliases: ["deepractice-prompt"],
   description: "AI Prompt template",
   serializer: {
     async serialize(rxr) {
-      const text = await rxr.content.text();
-      return Buffer.from(text, "utf-8");
+      return rxr.content.buffer();
     },
     async deserialize(data, manifest) {
       // ... implementation
@@ -59,7 +58,11 @@ const promptType: ResourceType<string> = {
   },
   resolver: {
     async resolve(rxr) {
-      return rxr.content.text();
+      // Return a callable function (lazy loading)
+      return async () => {
+        const buffer = await rxr.content.file("content");
+        return buffer.toString("utf-8");
+      };
     },
   },
 };
@@ -115,8 +118,11 @@ console.log(await restored.content.text()); // "Hello, World!"
 ```typescript
 import { globalTypeHandlerChain } from "@resourcexjs/type";
 
-// Resolve RXR to usable object
-const text = await globalTypeHandlerChain.resolve<string>(rxr);
+// Resolve RXR to callable function (lazy loading)
+const fn = await globalTypeHandlerChain.resolve<void, string>(rxr);
+
+// Call the function to get the actual content
+const text = await fn();
 console.log(text); // "Hello, World!"
 ```
 
@@ -174,11 +180,18 @@ Deserialize Buffer to RXR using appropriate type handler.
 
 **Throws**: `ResourceTypeError` if type not supported.
 
-##### `resolve<T>(rxr: RXR): Promise<T>`
+##### `resolve<TArgs, TResult>(rxr: RXR): Promise<ResolvedResource<TArgs, TResult>>`
 
-Resolve RXR content to usable object using appropriate type handler.
+Resolve RXR content to callable function using appropriate type handler.
+
+**Returns**: A callable function that returns the content when called.
 
 **Throws**: `ResourceTypeError` if type not supported.
+
+```typescript
+const fn = await globalTypeHandlerChain.resolve<void, string>(rxr);
+const content = await fn(); // Lazy load content
+```
 
 ##### `clearExtensions(): void`
 
@@ -190,26 +203,28 @@ globalTypeHandlerChain.clearExtensions();
 
 ## Builtin Types
 
+All builtin types return callable functions (lazy loading):
+
 ### Text Type
 
 - **Name**: `text`
 - **Aliases**: `txt`, `plaintext`
-- **Storage**: UTF-8 encoded string
-- **Resolves to**: `string`
+- **Storage**: tar.gz archive
+- **Resolves to**: `() => Promise<string>`
 
 ### JSON Type
 
 - **Name**: `json`
 - **Aliases**: `config`, `manifest`
-- **Storage**: Formatted JSON string
-- **Resolves to**: `unknown` (parsed object)
+- **Storage**: tar.gz archive
+- **Resolves to**: `() => Promise<unknown>` (parsed object)
 
 ### Binary Type
 
 - **Name**: `binary`
 - **Aliases**: `bin`, `blob`, `raw`
-- **Storage**: Raw bytes
-- **Resolves to**: `Buffer`
+- **Storage**: tar.gz archive
+- **Resolves to**: `() => Promise<Buffer>`
 
 ## Type System Architecture
 
@@ -228,41 +243,82 @@ globalTypeHandlerChain.clearExtensions();
 
 ## Creating Custom Types
 
-### Example: Prompt Type
+### Example: Prompt Type (No Arguments)
 
 ```typescript
 import type { ResourceType } from "@resourcexjs/type";
 import { createRXC, parseRXL } from "@resourcexjs/core";
 
-export const promptType: ResourceType<string> = {
+export const promptType: ResourceType<void, string> = {
   name: "prompt",
   aliases: ["deepractice-prompt"],
-  description: "AI Prompt template with variable substitution",
+  description: "AI Prompt template",
 
   serializer: {
     async serialize(rxr) {
-      const text = await rxr.content.text();
-      return Buffer.from(text, "utf-8");
+      return rxr.content.buffer();
     },
 
     async deserialize(data, manifest) {
-      const text = data.toString("utf-8");
       return {
         locator: parseRXL(manifest.toLocator()),
         manifest,
-        content: createRXC(text),
+        content: await createRXC({ archive: data }),
       };
     },
   },
 
   resolver: {
     async resolve(rxr) {
-      // Custom resolution logic
-      const template = await rxr.content.text();
-      return template;
+      // Return callable function (lazy loading)
+      return async () => {
+        const buffer = await rxr.content.file("content");
+        return buffer.toString("utf-8");
+      };
     },
   },
 };
+```
+
+### Example: Tool Type (With Arguments)
+
+```typescript
+import type { ResourceType } from "@resourcexjs/type";
+
+interface ToolArgs {
+  a: number;
+  b: number;
+}
+
+export const toolType: ResourceType<ToolArgs, number> = {
+  name: "tool",
+  description: "Executable tool with arguments",
+
+  serializer: {
+    async serialize(rxr) {
+      return rxr.content.buffer();
+    },
+    async deserialize(data, manifest) {
+      // ... implementation
+    },
+  },
+
+  resolver: {
+    async resolve(rxr) {
+      // Return callable function that accepts arguments
+      return async (args) => {
+        const buffer = await rxr.content.file("content");
+        const code = buffer.toString("utf-8");
+        // Execute code with args
+        return args ? args.a + args.b : 0;
+      };
+    },
+  },
+};
+
+// Usage
+const fn = await globalTypeHandlerChain.resolve<ToolArgs, number>(rxr);
+const result = await fn({ a: 1, b: 2 }); // 3
 ```
 
 ## Error Handling

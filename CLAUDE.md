@@ -114,18 +114,27 @@ const rxr: RXR = { locator, manifest, content };
 **ResourceType** defines how resources are serialized and resolved:
 
 ```typescript
-interface ResourceType<T> {
+// ResolvedResource - callable function returned by resolver
+type ResolvedResource<TArgs = void, TResult = unknown> = (
+  args?: TArgs,
+) => TResult | Promise<TResult>;
+
+interface ResourceType<TArgs = void, TResult = unknown> {
   name: string;               // "text", "json", "prompt"
   aliases?: string[];         // ["txt"], ["config"]
   description: string;
   serializer: ResourceSerializer;  // RXR ↔ Buffer (for storage)
-  resolver: ResourceResolver<T>;   // RXR → usable object
+  resolver: ResourceResolver<TArgs, TResult>;  // RXR → callable function
 }
 
-// Built-in types
-text   → aliases: [txt, plaintext]
-json   → aliases: [config, manifest]
-binary → aliases: [bin, blob, raw]
+interface ResourceResolver<TArgs = void, TResult = unknown> {
+  resolve(rxr: RXR): Promise<ResolvedResource<TArgs, TResult>>;
+}
+
+// Built-in types (all return callable functions)
+text   → aliases: [txt, plaintext]  → () => Promise<string>
+json   → aliases: [config, manifest] → () => Promise<unknown>
+binary → aliases: [bin, blob, raw]   → () => Promise<Buffer>
 ```
 
 **TypeHandlerChain** - Responsibility chain for type handling:
@@ -135,7 +144,11 @@ chain.register(type); // Register a type
 chain.canHandle(name); // Check if type supported
 chain.serialize(rxr); // RXR → Buffer
 chain.deserialize(data, manifest); // Buffer → RXR
-chain.resolve<T>(rxr); // RXR → usable object
+chain.resolve<TArgs, TResult>(rxr); // RXR → callable function
+
+// Example usage
+const fn = await chain.resolve<void, string>(rxr);
+const content = await fn(); // Lazy load content
 ```
 
 Used by Registry to delegate serialization logic.
