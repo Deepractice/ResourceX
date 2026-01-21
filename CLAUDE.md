@@ -114,27 +114,30 @@ const rxr: RXR = { locator, manifest, content };
 **ResourceType** defines how resources are serialized and resolved:
 
 ```typescript
-// ResolvedResource - callable function returned by resolver
-type ResolvedResource<TArgs = void, TResult = unknown> = (
-  args?: TArgs,
-) => TResult | Promise<TResult>;
+// ResolvedResource - structured result with execute and schema
+interface ResolvedResource<TArgs = void, TResult = unknown> {
+  execute: (args?: TArgs) => TResult | Promise<TResult>;
+  schema: TArgs extends void ? undefined : JSONSchema;
+}
+
+// ResourceResolver - requires schema for typed args
+interface ResourceResolver<TArgs = void, TResult = unknown> {
+  schema: TArgs extends void ? undefined : JSONSchema;
+  resolve(rxr: RXR): Promise<ResolvedResource<TArgs, TResult>>;
+}
 
 interface ResourceType<TArgs = void, TResult = unknown> {
   name: string;               // "text", "json", "prompt"
   aliases?: string[];         // ["txt"], ["config"]
   description: string;
   serializer: ResourceSerializer;  // RXR ↔ Buffer (for storage)
-  resolver: ResourceResolver<TArgs, TResult>;  // RXR → callable function
+  resolver: ResourceResolver<TArgs, TResult>;  // RXR → structured result
 }
 
-interface ResourceResolver<TArgs = void, TResult = unknown> {
-  resolve(rxr: RXR): Promise<ResolvedResource<TArgs, TResult>>;
-}
-
-// Built-in types (all return callable functions)
-text   → aliases: [txt, plaintext]  → () => Promise<string>
-json   → aliases: [config, manifest] → () => Promise<unknown>
-binary → aliases: [bin, blob, raw]   → () => Promise<Buffer>
+// Built-in types (schema: undefined, no args)
+text   → aliases: [txt, plaintext]  → execute() => Promise<string>
+json   → aliases: [config, manifest] → execute() => Promise<unknown>
+binary → aliases: [bin, blob, raw]   → execute() => Promise<Buffer>
 ```
 
 **TypeHandlerChain** - Responsibility chain for type handling:
@@ -144,11 +147,12 @@ chain.register(type); // Register a type
 chain.canHandle(name); // Check if type supported
 chain.serialize(rxr); // RXR → Buffer
 chain.deserialize(data, manifest); // Buffer → RXR
-chain.resolve<TArgs, TResult>(rxr); // RXR → callable function
+chain.resolve<TArgs, TResult>(rxr); // RXR → structured result
 
 // Example usage
-const fn = await chain.resolve<void, string>(rxr);
-const content = await fn(); // Lazy load content
+const result = await chain.resolve<void, string>(rxr);
+result.schema; // undefined for builtin types
+await result.execute(); // Lazy load content
 ```
 
 Used by Registry to delegate serialization logic.

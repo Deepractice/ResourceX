@@ -118,11 +118,14 @@ console.log(await restored.content.text()); // "Hello, World!"
 ```typescript
 import { globalTypeHandlerChain } from "@resourcexjs/type";
 
-// Resolve RXR to callable function (lazy loading)
-const fn = await globalTypeHandlerChain.resolve<void, string>(rxr);
+// Resolve RXR to structured result (lazy loading)
+const result = await globalTypeHandlerChain.resolve<void, string>(rxr);
 
-// Call the function to get the actual content
-const text = await fn();
+// Check schema (undefined for builtin types)
+console.log(result.schema); // undefined
+
+// Execute to get the actual content
+const text = await result.execute();
 console.log(text); // "Hello, World!"
 ```
 
@@ -182,15 +185,21 @@ Deserialize Buffer to RXR using appropriate type handler.
 
 ##### `resolve<TArgs, TResult>(rxr: RXR): Promise<ResolvedResource<TArgs, TResult>>`
 
-Resolve RXR content to callable function using appropriate type handler.
+Resolve RXR content to structured result using appropriate type handler.
 
-**Returns**: A callable function that returns the content when called.
+**Returns**: A structured object with `execute` function and optional `schema`.
 
 **Throws**: `ResourceTypeError` if type not supported.
 
 ```typescript
-const fn = await globalTypeHandlerChain.resolve<void, string>(rxr);
-const content = await fn(); // Lazy load content
+const result = await globalTypeHandlerChain.resolve<void, string>(rxr);
+result.schema; // undefined for builtin types
+await result.execute(); // Lazy load content
+
+// For types with args
+const toolResult = await globalTypeHandlerChain.resolve<{ query: string }, unknown>(rxr);
+toolResult.schema; // JSONSchema for UI form rendering
+await toolResult.execute({ query: "test" });
 ```
 
 ##### `clearExtensions(): void`
@@ -203,28 +212,28 @@ globalTypeHandlerChain.clearExtensions();
 
 ## Builtin Types
 
-All builtin types return callable functions (lazy loading):
+All builtin types return structured results with `schema: undefined` (no args):
 
 ### Text Type
 
 - **Name**: `text`
 - **Aliases**: `txt`, `plaintext`
 - **Storage**: tar.gz archive
-- **Resolves to**: `() => Promise<string>`
+- **Resolves to**: `{ execute: () => Promise<string>, schema: undefined }`
 
 ### JSON Type
 
 - **Name**: `json`
 - **Aliases**: `config`, `manifest`
 - **Storage**: tar.gz archive
-- **Resolves to**: `() => Promise<unknown>` (parsed object)
+- **Resolves to**: `{ execute: () => Promise<unknown>, schema: undefined }`
 
 ### Binary Type
 
 - **Name**: `binary`
 - **Aliases**: `bin`, `blob`, `raw`
 - **Storage**: tar.gz archive
-- **Resolves to**: `() => Promise<Buffer>`
+- **Resolves to**: `{ execute: () => Promise<Buffer>, schema: undefined }`
 
 ## Type System Architecture
 
@@ -269,28 +278,40 @@ export const promptType: ResourceType<void, string> = {
   },
 
   resolver: {
+    schema: undefined, // No args, schema is undefined
     async resolve(rxr) {
-      // Return callable function (lazy loading)
-      return async () => {
-        const buffer = await rxr.content.file("content");
-        return buffer.toString("utf-8");
+      return {
+        schema: undefined,
+        execute: async () => {
+          const buffer = await rxr.content.file("content");
+          return buffer.toString("utf-8");
+        },
       };
     },
   },
 };
 ```
 
-### Example: Tool Type (With Arguments)
+### Example: Tool Type (With Arguments and Schema)
 
 ```typescript
-import type { ResourceType } from "@resourcexjs/type";
+import type { ResourceType, JSONSchema } from "@resourcexjs/type";
 
 interface ToolArgs {
-  a: number;
-  b: number;
+  query: string;
+  limit?: number;
 }
 
-export const toolType: ResourceType<ToolArgs, number> = {
+const toolSchema: JSONSchema = {
+  type: "object",
+  properties: {
+    query: { type: "string", description: "Search keyword" },
+    limit: { type: "number", description: "Max results", default: 10 },
+  },
+  required: ["query"],
+};
+
+export const toolType: ResourceType<ToolArgs, unknown> = {
   name: "tool",
   description: "Executable tool with arguments",
 
@@ -304,21 +325,23 @@ export const toolType: ResourceType<ToolArgs, number> = {
   },
 
   resolver: {
+    schema: toolSchema, // Required for types with args
     async resolve(rxr) {
-      // Return callable function that accepts arguments
-      return async (args) => {
-        const buffer = await rxr.content.file("content");
-        const code = buffer.toString("utf-8");
-        // Execute code with args
-        return args ? args.a + args.b : 0;
+      return {
+        schema: toolSchema,
+        execute: async (args) => {
+          // Execute with args
+          return { query: args?.query, limit: args?.limit ?? 10 };
+        },
       };
     },
   },
 };
 
 // Usage
-const fn = await globalTypeHandlerChain.resolve<ToolArgs, number>(rxr);
-const result = await fn({ a: 1, b: 2 }); // 3
+const result = await globalTypeHandlerChain.resolve<ToolArgs, unknown>(rxr);
+result.schema; // JSONSchema for UI form rendering
+await result.execute({ query: "test", limit: 5 });
 ```
 
 ## Error Handling
