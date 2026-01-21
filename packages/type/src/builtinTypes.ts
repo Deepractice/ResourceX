@@ -31,6 +31,7 @@ const textResolver: ResourceResolver<void, string> = {
   schema: undefined,
   async resolve(rxr: RXR): Promise<ResolvedResource<void, string>> {
     return {
+      resource: rxr,
       schema: undefined,
       execute: async () => {
         const buffer = await rxr.content.file("content");
@@ -75,6 +76,7 @@ const jsonResolver: ResourceResolver<void, unknown> = {
   schema: undefined,
   async resolve(rxr: RXR): Promise<ResolvedResource<void, unknown>> {
     return {
+      resource: rxr,
       schema: undefined,
       execute: async () => {
         const buffer = await rxr.content.file("content");
@@ -119,6 +121,7 @@ const binaryResolver: ResourceResolver<void, Buffer> = {
   schema: undefined,
   async resolve(rxr: RXR): Promise<ResolvedResource<void, Buffer>> {
     return {
+      resource: rxr,
       schema: undefined,
       execute: async () => {
         return rxr.content.file("content");

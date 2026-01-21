@@ -3,8 +3,14 @@ import { strict as assert } from "node:assert";
 
 // Types for World context
 interface ResolvedResult {
+  resource?: unknown;
   execute: (args?: unknown) => unknown | Promise<unknown>;
   schema?: unknown;
+}
+
+interface TypeHandlerChainType {
+  register(type: unknown): void;
+  resolve(rxr: unknown): Promise<ResolvedResult>;
 }
 
 interface ResolverWorld {
@@ -13,11 +19,13 @@ interface ResolverWorld {
   executeResult?: unknown;
   contentLoaded?: boolean;
   customTypes?: Map<string, unknown>;
+  typeChain?: TypeHandlerChainType;
 }
 
 Given("I have access to resourcexjs type system", async function (this: ResolverWorld) {
-  const { globalTypeHandlerChain } = await import("resourcexjs");
-  assert.ok(globalTypeHandlerChain, "globalTypeHandlerChain should exist");
+  const { TypeHandlerChain } = await import("resourcexjs");
+  this.typeChain = TypeHandlerChain.create() as TypeHandlerChainType;
+  assert.ok(this.typeChain, "TypeHandlerChain should exist");
   this.customTypes = new Map();
 });
 
@@ -110,7 +118,7 @@ Given(
 Given(
   "a custom {string} type that accepts arguments",
   async function (this: ResolverWorld, typeName: string) {
-    const { globalTypeHandlerChain, textType } = await import("resourcexjs");
+    const { textType } = await import("resourcexjs");
 
     // Register a custom type that accepts arguments
     const customType = {
@@ -128,6 +136,7 @@ Given(
         },
         async resolve(rxr: unknown) {
           return {
+            resource: rxr,
             schema: this.schema,
             execute: async (args?: { a: number; b: number }) => {
               const content = await (
@@ -146,7 +155,7 @@ Given(
     };
 
     try {
-      globalTypeHandlerChain.register(customType as never);
+      this.typeChain!.register(customType as never);
     } catch {
       // Type may already be registered
     }
@@ -157,7 +166,7 @@ Given(
 Given(
   "a custom {string} type that accepts no arguments",
   async function (this: ResolverWorld, typeName: string) {
-    const { globalTypeHandlerChain, textType } = await import("resourcexjs");
+    const { textType } = await import("resourcexjs");
 
     const customType = {
       name: typeName,
@@ -167,6 +176,7 @@ Given(
         schema: undefined,
         async resolve(rxr: unknown) {
           return {
+            resource: rxr,
             schema: undefined,
             execute: async () => {
               const content = await (
@@ -180,7 +190,7 @@ Given(
     };
 
     try {
-      globalTypeHandlerChain.register(customType as never);
+      this.typeChain!.register(customType as never);
     } catch {
       // Type may already be registered
     }
@@ -228,7 +238,7 @@ Given(
 Given(
   "a custom {string} type with async resolver",
   async function (this: ResolverWorld, typeName: string) {
-    const { globalTypeHandlerChain, textType } = await import("resourcexjs");
+    const { textType } = await import("resourcexjs");
 
     const customType = {
       name: typeName,
@@ -238,6 +248,7 @@ Given(
         schema: undefined,
         async resolve(rxr: unknown) {
           return {
+            resource: rxr,
             schema: undefined,
             execute: async () => {
               const content = await (
@@ -251,7 +262,7 @@ Given(
     };
 
     try {
-      globalTypeHandlerChain.register(customType as never);
+      this.typeChain!.register(customType as never);
     } catch {
       // Type may already be registered
     }
@@ -282,7 +293,7 @@ Given(
 Given(
   "a custom {string} type with sync resolver",
   async function (this: ResolverWorld, typeName: string) {
-    const { globalTypeHandlerChain, textType } = await import("resourcexjs");
+    const { textType } = await import("resourcexjs");
 
     const customType = {
       name: typeName,
@@ -298,6 +309,7 @@ Given(
           const text = content.toString("utf-8");
           // Return sync execute function
           return {
+            resource: rxr,
             schema: undefined,
             execute: () => text,
           };
@@ -306,7 +318,7 @@ Given(
     };
 
     try {
-      globalTypeHandlerChain.register(customType as never);
+      this.typeChain!.register(customType as never);
     } catch {
       // Type may already be registered
     }
@@ -335,9 +347,7 @@ Given(
 );
 
 When("I resolve the resource", async function (this: ResolverWorld) {
-  const { globalTypeHandlerChain } = await import("resourcexjs");
-
-  this.resolved = (await globalTypeHandlerChain.resolve(this.rxr as never)) as ResolvedResult;
+  this.resolved = (await this.typeChain!.resolve(this.rxr as never)) as ResolvedResult;
 });
 
 When("I call the resolved function", async function (this: ResolverWorld) {
@@ -348,9 +358,7 @@ When("I call the resolved function", async function (this: ResolverWorld) {
 });
 
 When("I resolve through TypeHandlerChain", async function (this: ResolverWorld) {
-  const { globalTypeHandlerChain } = await import("resourcexjs");
-
-  this.resolved = (await globalTypeHandlerChain.resolve(this.rxr as never)) as ResolvedResult;
+  this.resolved = (await this.typeChain!.resolve(this.rxr as never)) as ResolvedResult;
 });
 
 Then("I should get a callable function", function (this: ResolverWorld) {

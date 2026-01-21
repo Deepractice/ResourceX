@@ -39,9 +39,14 @@ export interface JSONSchema extends JSONSchemaProperty {
 
 /**
  * ResolvedResource - Structured result object returned by resolver.
- * Contains execute function and optional schema for UI rendering.
+ * Contains execute function, original resource, and optional schema for UI rendering.
  */
 export interface ResolvedResource<TArgs = void, TResult = unknown> {
+  /**
+   * Original RXR object (locator, manifest, content).
+   */
+  resource: RXR;
+
   /**
    * Execute function to get the resource content.
    * - For static resources (text/json/binary): call with no arguments

@@ -18,5 +18,5 @@ export { ResourceTypeError } from "./errors.js";
 // Builtin types
 export { textType, jsonType, binaryType, builtinTypes } from "./builtinTypes.js";
 
-// Type handler chain (global singleton)
-export { TypeHandlerChain, globalTypeHandlerChain } from "./TypeHandlerChain.js";
+// Type handler chain
+export { TypeHandlerChain } from "./TypeHandlerChain.js";

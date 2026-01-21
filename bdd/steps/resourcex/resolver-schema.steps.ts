@@ -3,6 +3,7 @@ import { strict as assert } from "node:assert";
 
 // Types for World context
 interface ResolvedResult {
+  resource?: unknown;
   execute: (args?: unknown) => unknown | Promise<unknown>;
   schema?: {
     type: string;
@@ -11,23 +12,35 @@ interface ResolvedResult {
   };
 }
 
+interface TypeHandlerChainType {
+  register(type: unknown): void;
+  resolve(rxr: unknown): Promise<ResolvedResult>;
+}
+
 interface SchemaWorld {
   rxr?: unknown;
   resolved?: ResolvedResult;
   executeResult?: unknown;
   customTypes?: Map<string, unknown>;
   typeError?: Error;
+  typeChain?: TypeHandlerChainType;
 }
 
 // Structured result steps
 When("I resolve the resource to structured result", async function (this: SchemaWorld) {
-  const { globalTypeHandlerChain } = await import("resourcexjs");
-  this.resolved = (await globalTypeHandlerChain.resolve(this.rxr as never)) as ResolvedResult;
+  if (!this.typeChain) {
+    const { TypeHandlerChain } = await import("resourcexjs");
+    this.typeChain = TypeHandlerChain.create() as TypeHandlerChainType;
+  }
+  this.resolved = (await this.typeChain.resolve(this.rxr as never)) as ResolvedResult;
 });
 
 When("I resolve through TypeHandlerChain to structured result", async function (this: SchemaWorld) {
-  const { globalTypeHandlerChain } = await import("resourcexjs");
-  this.resolved = (await globalTypeHandlerChain.resolve(this.rxr as never)) as ResolvedResult;
+  if (!this.typeChain) {
+    const { TypeHandlerChain } = await import("resourcexjs");
+    this.typeChain = TypeHandlerChain.create() as TypeHandlerChainType;
+  }
+  this.resolved = (await this.typeChain.resolve(this.rxr as never)) as ResolvedResult;
 });
 
 Then("the result should have an execute function", function (this: SchemaWorld) {
@@ -64,7 +77,11 @@ Then("calling execute should return a Buffer", async function (this: SchemaWorld
 Given(
   "a custom {string} type with schema:",
   async function (this: SchemaWorld, typeName: string, dataTable: DataTable) {
-    const { globalTypeHandlerChain, textType } = await import("resourcexjs");
+    const { TypeHandlerChain, textType } = await import("resourcexjs");
+
+    if (!this.typeChain) {
+      this.typeChain = TypeHandlerChain.create() as TypeHandlerChainType;
+    }
 
     const rows = dataTable.hashes();
     const properties: Record<string, { type: string; description?: string; default?: unknown }> =
@@ -96,8 +113,9 @@ Given(
       serializer: textType.serializer,
       resolver: {
         schema,
-        async resolve() {
+        async resolve(rxr: unknown) {
           return {
+            resource: rxr,
             schema,
             execute: async (args?: Record<string, unknown>) => {
               // For calculator type, return sum
@@ -112,7 +130,7 @@ Given(
     };
 
     try {
-      globalTypeHandlerChain.register(customType as never);
+      this.typeChain.register(customType as never);
     } catch {
       // Type may already be registered
     }
@@ -205,7 +223,11 @@ Then("the result should be {int}", function (this: SchemaWorld, expected: number
 Given(
   "a custom {string} type without schema",
   async function (this: SchemaWorld, typeName: string) {
-    const { globalTypeHandlerChain, textType } = await import("resourcexjs");
+    const { TypeHandlerChain, textType } = await import("resourcexjs");
+
+    if (!this.typeChain) {
+      this.typeChain = TypeHandlerChain.create() as TypeHandlerChainType;
+    }
 
     const customType = {
       name: typeName,
@@ -215,6 +237,7 @@ Given(
         schema: undefined,
         async resolve(rxr: unknown) {
           return {
+            resource: rxr,
             schema: undefined,
             execute: async () => {
               const content = await (
@@ -228,7 +251,7 @@ Given(
     };
 
     try {
-      globalTypeHandlerChain.register(customType as never);
+      this.typeChain.register(customType as never);
     } catch {
       // Type may already be registered
     }
@@ -283,7 +306,11 @@ Then("registering this type should fail with type error", async function (this: 
 Given(
   "a custom {string} type with detailed schema:",
   async function (this: SchemaWorld, typeName: string, dataTable: DataTable) {
-    const { globalTypeHandlerChain, textType } = await import("resourcexjs");
+    const { TypeHandlerChain, textType } = await import("resourcexjs");
+
+    if (!this.typeChain) {
+      this.typeChain = TypeHandlerChain.create() as TypeHandlerChainType;
+    }
 
     const rows = dataTable.hashes();
     const properties: Record<string, { type: string; description?: string; default?: unknown }> =
@@ -318,8 +345,9 @@ Given(
       serializer: textType.serializer,
       resolver: {
         schema,
-        async resolve() {
+        async resolve(rxr: unknown) {
           return {
+            resource: rxr,
             schema,
             execute: async (args?: Record<string, unknown>) => args,
           };
@@ -328,7 +356,7 @@ Given(
     };
 
     try {
-      globalTypeHandlerChain.register(customType as never);
+      this.typeChain.register(customType as never);
     } catch {
       // Type may already be registered
     }

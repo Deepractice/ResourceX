@@ -2,14 +2,14 @@ import { Given, When, Then, After } from "@cucumber/cucumber";
 import { strict as assert } from "node:assert";
 import { join } from "node:path";
 import { mkdir, rm, stat } from "node:fs/promises";
-import type { Registry, RXR, RXL } from "resourcexjs";
+import type { Registry, RXR, RXL, ResolvedResource } from "resourcexjs";
 
 const TEST_DIR = join(process.cwd(), ".test-bdd-registry");
 
 interface RegistryWorld {
   registry: Registry | null;
   resource: RXR | null;
-  resolvedResource: RXR | null;
+  resolvedResource: ResolvedResource | null;
   existsResult: boolean | null;
   searchResults: RXL[] | null;
   error: Error | null;
@@ -281,15 +281,17 @@ Then("I can resolve {string} from local", async function (this: RegistryWorld, l
 });
 
 Then("I should receive an RXR object", async function (this: RegistryWorld) {
-  assert.ok(this.resolvedResource, "Should receive an RXR object");
-  assert.ok(this.resolvedResource?.locator, "RXR should have locator");
-  assert.ok(this.resolvedResource?.manifest, "RXR should have manifest");
-  assert.ok(this.resolvedResource?.content, "RXR should have content");
+  assert.ok(this.resolvedResource, "Should receive a ResolvedResource");
+  assert.ok(this.resolvedResource?.resource, "ResolvedResource should have resource");
+  assert.ok(this.resolvedResource?.resource.locator, "RXR should have locator");
+  assert.ok(this.resolvedResource?.resource.manifest, "RXR should have manifest");
+  assert.ok(this.resolvedResource?.resource.content, "RXR should have content");
 });
 
 Then("the content should be {string}", async function (this: RegistryWorld, expected: string) {
-  const buffer = await this.resolvedResource!.content.file("content");
-  assert.equal(buffer.toString(), expected);
+  // Use execute() to get content directly
+  const content = await this.resolvedResource!.execute();
+  assert.equal(content, expected);
 });
 
 Then("it should throw a RegistryError", async function (this: RegistryWorld) {

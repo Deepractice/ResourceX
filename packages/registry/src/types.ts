@@ -1,5 +1,5 @@
 import type { RXR, RXL } from "@resourcexjs/core";
-import type { ResourceType } from "@resourcexjs/type";
+import type { ResourceType, ResolvedResource } from "@resourcexjs/type";
 
 /**
  * Registry configuration options.
@@ -42,6 +42,12 @@ export interface SearchOptions {
  */
 export interface Registry {
   /**
+   * Add support for a custom resource type.
+   * @param type - The resource type to support
+   */
+  supportType(type: ResourceType): void;
+
+  /**
    * Publish resource to remote registry (based on domain).
    */
   publish(resource: RXR): Promise<void>;
@@ -53,9 +59,12 @@ export interface Registry {
 
   /**
    * Resolve resource by locator string.
+   * Returns a ResolvedResource with execute function and original resource.
    * Checks local first, then fetches from remote if not found.
    */
-  resolve(locator: string): Promise<RXR>;
+  resolve<TArgs = void, TResult = unknown>(
+    locator: string
+  ): Promise<ResolvedResource<TArgs, TResult>>;
 
   /**
    * Check if resource exists.

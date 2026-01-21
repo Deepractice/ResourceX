@@ -52,10 +52,13 @@ describe("ARPRegistry", () => {
 
       const resolved = await registry.resolve("localhost/hello.text@1.0.0");
 
-      expect(resolved.manifest.name).toBe("hello");
-      expect(resolved.manifest.type).toBe("text");
-      const contentBuffer = await resolved.content.file("content");
-      expect(contentBuffer.toString()).toBe("Hello World!");
+      // Access via resource field
+      expect(resolved.resource.manifest.name).toBe("hello");
+      expect(resolved.resource.manifest.type).toBe("text");
+
+      // Can also use execute() to get content
+      const content = await resolved.execute();
+      expect(content).toBe("Hello World!");
     });
 
     it("throws error for non-existent resource", async () => {
@@ -118,8 +121,8 @@ describe("ARPRegistry", () => {
       await registry.link(rxr);
 
       const resolved = await registry.resolve("localhost/alias-test.txt@1.0.0");
-      const contentBuffer = await resolved.content.file("content");
-      expect(contentBuffer.toString()).toBe("Hello via alias!");
+      const content = await resolved.execute();
+      expect(content).toBe("Hello via alias!");
     });
 
     it("supports config as alias for json", async () => {
@@ -138,9 +141,10 @@ describe("ARPRegistry", () => {
 
       await registry.link(rxr);
 
-      const resolved = await registry.resolve("localhost/config-test.config@1.0.0");
-      const contentBuffer = await resolved.content.file("content");
-      const json = JSON.parse(contentBuffer.toString());
+      const resolved = await registry.resolve<void, { key: string }>(
+        "localhost/config-test.config@1.0.0"
+      );
+      const json = await resolved.execute();
       expect(json.key).toBe("value");
     });
 
@@ -161,9 +165,44 @@ describe("ARPRegistry", () => {
 
       await registry.link(rxr);
 
-      const resolved = await registry.resolve("localhost/binary-test.bin@1.0.0");
-      const contentBuffer = await resolved.content.file("content");
-      expect(contentBuffer).toEqual(binaryData);
+      const resolved = await registry.resolve<void, Buffer>("localhost/binary-test.bin@1.0.0");
+      const content = await resolved.execute();
+      expect(content).toEqual(binaryData);
+    });
+  });
+
+  describe("supportType", () => {
+    it("supports dynamically registered type", async () => {
+      const registry = createRegistry({ path: TEST_DIR });
+
+      // Define a custom type using text serializer
+      const { textType } = await import("@resourcexjs/type");
+      const customType = {
+        name: "prompt",
+        description: "AI prompt type",
+        serializer: textType.serializer,
+        resolver: textType.resolver,
+      };
+
+      registry.supportType(customType);
+
+      const manifest = createRXM({
+        domain: "localhost",
+        name: "greet",
+        type: "prompt",
+        version: "1.0.0",
+      });
+      const rxr: RXR = {
+        locator: parseRXL(manifest.toLocator()),
+        manifest,
+        content: await createRXC({ content: "Hello, {{name}}!" }),
+      };
+
+      await registry.link(rxr);
+
+      const resolved = await registry.resolve("localhost/greet.prompt@1.0.0");
+      const content = await resolved.execute();
+      expect(content).toBe("Hello, {{name}}!");
     });
   });
 });

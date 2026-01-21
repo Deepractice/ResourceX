@@ -4,11 +4,10 @@ import { ResourceTypeError } from "./errors.js";
 import { builtinTypes } from "./builtinTypes.js";
 
 /**
- * TypeHandlerChain - Global singleton for type handling.
- * Manages type registration and delegates serialization/deserialization.
+ * TypeHandlerChain - Manages type registration and delegates serialization/deserialization.
+ * Use TypeHandlerChain.create() to create a new instance.
  */
 export class TypeHandlerChain {
-  private static instance: TypeHandlerChain;
   private handlers: Map<string, ResourceType> = new Map();
 
   private constructor() {
@@ -19,13 +18,11 @@ export class TypeHandlerChain {
   }
 
   /**
-   * Get the global singleton instance.
+   * Create a new TypeHandlerChain instance.
+   * Each instance includes all builtin types (text, json, binary).
    */
-  static getInstance(): TypeHandlerChain {
-    if (!TypeHandlerChain.instance) {
-      TypeHandlerChain.instance = new TypeHandlerChain();
-    }
-    return TypeHandlerChain.instance;
+  static create(): TypeHandlerChain {
+    return new TypeHandlerChain();
   }
 
   /**
@@ -139,9 +136,3 @@ export class TypeHandlerChain {
     }
   }
 }
-
-/**
- * Global singleton instance of TypeHandlerChain.
- * All type registration and handling goes through this instance.
- */
-export const globalTypeHandlerChain: TypeHandlerChain = TypeHandlerChain.getInstance();

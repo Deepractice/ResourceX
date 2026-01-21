@@ -1,34 +1,54 @@
-import { describe, it, expect, beforeEach, afterEach } from "bun:test";
-import {
-  TypeHandlerChain,
-  globalTypeHandlerChain,
-  ResourceTypeError,
-  textType,
-  jsonType,
-  binaryType,
-} from "../../src/index.js";
+import { describe, it, expect, beforeEach } from "bun:test";
+import { TypeHandlerChain, ResourceTypeError, textType } from "../../src/index.js";
 import type { RXR, ResourceType } from "../../src/types.js";
 import { createRXM, createRXC, parseRXL } from "@resourcexjs/core";
 
-describe("TypeHandlerChain (global singleton)", () => {
-  // Clean up extension types after each test
-  afterEach(() => {
-    globalTypeHandlerChain.clearExtensions();
+describe("TypeHandlerChain", () => {
+  let chain: TypeHandlerChain;
+
+  beforeEach(() => {
+    chain = TypeHandlerChain.create();
+  });
+
+  describe("create", () => {
+    it("creates a new instance with builtin types", () => {
+      const instance = TypeHandlerChain.create();
+      expect(instance.canHandle("text")).toBe(true);
+      expect(instance.canHandle("json")).toBe(true);
+      expect(instance.canHandle("binary")).toBe(true);
+    });
+
+    it("creates independent instances", () => {
+      const instance1 = TypeHandlerChain.create();
+      const instance2 = TypeHandlerChain.create();
+
+      const customType: ResourceType = {
+        name: "custom",
+        description: "Custom type",
+        serializer: textType.serializer,
+        resolver: textType.resolver,
+      };
+
+      instance1.register(customType);
+
+      expect(instance1.canHandle("custom")).toBe(true);
+      expect(instance2.canHandle("custom")).toBe(false);
+    });
   });
 
   describe("builtin types", () => {
     it("has builtin types registered automatically", () => {
-      expect(globalTypeHandlerChain.canHandle("text")).toBe(true);
-      expect(globalTypeHandlerChain.canHandle("json")).toBe(true);
-      expect(globalTypeHandlerChain.canHandle("binary")).toBe(true);
+      expect(chain.canHandle("text")).toBe(true);
+      expect(chain.canHandle("json")).toBe(true);
+      expect(chain.canHandle("binary")).toBe(true);
     });
 
     it("supports builtin type aliases", () => {
-      expect(globalTypeHandlerChain.canHandle("txt")).toBe(true);
-      expect(globalTypeHandlerChain.canHandle("plaintext")).toBe(true);
-      expect(globalTypeHandlerChain.canHandle("config")).toBe(true);
-      expect(globalTypeHandlerChain.canHandle("manifest")).toBe(true);
-      expect(globalTypeHandlerChain.canHandle("bin")).toBe(true);
+      expect(chain.canHandle("txt")).toBe(true);
+      expect(chain.canHandle("plaintext")).toBe(true);
+      expect(chain.canHandle("config")).toBe(true);
+      expect(chain.canHandle("manifest")).toBe(true);
+      expect(chain.canHandle("bin")).toBe(true);
     });
   });
 
@@ -41,9 +61,9 @@ describe("TypeHandlerChain (global singleton)", () => {
         resolver: textType.resolver,
       };
 
-      globalTypeHandlerChain.register(customType);
+      chain.register(customType);
 
-      expect(globalTypeHandlerChain.canHandle("custom")).toBe(true);
+      expect(chain.canHandle("custom")).toBe(true);
     });
 
     it("registers extension type aliases", () => {
@@ -55,10 +75,10 @@ describe("TypeHandlerChain (global singleton)", () => {
         resolver: textType.resolver,
       };
 
-      globalTypeHandlerChain.register(customType);
+      chain.register(customType);
 
-      expect(globalTypeHandlerChain.canHandle("prompt")).toBe(true);
-      expect(globalTypeHandlerChain.canHandle("deepractice-prompt")).toBe(true);
+      expect(chain.canHandle("prompt")).toBe(true);
+      expect(chain.canHandle("deepractice-prompt")).toBe(true);
     });
 
     it("throws error when registering duplicate type name", () => {
@@ -69,37 +89,37 @@ describe("TypeHandlerChain (global singleton)", () => {
         resolver: textType.resolver,
       };
 
-      expect(() => globalTypeHandlerChain.register(customType)).toThrow(ResourceTypeError);
-      expect(() => globalTypeHandlerChain.register(customType)).toThrow("already registered");
+      expect(() => chain.register(customType)).toThrow(ResourceTypeError);
+      expect(() => chain.register(customType)).toThrow("already registered");
     });
   });
 
   describe("canHandle", () => {
     it("returns true for registered types", () => {
-      expect(globalTypeHandlerChain.canHandle("text")).toBe(true);
-      expect(globalTypeHandlerChain.canHandle("txt")).toBe(true);
+      expect(chain.canHandle("text")).toBe(true);
+      expect(chain.canHandle("txt")).toBe(true);
     });
 
     it("returns false for unregistered types", () => {
-      expect(globalTypeHandlerChain.canHandle("unknown")).toBe(false);
+      expect(chain.canHandle("unknown")).toBe(false);
     });
   });
 
   describe("getHandler", () => {
     it("returns handler for registered type", () => {
-      const handler = globalTypeHandlerChain.getHandler("text");
+      const handler = chain.getHandler("text");
       expect(handler).toBeDefined();
       expect(handler?.name).toBe("text");
     });
 
     it("returns handler for alias", () => {
-      const handler = globalTypeHandlerChain.getHandler("txt");
+      const handler = chain.getHandler("txt");
       expect(handler).toBeDefined();
       expect(handler?.name).toBe("text");
     });
 
     it("returns undefined for unregistered type", () => {
-      const handler = globalTypeHandlerChain.getHandler("unknown");
+      const handler = chain.getHandler("unknown");
       expect(handler).toBeUndefined();
     });
   });
@@ -118,7 +138,7 @@ describe("TypeHandlerChain (global singleton)", () => {
         content: await createRXC({ content: "Hello, World!" }),
       };
 
-      const buffer = await globalTypeHandlerChain.serialize(rxr);
+      const buffer = await chain.serialize(rxr);
 
       // Buffer is tar.gz format, check it's valid gzip
       expect(buffer[0]).toBe(0x1f);
@@ -138,7 +158,7 @@ describe("TypeHandlerChain (global singleton)", () => {
         content: await createRXC({ content: '{"key": "value"}' }),
       };
 
-      const buffer = await globalTypeHandlerChain.serialize(rxr);
+      const buffer = await chain.serialize(rxr);
 
       // Buffer is tar.gz format
       expect(buffer[0]).toBe(0x1f);
@@ -158,10 +178,8 @@ describe("TypeHandlerChain (global singleton)", () => {
         content: await createRXC({ content: "test" }),
       };
 
-      await expect(globalTypeHandlerChain.serialize(rxr)).rejects.toThrow(ResourceTypeError);
-      await expect(globalTypeHandlerChain.serialize(rxr)).rejects.toThrow(
-        "Unsupported resource type"
-      );
+      await expect(chain.serialize(rxr)).rejects.toThrow(ResourceTypeError);
+      await expect(chain.serialize(rxr)).rejects.toThrow("Unsupported resource type");
     });
   });
 
@@ -177,7 +195,7 @@ describe("TypeHandlerChain (global singleton)", () => {
       const originalRxc = await createRXC({ content: "Hello, World!" });
       const data = await originalRxc.buffer();
 
-      const rxr = await globalTypeHandlerChain.deserialize(data, manifest);
+      const rxr = await chain.deserialize(data, manifest);
 
       const contentBuffer = await rxr.content.file("content");
       expect(contentBuffer.toString()).toBe("Hello, World!");
@@ -193,7 +211,7 @@ describe("TypeHandlerChain (global singleton)", () => {
       const originalRxc = await createRXC({ content: "Via alias" });
       const data = await originalRxc.buffer();
 
-      const rxr = await globalTypeHandlerChain.deserialize(data, manifest);
+      const rxr = await chain.deserialize(data, manifest);
 
       const contentBuffer = await rxr.content.file("content");
       expect(contentBuffer.toString()).toBe("Via alias");
@@ -209,9 +227,7 @@ describe("TypeHandlerChain (global singleton)", () => {
       const originalRxc = await createRXC({ content: "test" });
       const data = await originalRxc.buffer();
 
-      await expect(globalTypeHandlerChain.deserialize(data, manifest)).rejects.toThrow(
-        ResourceTypeError
-      );
+      await expect(chain.deserialize(data, manifest)).rejects.toThrow(ResourceTypeError);
     });
   });
 
@@ -229,11 +245,12 @@ describe("TypeHandlerChain (global singleton)", () => {
         content: await createRXC({ content: "Hello" }),
       };
 
-      const result = await globalTypeHandlerChain.resolve<void, string>(rxr);
+      const result = await chain.resolve<void, string>(rxr);
 
       expect(typeof result).toBe("object");
       expect(typeof result.execute).toBe("function");
       expect(result.schema).toBeUndefined();
+      expect(result.resource).toBe(rxr);
       expect(await result.execute()).toBe("Hello");
     });
 
@@ -250,11 +267,12 @@ describe("TypeHandlerChain (global singleton)", () => {
         content: await createRXC({ content: '{"key": "value"}' }),
       };
 
-      const result = await globalTypeHandlerChain.resolve<void, { key: string }>(rxr);
+      const result = await chain.resolve<void, { key: string }>(rxr);
 
       expect(typeof result).toBe("object");
       expect(typeof result.execute).toBe("function");
       expect(result.schema).toBeUndefined();
+      expect(result.resource).toBe(rxr);
       expect(await result.execute()).toEqual({ key: "value" });
     });
 
@@ -271,7 +289,7 @@ describe("TypeHandlerChain (global singleton)", () => {
         content: await createRXC({ content: "test" }),
       };
 
-      await expect(globalTypeHandlerChain.resolve(rxr)).rejects.toThrow(ResourceTypeError);
+      await expect(chain.resolve(rxr)).rejects.toThrow(ResourceTypeError);
     });
   });
 
@@ -284,18 +302,18 @@ describe("TypeHandlerChain (global singleton)", () => {
         resolver: textType.resolver,
       };
 
-      globalTypeHandlerChain.register(customType);
-      expect(globalTypeHandlerChain.canHandle("custom")).toBe(true);
+      chain.register(customType);
+      expect(chain.canHandle("custom")).toBe(true);
 
-      globalTypeHandlerChain.clearExtensions();
+      chain.clearExtensions();
 
       // Extension cleared
-      expect(globalTypeHandlerChain.canHandle("custom")).toBe(false);
+      expect(chain.canHandle("custom")).toBe(false);
 
       // Builtins still available
-      expect(globalTypeHandlerChain.canHandle("text")).toBe(true);
-      expect(globalTypeHandlerChain.canHandle("json")).toBe(true);
-      expect(globalTypeHandlerChain.canHandle("binary")).toBe(true);
+      expect(chain.canHandle("text")).toBe(true);
+      expect(chain.canHandle("json")).toBe(true);
+      expect(chain.canHandle("binary")).toBe(true);
     });
   });
 });
