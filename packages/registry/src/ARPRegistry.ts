@@ -1,5 +1,5 @@
 import { homedir } from "node:os";
-import type { Registry, RegistryConfig } from "./types.js";
+import type { Registry, RegistryConfig, SearchOptions } from "./types.js";
 import type { RXR, RXL } from "@resourcexjs/core";
 import { parseRXL, createRXM } from "@resourcexjs/core";
 import { globalTypeHandlerChain } from "@resourcexjs/type";
@@ -115,9 +115,112 @@ export class ARPRegistry implements Registry {
     await contentArl.delete();
   }
 
-  async search(_query: string): Promise<RXL[]> {
-    // TODO: Implement search - requires listing directory
-    // ARP doesn't have list operation yet
-    throw new RegistryError("Search not implemented yet");
+  async search(options?: SearchOptions): Promise<RXL[]> {
+    const { query, limit, offset = 0 } = options ?? {};
+
+    // List all resources recursively from basePath
+    const baseUrl = `arp:text:file://${this.basePath}`;
+    const baseArl = this.arp.parse(baseUrl);
+
+    let entries: string[];
+    try {
+      const result = await baseArl.resolve({ recursive: "true" });
+      entries = JSON.parse(result.content as string);
+    } catch {
+      // If basePath doesn't exist, return empty array
+      return [];
+    }
+
+    // Filter for manifest.json files and extract locators
+    const locators: RXL[] = [];
+    for (const entry of entries) {
+      if (!entry.endsWith("/manifest.json")) {
+        continue;
+      }
+
+      // Parse the path to extract RXL components
+      // Format: {domain}/{path}/{name}.{type}@{version}/manifest.json
+      const rxl = this.parseEntryToRXL(entry);
+      if (rxl) {
+        locators.push(rxl);
+      }
+    }
+
+    // Filter by query if provided
+    let filtered = locators;
+    if (query) {
+      const lowerQuery = query.toLowerCase();
+      filtered = locators.filter((rxl) => {
+        const searchText =
+          `${rxl.domain ?? ""} ${rxl.path ?? ""} ${rxl.name} ${rxl.type ?? ""}`.toLowerCase();
+        return searchText.includes(lowerQuery);
+      });
+    }
+
+    // Apply pagination
+    let result = filtered.slice(offset);
+    if (limit !== undefined) {
+      result = result.slice(0, limit);
+    }
+
+    return result;
+  }
+
+  /**
+   * Parse a file entry path to RXL.
+   * Entry format: {domain}/{path}/{name}.{type}@{version}/manifest.json
+   */
+  private parseEntryToRXL(entry: string): RXL | null {
+    // Remove /manifest.json suffix
+    const dirPath = entry.replace(/\/manifest\.json$/, "");
+    const parts = dirPath.split("/");
+
+    if (parts.length < 2) {
+      return null;
+    }
+
+    // Last part is {name}.{type}@{version} or {name}@{version}
+    const resourceDir = parts.pop()!;
+    const domain = parts.shift()!;
+    const path = parts.length > 0 ? parts.join("/") : undefined;
+
+    // Parse resourceDir: {name}.{type}@{version}
+    const atIndex = resourceDir.lastIndexOf("@");
+    if (atIndex === -1) {
+      return null;
+    }
+
+    const nameTypePart = resourceDir.substring(0, atIndex);
+    const version = resourceDir.substring(atIndex + 1);
+
+    // Split name and type
+    const dotIndex = nameTypePart.lastIndexOf(".");
+    let name: string;
+    let type: string | undefined;
+
+    if (dotIndex !== -1) {
+      name = nameTypePart.substring(0, dotIndex);
+      type = nameTypePart.substring(dotIndex + 1);
+    } else {
+      name = nameTypePart;
+      type = undefined;
+    }
+
+    // Construct locator string and parse
+    let locatorStr = domain;
+    if (path) {
+      locatorStr += `/${path}`;
+    }
+    locatorStr += `/${name}`;
+    if (type) {
+      locatorStr += `.${type}`;
+    }
+    locatorStr += `@${version}`;
+
+    try {
+      return parseRXL(locatorStr);
+    } catch {
+      return null;
+    }
   }
 }

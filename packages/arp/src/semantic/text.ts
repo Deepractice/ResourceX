@@ -20,18 +20,42 @@ export class TextSemanticHandler implements SemanticHandler<string> {
     location: string,
     context: SemanticContext
   ): Promise<TextResource> {
-    const buffer = await transport.read(location);
-    const text = buffer.toString("utf-8");
+    const result = await transport.get(location, context.params);
 
+    // Handle directory listing
+    if (result.metadata?.type === "directory") {
+      // Return as JSON string for text semantic
+      const meta: ResourceMeta = {
+        url: context.url,
+        semantic: context.semantic,
+        transport: context.transport,
+        location: context.location,
+        size: result.content.length,
+        encoding: "utf-8",
+        mimeType: "application/json",
+        resolvedAt: context.timestamp.toISOString(),
+        type: "directory",
+      };
+
+      return {
+        type: "text",
+        content: result.content.toString("utf-8"),
+        meta,
+      };
+    }
+
+    // Handle file content
+    const text = result.content.toString("utf-8");
     const meta: ResourceMeta = {
       url: context.url,
       semantic: context.semantic,
       transport: context.transport,
       location: context.location,
-      size: buffer.length,
+      size: result.metadata?.size ?? result.content.length,
       encoding: "utf-8",
       mimeType: "text/plain",
       resolvedAt: context.timestamp.toISOString(),
+      type: "file",
     };
 
     return {
@@ -45,17 +69,19 @@ export class TextSemanticHandler implements SemanticHandler<string> {
     transport: TransportHandler,
     location: string,
     data: string,
-    _context: SemanticContext
+    context: SemanticContext
   ): Promise<void> {
-    if (!transport.write) {
+    const buffer = Buffer.from(data, "utf-8");
+
+    try {
+      await transport.set(location, buffer, context.params);
+    } catch (error) {
       throw new SemanticError(
-        `Transport "${transport.name}" does not support write operation`,
-        this.name
+        `Failed to deposit text to "${location}": ${(error as Error).message}`,
+        this.name,
+        { cause: error as Error }
       );
     }
-
-    const buffer = Buffer.from(data, "utf-8");
-    await transport.write(location, buffer);
   }
 
   async exists(
@@ -63,17 +89,7 @@ export class TextSemanticHandler implements SemanticHandler<string> {
     location: string,
     _context: SemanticContext
   ): Promise<boolean> {
-    if (transport.exists) {
-      return transport.exists(location);
-    }
-
-    // Fallback: try to read
-    try {
-      await transport.read(location);
-      return true;
-    } catch {
-      return false;
-    }
+    return transport.exists(location);
   }
 
   async delete(
@@ -81,14 +97,15 @@ export class TextSemanticHandler implements SemanticHandler<string> {
     location: string,
     _context: SemanticContext
   ): Promise<void> {
-    if (!transport.delete) {
+    try {
+      await transport.delete(location);
+    } catch (error) {
       throw new SemanticError(
-        `Transport "${transport.name}" does not support delete operation`,
-        this.name
+        `Failed to delete "${location}": ${(error as Error).message}`,
+        this.name,
+        { cause: error as Error }
       );
     }
-
-    await transport.delete(location);
   }
 }
 

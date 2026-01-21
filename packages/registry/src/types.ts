@@ -18,6 +18,26 @@ export interface RegistryConfig {
 }
 
 /**
+ * Search options for querying resources.
+ */
+export interface SearchOptions {
+  /**
+   * Search query string (matches against name, domain, path).
+   */
+  query?: string;
+
+  /**
+   * Maximum number of results to return.
+   */
+  limit?: number;
+
+  /**
+   * Number of results to skip (for pagination).
+   */
+  offset?: number;
+}
+
+/**
  * Registry interface for resource storage and retrieval.
  */
 export interface Registry {
@@ -48,7 +68,9 @@ export interface Registry {
   delete(locator: string): Promise<void>;
 
   /**
-   * Search for resources matching query.
+   * Search for resources matching options.
+   * @param options - Search options (query, limit, offset)
+   * @returns Array of matching resource locators
    */
-  search(query: string): Promise<RXL[]>;
+  search(options?: SearchOptions): Promise<RXL[]>;
 }

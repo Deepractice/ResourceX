@@ -4,7 +4,7 @@
  * Semantic orchestrates Transport primitives to handle resource structure and content
  */
 
-import type { TransportHandler } from "../transport/types.js";
+import type { TransportHandler, TransportParams } from "../transport/types.js";
 
 /**
  * Resource metadata
@@ -18,6 +18,10 @@ export interface ResourceMeta {
   encoding?: string;
   mimeType?: string;
   resolvedAt: string;
+  /**
+   * Resource type: 'file' or 'directory'
+   */
+  type?: "file" | "directory";
 }
 
 /**
@@ -29,6 +33,10 @@ export interface SemanticContext {
   transport: string;
   location: string;
   timestamp: Date;
+  /**
+   * Runtime parameters passed to operations
+   */
+  params?: TransportParams;
 }
 
 /**
@@ -56,7 +64,7 @@ export interface SemanticHandler<T = unknown> {
    *
    * @param transport - Transport handler for I/O operations
    * @param location - Resource location
-   * @param context - Semantic context
+   * @param context - Semantic context (includes params)
    */
   resolve(
     transport: TransportHandler,
@@ -71,7 +79,7 @@ export interface SemanticHandler<T = unknown> {
    * @param transport - Transport handler for I/O operations
    * @param location - Resource location
    * @param data - Data to deposit
-   * @param context - Semantic context
+   * @param context - Semantic context (includes params)
    */
   deposit?(
     transport: TransportHandler,

@@ -20,8 +20,8 @@ export { ARPError, ParseError, TransportError, SemanticError } from "./errors.js
 // Transport
 export {
   type TransportHandler,
-  type TransportCapabilities,
-  type ResourceStat,
+  type TransportResult,
+  type TransportParams,
   FileTransportHandler,
   fileTransport,
   HttpTransportHandler,

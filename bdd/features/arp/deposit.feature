@@ -33,7 +33,7 @@ Feature: Deposit Resource
     And content "Should fail"
     When deposit the content
     Then should throw error
-    And error message should contain "does not support write"
+    And error message should contain "read-only"
 
   @e2e
   Scenario: Round-trip deposit and resolve

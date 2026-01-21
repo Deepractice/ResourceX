@@ -4,7 +4,7 @@
 
 import type { ARL as IARL } from "./types.js";
 import type { Resource, SemanticContext, SemanticHandler } from "./semantic/types.js";
-import type { TransportHandler } from "./transport/types.js";
+import type { TransportHandler, TransportParams } from "./transport/types.js";
 import { SemanticError } from "./errors.js";
 
 /**
@@ -35,23 +35,24 @@ export class ARL implements IARL {
   /**
    * Create semantic context
    */
-  private createContext(): SemanticContext {
+  private createContext(params?: TransportParams): SemanticContext {
     return {
       url: this.toString(),
       semantic: this.semantic,
       transport: this.transport,
       location: this.location,
       timestamp: new Date(),
+      params,
     };
   }
 
   /**
    * Resolve the resource
    */
-  async resolve(): Promise<Resource> {
+  async resolve(params?: TransportParams): Promise<Resource> {
     const transport = this.resolver.getTransportHandler(this.transport);
     const semantic = this.resolver.getSemanticHandler(this.semantic);
-    const context = this.createContext();
+    const context = this.createContext(params);
 
     return semantic.resolve(transport, this.location, context);
   }
@@ -59,10 +60,10 @@ export class ARL implements IARL {
   /**
    * Deposit data to the resource
    */
-  async deposit(data: unknown): Promise<void> {
+  async deposit(data: unknown, params?: TransportParams): Promise<void> {
     const transport = this.resolver.getTransportHandler(this.transport);
     const semantic = this.resolver.getSemanticHandler(this.semantic);
-    const context = this.createContext();
+    const context = this.createContext(params);
 
     if (!semantic.deposit) {
       throw new SemanticError(
@@ -87,17 +88,7 @@ export class ARL implements IARL {
     }
 
     // Fallback to transport exists
-    if (transport.exists) {
-      return transport.exists(this.location);
-    }
-
-    // Fallback: try to read
-    try {
-      await transport.read(this.location);
-      return true;
-    } catch {
-      return false;
-    }
+    return transport.exists(this.location);
   }
 
   /**
@@ -113,13 +104,6 @@ export class ARL implements IARL {
     }
 
     // Fallback to transport delete
-    if (!transport.delete) {
-      throw new SemanticError(
-        `Neither semantic "${semantic.name}" nor transport "${transport.name}" supports delete operation`,
-        this.semantic
-      );
-    }
-
     await transport.delete(this.location);
   }
 

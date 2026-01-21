@@ -6,6 +6,7 @@
  */
 
 import type { Resource } from "./semantic/types.js";
+import type { TransportParams } from "./transport/types.js";
 
 /**
  * ARI - Agent Resource Identifier
@@ -25,13 +26,16 @@ export interface ARL extends ARI {
 
   /**
    * Resolve the resource
+   * @param params - Optional runtime parameters passed to transport/semantic
    */
-  resolve(): Promise<Resource>;
+  resolve(params?: TransportParams): Promise<Resource>;
 
   /**
    * Deposit data to the resource
+   * @param data - Data to deposit
+   * @param params - Optional runtime parameters passed to transport/semantic
    */
-  deposit(data: unknown): Promise<void>;
+  deposit(data: unknown, params?: TransportParams): Promise<void>;
 
   /**
    * Check if resource exists

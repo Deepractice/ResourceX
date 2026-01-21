@@ -60,4 +60,4 @@ Feature: Binary Semantic Handler
     And binary content from bytes [0x01, 0x02]
     When deposit the content
     Then should throw error
-    And error message should contain "does not support write"
+    And error message should contain "read-only"

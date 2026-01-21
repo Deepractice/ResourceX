@@ -201,7 +201,7 @@ When("I delete {string}", async function (this: RegistryWorld, locator: string) 
 
 When("I search for {string}", async function (this: RegistryWorld, query: string) {
   try {
-    this.searchResults = await this.registry!.search(query);
+    this.searchResults = await this.registry!.search({ query });
     this.error = null;
   } catch (e) {
     this.error = e as Error;
@@ -213,13 +213,50 @@ When(
   async function (this: RegistryWorld, _type: string) {
     // Search by type - currently not fully supported
     try {
-      this.searchResults = await this.registry!.search(_type);
+      this.searchResults = await this.registry!.search({ query: _type });
       this.error = null;
     } catch (e) {
       this.error = e as Error;
     }
   }
 );
+
+When(
+  "I search with options:",
+  async function (
+    this: RegistryWorld,
+    dataTable: { hashes: () => Array<{ key: string; value: string }> }
+  ) {
+    const rows = dataTable.hashes();
+    const options: { query?: string; limit?: number; offset?: number } = {};
+
+    for (const row of rows) {
+      if (row.key === "query") {
+        options.query = row.value;
+      } else if (row.key === "limit") {
+        options.limit = parseInt(row.value, 10);
+      } else if (row.key === "offset") {
+        options.offset = parseInt(row.value, 10);
+      }
+    }
+
+    try {
+      this.searchResults = await this.registry!.search(options);
+      this.error = null;
+    } catch (e) {
+      this.error = e as Error;
+    }
+  }
+);
+
+When("I search without options", async function (this: RegistryWorld) {
+  try {
+    this.searchResults = await this.registry!.search();
+    this.error = null;
+  } catch (e) {
+    this.error = e as Error;
+  }
+});
 
 Then("the resource should exist in local registry", async function (this: RegistryWorld) {
   const locator = this.resource!.manifest.toLocator();

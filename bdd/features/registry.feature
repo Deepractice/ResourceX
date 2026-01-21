@@ -81,32 +81,66 @@ Feature: Registry
   # Search - Find resources
   # ============================================
 
-  @search @skip
-  Scenario: Search resources by name
+  @search
+  Scenario: Search resources by query
     Given linked resources:
-      | locator                          |
-      | localhost/foo-prompt.text@1.0.0 |
-      | localhost/bar-prompt.text@1.0.0 |
-      | localhost/foo-tool.binary@1.0.0     |
-    When I search for "foo"
+      | locator                           |
+      | localhost/foo-prompt.text@1.0.0   |
+      | localhost/bar-prompt.text@1.0.0   |
+      | localhost/foo-tool.binary@1.0.0   |
+    When I search with options:
+      | key   | value |
+      | query | foo   |
     Then I should find 2 resources
     And results should contain "foo-prompt"
     And results should contain "foo-tool"
 
-  @search @skip
-  Scenario: Search resources by type
+  @search
+  Scenario: Search with pagination - limit
     Given linked resources:
-      | locator                          |
-      | localhost/a.text@1.0.0          |
-      | localhost/b.text@2.0.0          |
-      | localhost/c.binary@1.0.0            |
-    When I search for resources of type "prompt"
-    Then I should find 2 resources
+      | locator                   |
+      | localhost/a.text@1.0.0    |
+      | localhost/b.text@1.0.0    |
+      | localhost/c.text@1.0.0    |
+      | localhost/d.text@1.0.0    |
+      | localhost/e.text@1.0.0    |
+    When I search with options:
+      | key   | value |
+      | limit | 3     |
+    Then I should find 3 resources
 
-  @search @skip
+  @search
+  Scenario: Search with pagination - limit and offset
+    Given linked resources:
+      | locator                   |
+      | localhost/a.text@1.0.0    |
+      | localhost/b.text@1.0.0    |
+      | localhost/c.text@1.0.0    |
+      | localhost/d.text@1.0.0    |
+      | localhost/e.text@1.0.0    |
+    When I search with options:
+      | key    | value |
+      | limit  | 2     |
+      | offset | 2     |
+    Then I should find 2 resources
+    And results should contain "c"
+    And results should contain "d"
+
+  @search
   Scenario: Search with no results
-    When I search for "nonexistent"
+    When I search with options:
+      | key   | value       |
+      | query | nonexistent |
     Then I should find 0 resources
+
+  @search
+  Scenario: Search without options returns all
+    Given linked resources:
+      | locator                   |
+      | localhost/x.text@1.0.0    |
+      | localhost/y.text@1.0.0    |
+    When I search without options
+    Then I should find 2 resources
 
   # ============================================
   # Custom configuration

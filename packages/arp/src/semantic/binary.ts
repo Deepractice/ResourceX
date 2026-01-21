@@ -44,20 +44,21 @@ export class BinarySemanticHandler implements SemanticHandler<Buffer> {
     location: string,
     context: SemanticContext
   ): Promise<BinaryResource> {
-    const buffer = await transport.read(location);
+    const result = await transport.get(location, context.params);
 
     const meta: ResourceMeta = {
       url: context.url,
       semantic: context.semantic,
       transport: context.transport,
       location: context.location,
-      size: buffer.length,
+      size: result.metadata?.size ?? result.content.length,
       resolvedAt: context.timestamp.toISOString(),
+      type: result.metadata?.type,
     };
 
     return {
       type: "binary",
-      content: buffer,
+      content: result.content,
       meta,
     };
   }
@@ -66,17 +67,19 @@ export class BinarySemanticHandler implements SemanticHandler<Buffer> {
     transport: TransportHandler,
     location: string,
     data: BinaryInput,
-    _context: SemanticContext
+    context: SemanticContext
   ): Promise<void> {
-    if (!transport.write) {
+    const buffer = toBuffer(data);
+
+    try {
+      await transport.set(location, buffer, context.params);
+    } catch (error) {
       throw new SemanticError(
-        `Transport "${transport.name}" does not support write operation`,
-        this.name
+        `Failed to deposit binary to "${location}": ${(error as Error).message}`,
+        this.name,
+        { cause: error as Error }
       );
     }
-
-    const buffer = toBuffer(data);
-    await transport.write(location, buffer);
   }
 
   async exists(
@@ -84,17 +87,7 @@ export class BinarySemanticHandler implements SemanticHandler<Buffer> {
     location: string,
     _context: SemanticContext
   ): Promise<boolean> {
-    if (transport.exists) {
-      return transport.exists(location);
-    }
-
-    // Fallback: try to read
-    try {
-      await transport.read(location);
-      return true;
-    } catch {
-      return false;
-    }
+    return transport.exists(location);
   }
 
   async delete(
@@ -102,14 +95,15 @@ export class BinarySemanticHandler implements SemanticHandler<Buffer> {
     location: string,
     _context: SemanticContext
   ): Promise<void> {
-    if (!transport.delete) {
+    try {
+      await transport.delete(location);
+    } catch (error) {
       throw new SemanticError(
-        `Transport "${transport.name}" does not support delete operation`,
-        this.name
+        `Failed to delete "${location}": ${(error as Error).message}`,
+        this.name,
+        { cause: error as Error }
       );
     }
-
-    await transport.delete(location);
   }
 }
 

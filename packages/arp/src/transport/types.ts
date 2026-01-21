@@ -1,31 +1,60 @@
 /**
  * Transport Handler Interface
- * Responsible for I/O primitives - read, write, list, exists, delete
+ * Responsible for I/O primitives - get, set, exists, delete
  * Transport only handles WHERE and HOW to access bytes, not WHAT they mean
+ *
+ * Each transport defines its own location format and supported parameters.
  */
 
 /**
- * Transport capabilities declaration
+ * Runtime parameters passed to transport operations
+ * Each transport defines which parameters it supports
  */
-export interface TransportCapabilities {
-  readonly canRead: boolean;
-  readonly canWrite: boolean;
-  readonly canList: boolean;
-  readonly canDelete: boolean;
-  readonly canStat: boolean;
-}
+export type TransportParams = Record<string, string>;
 
 /**
- * Resource stat information
+ * Result from transport get operation
  */
-export interface ResourceStat {
-  size: number;
-  modifiedAt?: Date;
-  isDirectory?: boolean;
+export interface TransportResult {
+  /**
+   * Raw content as Buffer
+   */
+  content: Buffer;
+
+  /**
+   * Optional metadata about the resource
+   */
+  metadata?: {
+    /**
+     * Resource type: 'file' or 'directory'
+     */
+    type?: "file" | "directory";
+
+    /**
+     * File size in bytes
+     */
+    size?: number;
+
+    /**
+     * Last modified time
+     */
+    modifiedAt?: Date;
+
+    /**
+     * Additional transport-specific metadata
+     */
+    [key: string]: unknown;
+  };
 }
 
 /**
  * Transport Handler - provides I/O primitives
+ *
+ * Four core operations:
+ * - get: Retrieve content (file content or directory listing)
+ * - set: Store content
+ * - exists: Check existence
+ * - delete: Remove resource
  */
 export interface TransportHandler {
   /**
@@ -34,52 +63,38 @@ export interface TransportHandler {
   readonly name: string;
 
   /**
-   * Transport capabilities
+   * Get content from location
+   *
+   * For file-like transports:
+   * - If location points to a file, returns file content
+   * - If location points to a directory, returns directory listing as JSON
+   *
+   * @param location - The location string (format depends on transport)
+   * @param params - Optional runtime parameters (transport-specific)
+   * @returns Content and optional metadata
    */
-  readonly capabilities: TransportCapabilities;
+  get(location: string, params?: TransportParams): Promise<TransportResult>;
 
   /**
-   * Read content from location
-   * @param location - The location string after ://
-   * @returns Raw content as Buffer
-   */
-  read(location: string): Promise<Buffer>;
-
-  /**
-   * Write content to location
-   * @param location - The location string after ://
+   * Set content at location
+   *
+   * @param location - The location string (format depends on transport)
    * @param content - Content to write
+   * @param params - Optional runtime parameters (transport-specific)
    */
-  write?(location: string, content: Buffer): Promise<void>;
-
-  /**
-   * List entries at location (for directory-like transports)
-   * @param location - The location string after ://
-   * @returns Array of entry names
-   */
-  list?(location: string): Promise<string[]>;
-
-  /**
-   * Create directory at location
-   * @param location - The location string after ://
-   */
-  mkdir?(location: string): Promise<void>;
+  set(location: string, content: Buffer, params?: TransportParams): Promise<void>;
 
   /**
    * Check if resource exists at location
-   * @param location - The location string after ://
+   *
+   * @param location - The location string (format depends on transport)
    */
-  exists?(location: string): Promise<boolean>;
-
-  /**
-   * Get resource stat information
-   * @param location - The location string after ://
-   */
-  stat?(location: string): Promise<ResourceStat>;
+  exists(location: string): Promise<boolean>;
 
   /**
    * Delete resource at location
-   * @param location - The location string after ://
+   *
+   * @param location - The location string (format depends on transport)
    */
-  delete?(location: string): Promise<void>;
+  delete(location: string): Promise<void>;
 }
