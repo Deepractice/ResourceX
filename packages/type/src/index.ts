@@ -8,6 +8,8 @@ export type {
   ResourceSerializer,
   ResourceResolver,
   ResolvedResource,
+  JSONSchema,
+  JSONSchemaProperty,
 } from "./types.js";
 
 // Errors

@@ -111,7 +111,8 @@ export class TypeHandlerChain {
   }
 
   /**
-   * Resolve RXR content into callable function using the appropriate type handler.
+   * Resolve RXR content into structured result object using the appropriate type handler.
+   * Returns an object with execute function and optional schema.
    * @throws ResourceTypeError if type is not supported
    */
   async resolve<TArgs = void, TResult = unknown>(

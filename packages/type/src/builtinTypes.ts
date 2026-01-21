@@ -25,13 +25,17 @@ const textSerializer: ResourceSerializer = {
 };
 
 /**
- * Text resolver - returns callable that loads content as string (lazy)
+ * Text resolver - returns structured result with execute function (lazy)
  */
 const textResolver: ResourceResolver<void, string> = {
+  schema: undefined,
   async resolve(rxr: RXR): Promise<ResolvedResource<void, string>> {
-    return async () => {
-      const buffer = await rxr.content.file("content");
-      return buffer.toString("utf-8");
+    return {
+      schema: undefined,
+      execute: async () => {
+        const buffer = await rxr.content.file("content");
+        return buffer.toString("utf-8");
+      },
     };
   },
 };
@@ -65,13 +69,17 @@ const jsonSerializer: ResourceSerializer = {
 };
 
 /**
- * JSON resolver - returns callable that loads content as parsed object (lazy)
+ * JSON resolver - returns structured result with execute function (lazy)
  */
 const jsonResolver: ResourceResolver<void, unknown> = {
+  schema: undefined,
   async resolve(rxr: RXR): Promise<ResolvedResource<void, unknown>> {
-    return async () => {
-      const buffer = await rxr.content.file("content");
-      return JSON.parse(buffer.toString("utf-8"));
+    return {
+      schema: undefined,
+      execute: async () => {
+        const buffer = await rxr.content.file("content");
+        return JSON.parse(buffer.toString("utf-8"));
+      },
     };
   },
 };
@@ -105,12 +113,16 @@ const binarySerializer: ResourceSerializer = {
 };
 
 /**
- * Binary resolver - returns callable that loads content as Buffer (lazy)
+ * Binary resolver - returns structured result with execute function (lazy)
  */
 const binaryResolver: ResourceResolver<void, Buffer> = {
+  schema: undefined,
   async resolve(rxr: RXR): Promise<ResolvedResource<void, Buffer>> {
-    return async () => {
-      return rxr.content.file("content");
+    return {
+      schema: undefined,
+      execute: async () => {
+        return rxr.content.file("content");
+      },
     };
   },
 };

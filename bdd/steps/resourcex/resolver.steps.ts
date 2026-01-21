@@ -2,10 +2,15 @@ import { Given, When, Then } from "@cucumber/cucumber";
 import { strict as assert } from "node:assert";
 
 // Types for World context
+interface ResolvedResult {
+  execute: (args?: unknown) => unknown | Promise<unknown>;
+  schema?: unknown;
+}
+
 interface ResolverWorld {
   rxr?: unknown;
-  resolvedFn?: (args?: unknown) => unknown | Promise<unknown>;
-  resolvedResult?: unknown;
+  resolved?: ResolvedResult;
+  executeResult?: unknown;
   contentLoaded?: boolean;
   customTypes?: Map<string, unknown>;
 }
@@ -113,17 +118,28 @@ Given(
       description: `Custom ${typeName} type`,
       serializer: textType.serializer,
       resolver: {
+        schema: {
+          type: "object" as const,
+          properties: {
+            a: { type: "number" as const },
+            b: { type: "number" as const },
+          },
+          required: ["a", "b"],
+        },
         async resolve(rxr: unknown) {
-          return async (args?: { a: number; b: number }) => {
-            const content = await (
-              rxr as { content: { file: (name: string) => Promise<Buffer> } }
-            ).content.file("content");
-            const code = content.toString("utf-8");
-            // Simple eval for "return args.a + args.b"
-            if (code === "return args.a + args.b" && args) {
-              return args.a + args.b;
-            }
-            return code;
+          return {
+            schema: this.schema,
+            execute: async (args?: { a: number; b: number }) => {
+              const content = await (
+                rxr as { content: { file: (name: string) => Promise<Buffer> } }
+              ).content.file("content");
+              const code = content.toString("utf-8");
+              // Simple eval for "return args.a + args.b"
+              if (code === "return args.a + args.b" && args) {
+                return args.a + args.b;
+              }
+              return code;
+            },
           };
         },
       },
@@ -148,12 +164,16 @@ Given(
       description: `Custom ${typeName} type`,
       serializer: textType.serializer,
       resolver: {
+        schema: undefined,
         async resolve(rxr: unknown) {
-          return async () => {
-            const content = await (
-              rxr as { content: { file: (name: string) => Promise<Buffer> } }
-            ).content.file("content");
-            return content.toString("utf-8");
+          return {
+            schema: undefined,
+            execute: async () => {
+              const content = await (
+                rxr as { content: { file: (name: string) => Promise<Buffer> } }
+              ).content.file("content");
+              return content.toString("utf-8");
+            },
           };
         },
       },
@@ -215,12 +235,16 @@ Given(
       description: `Custom ${typeName} type with async resolver`,
       serializer: textType.serializer,
       resolver: {
+        schema: undefined,
         async resolve(rxr: unknown) {
-          return async () => {
-            const content = await (
-              rxr as { content: { file: (name: string) => Promise<Buffer> } }
-            ).content.file("content");
-            return content.toString("utf-8");
+          return {
+            schema: undefined,
+            execute: async () => {
+              const content = await (
+                rxr as { content: { file: (name: string) => Promise<Buffer> } }
+              ).content.file("content");
+              return content.toString("utf-8");
+            },
           };
         },
       },
@@ -265,14 +289,18 @@ Given(
       description: `Custom ${typeName} type with sync resolver`,
       serializer: textType.serializer,
       resolver: {
+        schema: undefined,
         async resolve(rxr: unknown) {
           // Pre-load content during resolve
           const content = await (
             rxr as { content: { file: (name: string) => Promise<Buffer> } }
           ).content.file("content");
           const text = content.toString("utf-8");
-          // Return sync function
-          return () => text;
+          // Return sync execute function
+          return {
+            schema: undefined,
+            execute: () => text,
+          };
         },
       },
     };
@@ -309,12 +337,12 @@ Given(
 When("I resolve the resource", async function (this: ResolverWorld) {
   const { globalTypeHandlerChain } = await import("resourcexjs");
 
-  this.resolvedFn = await globalTypeHandlerChain.resolve(this.rxr as never);
+  this.resolved = (await globalTypeHandlerChain.resolve(this.rxr as never)) as ResolvedResult;
 });
 
 When("I call the resolved function", async function (this: ResolverWorld) {
-  if (this.resolvedFn) {
-    this.resolvedResult = await this.resolvedFn();
+  if (this.resolved) {
+    this.executeResult = await this.resolved.execute();
     this.contentLoaded = true;
   }
 });
@@ -322,17 +350,18 @@ When("I call the resolved function", async function (this: ResolverWorld) {
 When("I resolve through TypeHandlerChain", async function (this: ResolverWorld) {
   const { globalTypeHandlerChain } = await import("resourcexjs");
 
-  this.resolvedFn = await globalTypeHandlerChain.resolve(this.rxr as never);
+  this.resolved = (await globalTypeHandlerChain.resolve(this.rxr as never)) as ResolvedResult;
 });
 
 Then("I should get a callable function", function (this: ResolverWorld) {
-  assert.strictEqual(typeof this.resolvedFn, "function");
+  assert.ok(this.resolved, "resolved should exist");
+  assert.strictEqual(typeof this.resolved.execute, "function");
 });
 
 Then(
   "calling the function should return {string}",
   async function (this: ResolverWorld, expected: string) {
-    const result = await this.resolvedFn!();
+    const result = await this.resolved!.execute();
     assert.strictEqual(result, expected);
   }
 );
@@ -340,7 +369,7 @@ Then(
 Then(
   "calling the function should return object with key {string} and value {string}",
   async function (this: ResolverWorld, key: string, value: string) {
-    const result = (await this.resolvedFn!()) as Record<string, unknown>;
+    const result = (await this.resolved!.execute()) as Record<string, unknown>;
     assert.strictEqual(result[key], value);
   }
 );
@@ -350,7 +379,7 @@ Then(
   async function (this: ResolverWorld, bytesStr: string) {
     // Parse "1,2,3,4" to array
     const expected = bytesStr.split(",").map((s) => parseInt(s.trim(), 10));
-    const result = (await this.resolvedFn!()) as Buffer;
+    const result = (await this.resolved!.execute()) as Buffer;
     assert.ok(Buffer.isBuffer(result), "result should be a Buffer");
     assert.deepStrictEqual(Array.from(result), expected);
   }
@@ -365,7 +394,7 @@ Then(
       const [key, value] = pair.split("=");
       args[key.trim()] = parseInt(value.trim(), 10);
     });
-    const result = await this.resolvedFn!(args);
+    const result = await this.resolved!.execute(args);
     assert.strictEqual(result, expected);
   }
 );
@@ -373,14 +402,15 @@ Then(
 Then(
   "calling the function without arguments should return {string}",
   async function (this: ResolverWorld, expected: string) {
-    const result = await this.resolvedFn!();
+    const result = await this.resolved!.execute();
     assert.strictEqual(result, expected);
   }
 );
 
 Then("the content should not be loaded yet", function (this: ResolverWorld) {
-  // Content is lazy loaded - we just check that we have a function
-  assert.strictEqual(typeof this.resolvedFn, "function");
+  // Content is lazy loaded - we just check that we have an execute function
+  assert.ok(this.resolved, "resolved should exist");
+  assert.strictEqual(typeof this.resolved.execute, "function");
   assert.notStrictEqual(this.contentLoaded, true);
 });
 
@@ -389,22 +419,22 @@ Then("the content should be loaded", function (this: ResolverWorld) {
 });
 
 Then("calling the function should return a Promise", async function (this: ResolverWorld) {
-  const result = this.resolvedFn!();
+  const result = this.resolved!.execute();
   assert.ok(result instanceof Promise, "result should be a Promise");
-  this.resolvedResult = await result;
+  this.executeResult = await result;
 });
 
 Then(
   "awaiting the Promise should return {string}",
   function (this: ResolverWorld, expected: string) {
-    assert.strictEqual(this.resolvedResult, expected);
+    assert.strictEqual(this.executeResult, expected);
   }
 );
 
 Then(
   "calling the function should return {string} directly",
   function (this: ResolverWorld, expected: string) {
-    const result = this.resolvedFn!();
+    const result = this.resolved!.execute();
     // Sync function returns value directly (not a Promise)
     assert.strictEqual(result, expected);
   }
