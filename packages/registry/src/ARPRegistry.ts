@@ -39,21 +39,21 @@ export class ARPRegistry implements Registry {
 
   /**
    * Build ARP URL for a resource file.
+   * Path structure: {basePath}/{domain}/{path}/{name}.{type}/{version}/{filename}
    */
   private buildUrl(locator: string | RXL, filename: string): string {
     const rxl = typeof locator === "string" ? parseRXL(locator) : locator;
     const domain = rxl.domain ?? "localhost";
+    const version = rxl.version ?? "latest";
 
     let path = `${this.basePath}/${domain}`;
     if (rxl.path) {
       path += `/${rxl.path}`;
     }
 
-    const resourceDir = rxl.type
-      ? `${rxl.name}.${rxl.type}@${rxl.version ?? "latest"}`
-      : `${rxl.name}@${rxl.version ?? "latest"}`;
+    const resourceName = rxl.type ? `${rxl.name}.${rxl.type}` : rxl.name;
 
-    return `arp:text:file://${path}/${resourceDir}/${filename}`;
+    return `arp:text:file://${path}/${resourceName}/${version}/${filename}`;
   }
 
   async publish(_resource: RXR): Promise<void> {
@@ -70,7 +70,7 @@ export class ARPRegistry implements Registry {
     await manifestArl.deposit(JSON.stringify(resource.manifest.toJSON(), null, 2));
 
     // Serialize content using type handler chain
-    const contentUrl = this.buildUrl(locator, "content").replace("arp:text:", "arp:binary:");
+    const contentUrl = this.buildUrl(locator, "content.tar.gz").replace("arp:text:", "arp:binary:");
     const contentArl = this.arp.parse(contentUrl);
     const serialized = await this.typeHandler.serialize(resource);
     await contentArl.deposit(serialized);
@@ -92,7 +92,7 @@ export class ARPRegistry implements Registry {
     const manifest = createRXM(manifestData);
 
     // Read content
-    const contentUrl = this.buildUrl(locator, "content").replace("arp:text:", "arp:binary:");
+    const contentUrl = this.buildUrl(locator, "content.tar.gz").replace("arp:text:", "arp:binary:");
     const contentArl = this.arp.parse(contentUrl);
     const contentResult = await contentArl.resolve();
     const data = contentResult.content as Buffer;
@@ -120,7 +120,7 @@ export class ARPRegistry implements Registry {
     await manifestArl.delete();
 
     // Delete content
-    const contentUrl = this.buildUrl(locator, "content").replace("arp:text:", "arp:binary:");
+    const contentUrl = this.buildUrl(locator, "content.tar.gz").replace("arp:text:", "arp:binary:");
     const contentArl = this.arp.parse(contentUrl);
     await contentArl.delete();
   }
@@ -178,30 +178,26 @@ export class ARPRegistry implements Registry {
 
   /**
    * Parse a file entry path to RXL.
-   * Entry format: {domain}/{path}/{name}.{type}@{version}/manifest.json
+   * Entry format: {domain}/{path}/{name}.{type}/{version}/manifest.json
    */
   private parseEntryToRXL(entry: string): RXL | null {
     // Remove /manifest.json suffix
     const dirPath = entry.replace(/\/manifest\.json$/, "");
     const parts = dirPath.split("/");
 
-    if (parts.length < 2) {
+    if (parts.length < 3) {
+      // Need at least: domain, name.type, version
       return null;
     }
 
-    // Last part is {name}.{type}@{version} or {name}@{version}
-    const resourceDir = parts.pop()!;
+    // Last part is version
+    const version = parts.pop()!;
+    // Second to last is {name}.{type} or {name}
+    const nameTypePart = parts.pop()!;
+    // First part is domain
     const domain = parts.shift()!;
+    // Remaining parts are path (if any)
     const path = parts.length > 0 ? parts.join("/") : undefined;
-
-    // Parse resourceDir: {name}.{type}@{version}
-    const atIndex = resourceDir.lastIndexOf("@");
-    if (atIndex === -1) {
-      return null;
-    }
-
-    const nameTypePart = resourceDir.substring(0, atIndex);
-    const version = resourceDir.substring(atIndex + 1);
 
     // Split name and type
     const dotIndex = nameTypePart.lastIndexOf(".");
