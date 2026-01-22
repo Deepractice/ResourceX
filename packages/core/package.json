@@ -37,7 +37,6 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@resourcexjs/arp": "workspace:*",
     "modern-tar": "^0.7.3"
   },
   "devDependencies": {},

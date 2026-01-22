@@ -4,10 +4,16 @@
  * Format: arp:{semantic}:rxr://{rxl}/{internal-path}
  *
  * This is a read-only transport - set and delete operations are not supported.
+ *
+ * Registry selection:
+ * - localhost domain: Uses LocalRegistry (filesystem)
+ * - Other domains: Uses RemoteRegistry with well-known discovery
  */
 
 import { TransportError } from "../errors.js";
 import type { TransportHandler, TransportResult, TransportParams } from "./types.js";
+import { createRegistry, discoverRegistry } from "@resourcexjs/registry";
+import type { Registry } from "@resourcexjs/registry";
 
 /**
  * Minimal registry interface required by RxrTransport.
@@ -21,6 +27,9 @@ export interface RxrTransportRegistry {
   }>;
 }
 
+// Cache for discovered registry endpoints
+const registryCache = new Map<string, Registry>();
+
 /**
  * RXR Transport - Access files inside a resource.
  *
@@ -28,19 +37,24 @@ export interface RxrTransportRegistry {
  * Example: deepractice.ai/nuwa.role@1.0.0/thought/first-principles.md
  *
  * The RXL portion ends at @version, and the internal path follows.
+ *
+ * When no registry is provided, automatically creates one based on domain:
+ * - localhost: LocalRegistry
+ * - Other domains: RemoteRegistry with well-known discovery
  */
 export class RxrTransport implements TransportHandler {
   readonly name = "rxr";
 
-  constructor(private registry: RxrTransportRegistry) {}
+  constructor(private registry?: RxrTransportRegistry) {}
 
   /**
    * Get file content from inside a resource.
    */
   async get(location: string, _params?: TransportParams): Promise<TransportResult> {
-    const { rxl, internalPath } = this.parseLocation(location);
+    const { domain, rxl, internalPath } = this.parseLocation(location);
 
-    const rxr = await this.registry.get(rxl);
+    const registry = await this.getRegistry(domain);
+    const rxr = await registry.get(rxl);
     const files = await rxr.content.files();
     const file = files.get(internalPath);
 
@@ -66,8 +80,9 @@ export class RxrTransport implements TransportHandler {
    */
   async exists(location: string): Promise<boolean> {
     try {
-      const { rxl, internalPath } = this.parseLocation(location);
-      const rxr = await this.registry.get(rxl);
+      const { domain, rxl, internalPath } = this.parseLocation(location);
+      const registry = await this.getRegistry(domain);
+      const rxr = await registry.get(rxl);
       const files = await rxr.content.files();
       return files.has(internalPath);
     } catch {
@@ -83,11 +98,51 @@ export class RxrTransport implements TransportHandler {
   }
 
   /**
-   * Parse location into RXL and internal path.
-   * Format: {rxl}/{internal-path}
+   * Get or create a registry for the given domain.
+   * - If a registry was provided in constructor, use it
+   * - localhost: create LocalRegistry
+   * - Other domains: discover endpoint via well-known and create RemoteRegistry
+   */
+  private async getRegistry(domain: string): Promise<RxrTransportRegistry> {
+    // Use injected registry if provided
+    if (this.registry) {
+      return this.registry;
+    }
+
+    // Check cache first
+    if (registryCache.has(domain)) {
+      return registryCache.get(domain)!;
+    }
+
+    let registry: Registry;
+
+    if (domain === "localhost") {
+      // Use local filesystem registry
+      registry = createRegistry();
+    } else {
+      // Discover remote registry endpoint via well-known
+      try {
+        const endpoint = await discoverRegistry(domain);
+        registry = createRegistry({ endpoint });
+      } catch (error) {
+        throw new TransportError(
+          `Failed to discover registry for domain ${domain}: ${(error as Error).message}`,
+          this.name
+        );
+      }
+    }
+
+    // Cache the registry
+    registryCache.set(domain, registry);
+    return registry;
+  }
+
+  /**
+   * Parse location into domain, RXL and internal path.
+   * Format: {domain}/{path}/{name}.{type}@{version}/{internal-path}
    * Example: deepractice.ai/nuwa.role@1.0.0/thought/first-principles.md
    */
-  private parseLocation(location: string): { rxl: string; internalPath: string } {
+  private parseLocation(location: string): { domain: string; rxl: string; internalPath: string } {
     // Find @version marker
     const atIndex = location.indexOf("@");
     if (atIndex === -1) {
@@ -103,9 +158,21 @@ export class RxrTransport implements TransportHandler {
       );
     }
 
+    // Extract domain (first segment before /)
+    const firstSlash = location.indexOf("/");
+    const domain = firstSlash > 0 ? location.slice(0, firstSlash) : "localhost";
+
     return {
+      domain,
       rxl: location.slice(0, slashAfterVersion),
       internalPath: location.slice(slashAfterVersion + 1),
     };
   }
+}
+
+/**
+ * Clear the registry cache. Useful for testing.
+ */
+export function clearRegistryCache(): void {
+  registryCache.clear();
 }

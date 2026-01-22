@@ -119,3 +119,26 @@ Feature: RXR Transport
     And I try to delete the parsed ARL
     Then an error should be thrown
     And the error message should include "read-only"
+
+  # ============================================
+  # Auto Registry Creation (Phase 3)
+  # ============================================
+
+  @auto-registry
+  Scenario: RxrTransport auto-creates LocalRegistry for localhost
+    Given a linked resource "localhost/auto-test.text@1.0.0" with content "Auto Registry Works"
+    And an ARP instance with auto RxrTransport
+    When I parse ARP URL "arp:text:rxr://localhost/auto-test.text@1.0.0/content"
+    And I resolve the parsed ARL
+    Then the resolved content should be "Auto Registry Works"
+
+  @auto-registry
+  Scenario: RxrTransport auto-creates LocalRegistry for multi-file resource
+    Given a linked multi-file resource "localhost/auto-project.text@1.0.0":
+      | path         | content    |
+      | src/main.ts  | auto main  |
+      | README.md    | auto docs  |
+    And an ARP instance with auto RxrTransport
+    When I parse ARP URL "arp:text:rxr://localhost/auto-project.text@1.0.0/src/main.ts"
+    And I resolve the parsed ARL
+    Then the resolved content should be "auto main"

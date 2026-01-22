@@ -37,12 +37,14 @@
     "packages/arp": {
       "name": "@resourcexjs/arp",
       "version": "1.6.0",
+      "dependencies": {
+        "@resourcexjs/registry": "workspace:*",
+      },
     },
     "packages/core": {
       "name": "@resourcexjs/core",
       "version": "1.6.0",
       "dependencies": {
-        "@resourcexjs/arp": "workspace:*",
         "modern-tar": "^0.7.3",
       },
     },

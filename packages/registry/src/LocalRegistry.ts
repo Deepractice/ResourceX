@@ -1,7 +1,7 @@
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { readFile, writeFile, mkdir, rm, stat, readdir } from "node:fs/promises";
-import type { Registry, RegistryConfig, SearchOptions } from "./types.js";
+import type { Registry, LocalRegistryConfig, SearchOptions } from "./types.js";
 import type { RXR, RXL } from "@resourcexjs/core";
 import { parseRXL, createRXM } from "@resourcexjs/core";
 import { TypeHandlerChain } from "@resourcexjs/type";
@@ -18,7 +18,7 @@ export class LocalRegistry implements Registry {
   private readonly basePath: string;
   private readonly typeHandler: TypeHandlerChain;
 
-  constructor(config?: RegistryConfig) {
+  constructor(config?: LocalRegistryConfig) {
     this.basePath = config?.path ?? DEFAULT_PATH;
     this.typeHandler = TypeHandlerChain.create();
 

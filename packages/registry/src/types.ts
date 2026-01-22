@@ -2,9 +2,10 @@ import type { RXR, RXL } from "@resourcexjs/core";
 import type { ResourceType, ResolvedResource } from "@resourcexjs/type";
 
 /**
- * Registry configuration options.
+ * Local registry configuration.
+ * Uses filesystem for storage.
  */
-export interface RegistryConfig {
+export interface LocalRegistryConfig {
   /**
    * Local storage path. Defaults to ~/.resourcex
    */
@@ -15,6 +16,30 @@ export interface RegistryConfig {
    * If not provided, defaults to built-in types (text, json, binary).
    */
   types?: ResourceType[];
+}
+
+/**
+ * Remote registry configuration.
+ * Uses HTTP API for access.
+ */
+export interface RemoteRegistryConfig {
+  /**
+   * Remote registry API endpoint.
+   * Example: "https://registry.deepractice.ai/v1"
+   */
+  endpoint: string;
+}
+
+/**
+ * Registry configuration - either local or remote.
+ */
+export type RegistryConfig = LocalRegistryConfig | RemoteRegistryConfig;
+
+/**
+ * Type guard to check if config is for remote registry.
+ */
+export function isRemoteConfig(config?: RegistryConfig): config is RemoteRegistryConfig {
+  return config !== undefined && "endpoint" in config;
 }
 
 /**

@@ -58,6 +58,30 @@ Given("an ARP instance with RxrTransport", async function (this: RxrTransportWor
   });
 });
 
+Given("an ARP instance with auto RxrTransport", async function (this: RxrTransportWorld) {
+  // Clear the registry cache to ensure fresh state
+  const {
+    createARP,
+    fileTransport,
+    textSemantic,
+    binarySemantic,
+    RxrTransport,
+    clearRegistryCache,
+  } = await import("resourcexjs/arp");
+
+  clearRegistryCache();
+
+  // For testing: inject the test registry so auto-created LocalRegistry uses the same path
+  // In production, RxrTransport would auto-create a LocalRegistry with default path
+  // But for testing, we need to use the test directory where resources are linked
+  const rxrTransport = new RxrTransport(this.registry!);
+
+  this.arp = createARP({
+    transports: [fileTransport, rxrTransport],
+    semantics: [textSemantic, binarySemantic],
+  });
+});
+
 // ============================================
 // When steps - unique names for @rxr-transport
 // ============================================

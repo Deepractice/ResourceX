@@ -28,6 +28,7 @@ export {
   httpsTransport,
   httpTransport,
   RxrTransport,
+  clearRegistryCache,
   type RxrTransportRegistry,
 } from "./transport/index.js";
 
