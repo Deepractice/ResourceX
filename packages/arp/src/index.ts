@@ -27,6 +27,8 @@ export {
   HttpTransportHandler,
   httpsTransport,
   httpTransport,
+  RxrTransport,
+  type RxrTransportRegistry,
 } from "./transport/index.js";
 
 // Semantic

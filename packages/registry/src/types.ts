@@ -58,6 +58,13 @@ export interface Registry {
   link(resource: RXR): Promise<void>;
 
   /**
+   * Get raw resource by locator string.
+   * Returns the RXR (locator + manifest + content) without resolving.
+   * Use this when you need access to raw resource content.
+   */
+  get(locator: string): Promise<RXR>;
+
+  /**
    * Resolve resource by locator string.
    * Returns a ResolvedResource with execute function and original resource.
    * Checks local first, then fetches from remote if not found.

@@ -164,7 +164,8 @@ Used by Registry to delegate serialization logic.
 ```typescript
 interface Registry {
   link(resource: RXR): Promise<void>; // Link to local (~/.resourcex)
-  resolve(locator: string): Promise<RXR>; // Resolve (local-first)
+  get(locator: string): Promise<RXR>; // Get raw RXR without resolving
+  resolve(locator: string): Promise<ResolvedResource>; // Resolve with execute()
   exists(locator: string): Promise<boolean>;
   delete(locator: string): Promise<void>;
   search(options?: SearchOptions): Promise<RXL[]>;
@@ -182,7 +183,7 @@ interface SearchOptions {
 
 - Uses ARP for atomic I/O (read/write via arp:text:file://)
 - Uses TypeHandlerChain for serialization/deserialization
-- Storage: `~/.resourcex/{domain}/{path}/{name}.{type}@{version}/`
+- Storage: `~/.resourcex/{domain}/{path}/{name}.{type}/{version}/`
 
 **Storage Structure:**
 
@@ -190,9 +191,10 @@ interface SearchOptions {
 ~/.resourcex/
 └── {domain}/
     └── {path}/
-        └── {name}.{type}@{version}/
-            ├── manifest.json    # RXM as JSON
-            └── content          # RXC as tar.gz archive
+        └── {name}.{type}/
+            └── {version}/
+                ├── manifest.json    # RXM as JSON
+                └── content.tar.gz   # RXC as tar.gz archive
 ```
 
 ### Resolution Flow
@@ -247,6 +249,11 @@ interface TransportResult {
 - `http`, `https` - Network (read-only)
   - Merges URL query params with runtime params
   - `set`/`delete` throw "read-only" error
+- `rxr` - Access files inside resources (read-only)
+  - Format: `arp:{semantic}:rxr://{rxl}/{internal-path}`
+  - Example: `arp:text:rxr://localhost/hello.text@1.0.0/content`
+  - Requires Registry instance (manual registration)
+  - See `issues/004-registry-http-protocol.md` for future auto-registration
 
 **Semantic handlers:**
 
@@ -370,7 +377,8 @@ createTypeHandlerChain(types?: ResourceType[]): TypeHandlerChain
 createRegistry(config?: { path?, types? }): Registry
 
 registry.link(rxr): Promise<void>
-registry.resolve(locator): Promise<RXR>
+registry.get(locator): Promise<RXR>         // Raw RXR without resolving
+registry.resolve(locator): Promise<ResolvedResource>
 registry.exists(locator): Promise<boolean>
 registry.delete(locator): Promise<void>
 registry.search(options?): Promise<RXL[]>   // { query?, limit?, offset? }
@@ -383,6 +391,7 @@ registry.publish(rxr): Promise<void>        // TODO: remote publish
 createARP(config?: ARPConfig): ARP
 
 arp.parse(url: string): ARL
+arp.registerTransport(transport: TransportHandler): void
 
 arl.resolve(params?: TransportParams): Promise<Resource>
 arl.deposit(data: unknown, params?: TransportParams): Promise<void>
@@ -393,6 +402,13 @@ arl.delete(): Promise<void>
 fileTransport: TransportHandler
 httpTransport: TransportHandler
 httpsTransport: TransportHandler
+RxrTransport: class  // Requires registry instance
+
+// RxrTransport usage
+const rxrTransport = new RxrTransport(registry);
+arp.registerTransport(rxrTransport);
+const arl = arp.parse("arp:text:rxr://localhost/hello.text@1.0.0/content");
+const resource = await arl.resolve();
 ```
 
 ## Error Hierarchy
@@ -415,5 +431,8 @@ ARPError
 ## TODO
 
 - [x] Registry.search() - Implemented with query/limit/offset options
+- [x] Registry.get() - Get raw RXR without resolving
+- [x] RxrTransport - Access files inside resources via ARP
+- [ ] Registry HTTP Protocol - See `issues/004-registry-http-protocol.md`
 - [ ] Registry.publish() - Remote publishing to domain-based registry
 - [ ] Remote resolution - Fetch from remote when not in local cache

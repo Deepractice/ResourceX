@@ -76,9 +76,7 @@ export class ARPRegistry implements Registry {
     await contentArl.deposit(serialized);
   }
 
-  async resolve<TArgs = void, TResult = unknown>(
-    locator: string
-  ): Promise<ResolvedResource<TArgs, TResult>> {
+  async get(locator: string): Promise<RXR> {
     // Check exists first
     if (!(await this.exists(locator))) {
       throw new RegistryError(`Resource not found: ${locator}`);
@@ -97,8 +95,16 @@ export class ARPRegistry implements Registry {
     const contentResult = await contentArl.resolve();
     const data = contentResult.content as Buffer;
 
-    // Deserialize to RXR and resolve to ResolvedResource
-    const rxr = await this.typeHandler.deserialize(data, manifest);
+    // Deserialize to RXR
+    return this.typeHandler.deserialize(data, manifest);
+  }
+
+  async resolve<TArgs = void, TResult = unknown>(
+    locator: string
+  ): Promise<ResolvedResource<TArgs, TResult>> {
+    // Get the raw RXR first
+    const rxr = await this.get(locator);
+    // Resolve to ResolvedResource
     return this.typeHandler.resolve<TArgs, TResult>(rxr);
   }
 
