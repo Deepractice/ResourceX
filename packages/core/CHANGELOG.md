@@ -1,5 +1,11 @@
 # @resourcexjs/core
 
+## 1.6.0
+
+### Patch Changes
+
+- @resourcexjs/arp@1.6.0
+
 ## 1.5.0
 
 ### Patch Changes
