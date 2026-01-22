@@ -22,7 +22,7 @@ async function createTestRXR(name: string, content: string): Promise<RXR> {
   };
 }
 
-describe("ARPRegistry", () => {
+describe("LocalRegistry", () => {
   beforeEach(async () => {
     await mkdir(TEST_DIR, { recursive: true });
   });

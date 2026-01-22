@@ -1,10 +1,10 @@
 import type { Registry, RegistryConfig } from "./types.js";
-import { ARPRegistry } from "./ARPRegistry.js";
+import { LocalRegistry } from "./LocalRegistry.js";
 
 /**
  * Create a registry instance.
- * Uses ARP protocol for storage operations.
+ * Uses local filesystem for storage operations.
  */
 export function createRegistry(config?: RegistryConfig): Registry {
-  return new ARPRegistry(config);
+  return new LocalRegistry(config);
 }

@@ -76,7 +76,7 @@ export type { LoadResourceConfig } from "@resourcexjs/loader";
 // Registry
 // ============================================
 export type { Registry, RegistryConfig } from "@resourcexjs/registry";
-export { createRegistry, ARPRegistry } from "@resourcexjs/registry";
+export { createRegistry, LocalRegistry } from "@resourcexjs/registry";
 
 // ============================================
 // Version

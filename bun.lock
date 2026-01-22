@@ -36,11 +36,11 @@
     },
     "packages/arp": {
       "name": "@resourcexjs/arp",
-      "version": "1.0.0",
+      "version": "1.6.0",
     },
     "packages/core": {
       "name": "@resourcexjs/core",
-      "version": "1.0.0",
+      "version": "1.6.0",
       "dependencies": {
         "@resourcexjs/arp": "workspace:*",
         "modern-tar": "^0.7.3",
@@ -48,23 +48,22 @@
     },
     "packages/loader": {
       "name": "@resourcexjs/loader",
-      "version": "1.0.0",
+      "version": "1.6.0",
       "dependencies": {
         "@resourcexjs/core": "workspace:*",
       },
     },
     "packages/registry": {
       "name": "@resourcexjs/registry",
-      "version": "1.0.0",
+      "version": "1.6.0",
       "dependencies": {
-        "@resourcexjs/arp": "workspace:*",
         "@resourcexjs/core": "workspace:*",
         "@resourcexjs/type": "workspace:*",
       },
     },
     "packages/resourcex": {
       "name": "resourcexjs",
-      "version": "1.0.0",
+      "version": "1.6.0",
       "dependencies": {
         "@resourcexjs/arp": "workspace:*",
         "@resourcexjs/core": "workspace:*",
@@ -75,7 +74,7 @@
     },
     "packages/type": {
       "name": "@resourcexjs/type",
-      "version": "1.0.0",
+      "version": "1.6.0",
       "dependencies": {
         "@resourcexjs/core": "workspace:*",
       },

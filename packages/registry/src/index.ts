@@ -6,5 +6,5 @@
 
 export type { Registry, RegistryConfig, SearchOptions } from "./types.js";
 export { RegistryError } from "./errors.js";
-export { ARPRegistry } from "./ARPRegistry.js";
+export { LocalRegistry } from "./LocalRegistry.js";
 export { createRegistry } from "./createRegistry.js";

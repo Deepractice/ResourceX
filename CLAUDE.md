@@ -179,9 +179,9 @@ interface SearchOptions {
 }
 ```
 
-**ARPRegistry Implementation:**
+**LocalRegistry Implementation:**
 
-- Uses ARP for atomic I/O (read/write via arp:text:file://)
+- Uses Node.js `fs` module directly for local storage
 - Uses TypeHandlerChain for serialization/deserialization
 - Storage: `~/.resourcex/{domain}/{path}/{name}.{type}/{version}/`
 
@@ -295,16 +295,16 @@ Follow `issues/000-unified-development-mode.md`:
 Registry delegates serialization to TypeHandlerChain, keeping concerns separated:
 
 ```typescript
-// ARPRegistry (storage layer)
-class ARPRegistry implements Registry {
+// LocalRegistry (storage layer)
+class LocalRegistry implements Registry {
   private typeChain: TypeHandlerChain;
 
   async link(rxr: RXR) {
     // Delegate to chain
     const buffer = await this.typeChain.serialize(rxr);
 
-    // Store using ARP
-    await this.arp.parse(url).deposit(buffer);
+    // Store using fs
+    await writeFile(contentPath, buffer);
   }
 }
 ```
