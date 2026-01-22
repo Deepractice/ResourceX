@@ -1,5 +1,46 @@
 # @resourcexjs/arp
 
+## 1.7.0
+
+### Minor Changes
+
+- 1408238: feat: add RemoteRegistry and auto-create Registry support
+
+  ## Registry Package
+  - Add `RemoteRegistry` for accessing remote registries via HTTP API
+  - Add `discoverRegistry()` for well-known service discovery
+  - Split `RegistryConfig` into `LocalRegistryConfig` and `RemoteRegistryConfig`
+  - `createRegistry()` now supports both local and remote modes
+
+  ## ARP Package
+  - `RxrTransport` now auto-creates Registry based on domain:
+    - `localhost` domain: Uses LocalRegistry (filesystem)
+    - Other domains: Uses RemoteRegistry with well-known discovery
+  - Add `clearRegistryCache()` for testing
+  - ARP now depends on registry package
+
+  ## Core Package
+  - Remove unused dependency on ARP package
+
+  This completes Phase 2 and Phase 3 of the remote registry support plan.
+  See issues/015-registry-remote-support.md for details.
+
+- d1a5f15: feat: add RxrTransport and Registry.get()
+  - Add `Registry.get(locator)` method to retrieve raw RXR without resolving
+  - Add `RxrTransport` class for accessing files inside resources via ARP protocol
+  - Format: `arp:{semantic}:rxr://{rxl}/{internal-path}`
+  - Example: `arp:text:rxr://localhost/hello.text@1.0.0/content`
+
+  Note: RxrTransport currently requires manual registration with a Registry instance.
+  Future work will add HTTP protocol support for automatic remote access (see issues/004-registry-http-protocol.md).
+
+### Patch Changes
+
+- Updated dependencies [ad3b2ac]
+- Updated dependencies [1408238]
+- Updated dependencies [d1a5f15]
+  - @resourcexjs/registry@1.7.0
+
 ## 1.6.0
 
 ## 1.5.0

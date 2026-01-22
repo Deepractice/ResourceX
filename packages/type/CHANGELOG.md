@@ -1,5 +1,12 @@
 # @resourcexjs/type
 
+## 1.7.0
+
+### Patch Changes
+
+- Updated dependencies [1408238]
+  - @resourcexjs/core@1.7.0
+
 ## 1.6.0
 
 ### Patch Changes
