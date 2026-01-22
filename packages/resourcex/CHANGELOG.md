@@ -1,5 +1,16 @@
 # resourcexjs
 
+## 1.6.0
+
+### Patch Changes
+
+- Updated dependencies [d88f26c]
+  - @resourcexjs/registry@1.6.0
+  - @resourcexjs/core@1.6.0
+  - @resourcexjs/type@1.6.0
+  - @resourcexjs/loader@1.6.0
+  - @resourcexjs/arp@1.6.0
+
 ## 1.5.0
 
 ### Minor Changes

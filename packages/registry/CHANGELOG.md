@@ -1,5 +1,21 @@
 # @resourcexjs/registry
 
+## 1.6.0
+
+### Minor Changes
+
+- d88f26c: refactor: version as subdirectory, content.tar.gz extension
+
+  Storage structure change:
+  - Old: `{domain}/{name}.{type}@{version}/content`
+  - New: `{domain}/{name}.{type}/{version}/content.tar.gz`
+
+### Patch Changes
+
+- @resourcexjs/core@1.6.0
+- @resourcexjs/type@1.6.0
+- @resourcexjs/arp@1.6.0
+
 ## 1.5.0
 
 ### Minor Changes
