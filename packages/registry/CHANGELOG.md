@@ -1,5 +1,54 @@
 # @resourcexjs/registry
 
+## 1.7.0
+
+### Minor Changes
+
+- ad3b2ac: refactor: replace ARPRegistry with LocalRegistry
+  - Registry no longer depends on ARP package
+  - Uses Node.js `fs` module directly for local storage
+  - Exported class renamed: `ARPRegistry` → `LocalRegistry`
+  - `createRegistry()` API remains unchanged
+
+  This is Phase 1 of the remote registry support plan (see issues/015-registry-remote-support.md).
+  Breaking change: Direct imports of `ARPRegistry` need to be updated to `LocalRegistry`.
+
+- 1408238: feat: add RemoteRegistry and auto-create Registry support
+
+  ## Registry Package
+  - Add `RemoteRegistry` for accessing remote registries via HTTP API
+  - Add `discoverRegistry()` for well-known service discovery
+  - Split `RegistryConfig` into `LocalRegistryConfig` and `RemoteRegistryConfig`
+  - `createRegistry()` now supports both local and remote modes
+
+  ## ARP Package
+  - `RxrTransport` now auto-creates Registry based on domain:
+    - `localhost` domain: Uses LocalRegistry (filesystem)
+    - Other domains: Uses RemoteRegistry with well-known discovery
+  - Add `clearRegistryCache()` for testing
+  - ARP now depends on registry package
+
+  ## Core Package
+  - Remove unused dependency on ARP package
+
+  This completes Phase 2 and Phase 3 of the remote registry support plan.
+  See issues/015-registry-remote-support.md for details.
+
+- d1a5f15: feat: add RxrTransport and Registry.get()
+  - Add `Registry.get(locator)` method to retrieve raw RXR without resolving
+  - Add `RxrTransport` class for accessing files inside resources via ARP protocol
+  - Format: `arp:{semantic}:rxr://{rxl}/{internal-path}`
+  - Example: `arp:text:rxr://localhost/hello.text@1.0.0/content`
+
+  Note: RxrTransport currently requires manual registration with a Registry instance.
+  Future work will add HTTP protocol support for automatic remote access (see issues/004-registry-http-protocol.md).
+
+### Patch Changes
+
+- Updated dependencies [1408238]
+  - @resourcexjs/core@1.7.0
+  - @resourcexjs/type@1.7.0
+
 ## 1.6.0
 
 ### Minor Changes
