@@ -186,16 +186,40 @@ interface SearchOptions {
 const registry = createRegistry();
 const registry2 = createRegistry({ path: "./custom-path" });
 
-// Remote registry
+// Remote registry (HTTP)
 const registry3 = createRegistry({
   endpoint: "https://registry.deepractice.ai/v1",
 });
 
-// Well-known discovery
+// Git registry (requires domain for security)
+const registry4 = createRegistry({
+  type: "git",
+  url: "git@github.com:Deepractice/Registry.git",
+  domain: "deepractice.dev", // Required for remote URLs
+});
+
+// Well-known discovery (auto-binds domain)
 import { discoverRegistry } from "@resourcexjs/registry";
-const endpoint = await discoverRegistry("deepractice.ai");
-// → fetches https://deepractice.ai/.well-known/resourcex
+const discovery = await discoverRegistry("deepractice.dev");
+// → { domain: "deepractice.dev", registries: ["git@github.com:..."] }
 ```
+
+**Well-known Format:**
+
+```json
+// https://deepractice.dev/.well-known/resourcex
+{
+  "version": "1.0",
+  "registries": ["git@github.com:Deepractice/Registry.git"]
+}
+```
+
+**Security:**
+
+- Remote git URLs require `domain` parameter (prevents impersonation)
+- Local paths (./repo) don't require domain (development use)
+- `discoverRegistry()` auto-binds domain from well-known
+- Domain validation: manifest.domain must match trustedDomain
 
 **LocalRegistry Implementation:**
 
@@ -208,6 +232,13 @@ const endpoint = await discoverRegistry("deepractice.ai");
 - Uses HTTP API for resource access
 - Read-only (link/delete not supported)
 - Endpoints: `/resource`, `/content`, `/exists`, `/search`
+
+**GitRegistry Implementation:**
+
+- Clones git repository to `~/.resourcex/.git-cache/{repo-name}/`
+- Every access does `git fetch` to stay current
+- Read-only (link/delete not supported)
+- Security: remote URLs require domain binding
 
 **Storage Structure (Local):**
 
@@ -409,17 +440,26 @@ createTypeHandlerChain(types?: ResourceType[]): TypeHandlerChain
 ### Registry Package (`@resourcexjs/registry`)
 
 ```typescript
-// Create registry (local or remote)
+// Create registry (local, remote, or git)
 createRegistry(): Registry                              // LocalRegistry with default path
-createRegistry({ path?: string, types?: ResourceType[] }): Registry  // LocalRegistry
+createRegistry({ path?: string }): Registry             // LocalRegistry
 createRegistry({ endpoint: string }): Registry          // RemoteRegistry
+createRegistry({ type: "git", url: string, domain: string }): Registry  // GitRegistry
 
-// Well-known discovery
-discoverRegistry(domain: string): Promise<string>       // Returns registry endpoint
+// Well-known discovery (returns domain + registries)
+discoverRegistry(domain: string): Promise<DiscoveryResult>
+// → { domain: "example.com", registries: ["git@github.com:..."] }
+
+// Types
+interface DiscoveryResult {
+  domain: string;
+  registries: string[];
+}
 
 // Classes
 LocalRegistry   // Filesystem-based
 RemoteRegistry  // HTTP API-based
+GitRegistry     // Git clone-based (read-only)
 
 // Registry methods
 registry.link(rxr): Promise<void>

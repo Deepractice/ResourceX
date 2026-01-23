@@ -42,6 +42,36 @@ export interface GitRegistryConfig {
   ref?: string;
   /** Base path in repo for resources. Default: ".resourcex" */
   basePath?: string;
+  /**
+   * Trusted domain for this registry.
+   * If set, only resources with this domain in manifest are allowed.
+   * Required for security - prevents untrusted registries from claiming any domain.
+   */
+  domain?: string;
+}
+
+/**
+ * Well-known discovery response format.
+ * Used by discoverRegistry() to find registry for a domain.
+ */
+export interface WellKnownResponse {
+  version: string;
+  /**
+   * List of registry URLs (git or http).
+   * First one is primary, rest are fallbacks (for future use).
+   */
+  registries: string[];
+}
+
+/**
+ * Result from discoverRegistry().
+ * Contains domain and its authorized registries.
+ */
+export interface DiscoveryResult {
+  /** The domain that was discovered */
+  domain: string;
+  /** Authorized registry URLs for this domain */
+  registries: string[];
 }
 
 /**

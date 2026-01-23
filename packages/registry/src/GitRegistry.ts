@@ -27,13 +27,34 @@ export class GitRegistry implements Registry {
   private readonly basePath: string;
   private readonly cacheDir: string;
   private readonly typeHandler: TypeHandlerChain;
+  private readonly trustedDomain?: string;
 
   constructor(config: GitRegistryConfig) {
     this.url = config.url;
     this.ref = config.ref ?? "main";
     this.basePath = config.basePath ?? ".resourcex";
-    this.cacheDir = this.buildCacheDir(config.url);
     this.typeHandler = TypeHandlerChain.create();
+    this.trustedDomain = config.domain;
+
+    // Security check: remote URL requires domain binding
+    if (this.isRemoteUrl(config.url) && !config.domain) {
+      throw new RegistryError(
+        `Remote git registry requires a trusted domain.\n\n` +
+          `Either:\n` +
+          `1. Use discoverRegistry("your-domain.com") to auto-bind domain\n` +
+          `2. Explicitly set domain: createRegistry({ type: "git", url: "...", domain: "your-domain.com" })\n\n` +
+          `This ensures resources from untrusted sources cannot impersonate your domain.`
+      );
+    }
+
+    this.cacheDir = this.buildCacheDir(config.url);
+  }
+
+  /**
+   * Check if URL is a remote git URL (not local path).
+   */
+  private isRemoteUrl(url: string): boolean {
+    return url.startsWith("git@") || url.startsWith("https://") || url.startsWith("http://");
   }
 
   /**
@@ -121,6 +142,13 @@ export class GitRegistry implements Registry {
     const manifestContent = await readFile(manifestPath, "utf-8");
     const manifestData = JSON.parse(manifestContent);
     const manifest = createRXM(manifestData);
+
+    // Validate domain if trustedDomain is set
+    if (this.trustedDomain && manifest.domain !== this.trustedDomain) {
+      throw new RegistryError(
+        `Untrusted domain: resource claims "${manifest.domain}" but registry only trusts "${this.trustedDomain}"`
+      );
+    }
 
     // Read content
     const contentPath = join(resourcePath, "content.tar.gz");

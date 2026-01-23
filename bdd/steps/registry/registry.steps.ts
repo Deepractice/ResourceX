@@ -295,10 +295,11 @@ Then("the content should be {string}", async function (this: RegistryWorld, expe
 });
 
 Then("it should throw a RegistryError", async function (this: RegistryWorld) {
-  const { RegistryError } = await import("resourcexjs");
   assert.ok(this.error, "Error should have been thrown");
-  assert.ok(
-    this.error instanceof RegistryError,
+  // Use error.name instead of instanceof (bundle-safe)
+  assert.strictEqual(
+    this.error?.name,
+    "RegistryError",
     `Expected RegistryError but got ${this.error?.name}`
   );
 });

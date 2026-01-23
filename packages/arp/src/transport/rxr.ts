@@ -101,7 +101,7 @@ export class RxrTransport implements TransportHandler {
    * Get or create a registry for the given domain.
    * - If a registry was provided in constructor, use it
    * - localhost: create LocalRegistry
-   * - Other domains: discover endpoint via well-known and create RemoteRegistry
+   * - Other domains: discover endpoint via well-known and create appropriate registry
    */
   private async getRegistry(domain: string): Promise<RxrTransportRegistry> {
     // Use injected registry if provided
@@ -122,8 +122,21 @@ export class RxrTransport implements TransportHandler {
     } else {
       // Discover remote registry endpoint via well-known
       try {
-        const endpoint = await discoverRegistry(domain);
-        registry = createRegistry({ endpoint });
+        const discovery = await discoverRegistry(domain);
+        const registryUrl = discovery.registries[0];
+
+        // Determine registry type based on URL format
+        if (this.isGitUrl(registryUrl)) {
+          // Git registry (SSH or HTTPS git URL)
+          registry = createRegistry({
+            type: "git",
+            url: registryUrl,
+            domain: discovery.domain, // Bind domain for security
+          });
+        } else {
+          // HTTP registry
+          registry = createRegistry({ endpoint: registryUrl });
+        }
       } catch (error) {
         throw new TransportError(
           `Failed to discover registry for domain ${domain}: ${(error as Error).message}`,
@@ -135,6 +148,13 @@ export class RxrTransport implements TransportHandler {
     // Cache the registry
     registryCache.set(domain, registry);
     return registry;
+  }
+
+  /**
+   * Check if URL is a git repository URL.
+   */
+  private isGitUrl(url: string): boolean {
+    return url.startsWith("git@") || url.endsWith(".git");
   }
 
   /**

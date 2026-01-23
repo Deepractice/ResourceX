@@ -14,6 +14,8 @@ export type {
   PullOptions,
   PublishOptions,
   PublishTarget,
+  WellKnownResponse,
+  DiscoveryResult,
 } from "./types.js";
 export { isRemoteConfig, isGitConfig } from "./types.js";
 export { RegistryError } from "./errors.js";

@@ -111,20 +111,14 @@ export class RemoteRegistry implements Registry {
   }
 }
 
-/**
- * Well-known discovery response format.
- */
-interface WellKnownResponse {
-  version: string;
-  registry: string;
-}
+import type { WellKnownResponse, DiscoveryResult } from "./types.js";
 
 /**
- * Discover registry endpoint for a domain using well-known.
+ * Discover registry for a domain using well-known.
  * @param domain - The domain to discover (e.g., "deepractice.ai")
- * @returns The registry endpoint URL
+ * @returns Discovery result with domain and authorized registries
  */
-export async function discoverRegistry(domain: string): Promise<string> {
+export async function discoverRegistry(domain: string): Promise<DiscoveryResult> {
   const wellKnownUrl = `https://${domain}/.well-known/resourcex`;
 
   try {
@@ -134,7 +128,18 @@ export async function discoverRegistry(domain: string): Promise<string> {
     }
 
     const data = (await response.json()) as WellKnownResponse;
-    return data.registry;
+
+    // Validate response format
+    if (!data.registries || !Array.isArray(data.registries) || data.registries.length === 0) {
+      throw new RegistryError(
+        `Invalid well-known response for ${domain}: missing or empty registries`
+      );
+    }
+
+    return {
+      domain,
+      registries: data.registries,
+    };
   } catch (error) {
     if (error instanceof RegistryError) {
       throw error;

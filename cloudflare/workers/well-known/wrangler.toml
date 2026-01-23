@@ -1,0 +1,8 @@
+
+# Cloudflare Workers configuration for deepractice.dev well-known
+name = "deepractice-dev-well-known"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+# Custom domain (configure in Cloudflare Dashboard after deployment)
+# routes = [{ pattern = "deepractice.dev/.well-known/*", zone_name = "deepractice.dev" }]

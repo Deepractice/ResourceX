@@ -249,7 +249,7 @@ const rxr: RXR = {
 
 ### Registry
 
-Resource storage and retrieval (local or remote):
+Resource storage and retrieval (local, remote, or git):
 
 ```typescript
 import { createRegistry, discoverRegistry } from "resourcexjs";
@@ -258,21 +258,28 @@ import { createRegistry, discoverRegistry } from "resourcexjs";
 const registry = createRegistry();
 const registry2 = createRegistry({ path: "./custom-path" });
 
-// Remote registry
+// Remote registry (HTTP)
 const registry3 = createRegistry({
   endpoint: "https://registry.deepractice.ai/v1",
 });
 
-// Well-known discovery
-const endpoint = await discoverRegistry("deepractice.ai");
-// → fetches https://deepractice.ai/.well-known/resourcex
-// → returns { "version": "1.0", "registry": "https://..." }
+// Git registry (requires domain for security)
+const registry4 = createRegistry({
+  type: "git",
+  url: "git@github.com:Deepractice/Registry.git",
+  domain: "deepractice.dev", // Required for remote URLs
+});
+
+// Well-known discovery (auto-binds domain)
+const discovery = await discoverRegistry("deepractice.dev");
+// → fetches https://deepractice.dev/.well-known/resourcex
+// → returns { domain: "deepractice.dev", registries: ["git@github.com:..."] }
 
 // Link to local (like npm link)
 await registry.link(rxr);
 
 // Resolve from local or remote (like npm install)
-const rxr = await registry.resolve("deepractice.ai/assistant.prompt@1.0.0");
+const rxr = await registry.resolve("deepractice.dev/assistant.prompt@1.0.0");
 
 // Check existence
 await registry.exists("localhost/test.text@1.0.0");
@@ -283,6 +290,8 @@ await registry.delete("localhost/test.text@1.0.0");
 // Search
 const results = await registry.search({ query: "assistant", limit: 10 });
 ```
+
+**Security Note:** Remote git URLs require a `domain` parameter to prevent impersonation attacks. Local paths (./repo) don't require domain for development use.
 
 ### Resource Types
 
