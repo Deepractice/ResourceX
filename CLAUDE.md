@@ -213,23 +213,31 @@ const endpoint = await discoverRegistry("deepractice.ai");
 
 ```
 ~/.resourcex/
-└── {domain}/
-    └── {path}/
-        └── {name}.{type}/
-            └── {version}/
-                ├── manifest.json    # RXM as JSON
-                └── content.tar.gz   # RXC as tar.gz archive
+├── local/                              # Development resources
+│   └── {name}.{type}/
+│       └── {version}/
+│           ├── manifest.json
+│           └── content.tar.gz
+│
+└── cache/                              # Remote cached resources
+    └── {domain}/
+        └── {path}/
+            └── {name}.{type}/
+                └── {version}/
+                    ├── manifest.json
+                    └── content.tar.gz
 ```
 
 ### Resolution Flow
 
 ```
-registry.resolve("deepractice.ai/assistant.prompt@1.0.0")
+registry.resolve("my-tool.text@1.0.0")
   ↓
 LocalRegistry:
-1. Check local: ~/.resourcex/deepractice.ai/...
-2. Read manifest.json + content.tar.gz
-3. typeChain.deserialize → RXR
+1. Check local/ first: ~/.resourcex/local/my-tool.text/1.0.0/
+2. If not found, check cache/: ~/.resourcex/cache/.../my-tool.text/1.0.0/
+3. Read manifest.json + content.tar.gz
+4. typeChain.deserialize → RXR
 
 RemoteRegistry:
 1. GET /resource?locator=... → manifest

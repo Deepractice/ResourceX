@@ -122,3 +122,13 @@ Then("I can read file content as Buffer", async function (this: RegistryGetWorld
     assert.ok(Buffer.isBuffer(content), "File content should be a Buffer");
   }
 });
+
+Then(
+  "the raw content should be {string}",
+  async function (this: RegistryGetWorld, expected: string) {
+    assert.ok(this.rxr, "Should have rxr from get()");
+    const file = await this.rxr!.content.file("content");
+    assert.ok(file, "Should have content file");
+    assert.equal(file.toString(), expected, "Content should match");
+  }
+);

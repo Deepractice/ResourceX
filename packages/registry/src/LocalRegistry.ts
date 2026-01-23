@@ -1,7 +1,13 @@
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { readFile, writeFile, mkdir, rm, stat, readdir } from "node:fs/promises";
-import type { Registry, LocalRegistryConfig, SearchOptions } from "./types.js";
+import type {
+  Registry,
+  LocalRegistryConfig,
+  SearchOptions,
+  PullOptions,
+  PublishOptions,
+} from "./types.js";
 import type { RXR, RXL } from "@resourcexjs/core";
 import { parseRXL, createRXM } from "@resourcexjs/core";
 import { TypeHandlerChain } from "@resourcexjs/type";
@@ -36,53 +42,78 @@ export class LocalRegistry implements Registry {
 
   /**
    * Build filesystem path for a resource.
-   * Path structure: {basePath}/{domain}/{path}/{name}.{type}/{version}
+   *
+   * Storage structure:
+   * - local: {basePath}/local/{name}.{type}/{version}
+   * - cache: {basePath}/cache/{domain}/{path}/{name}.{type}/{version}
+   *
+   * @param locator - Resource locator
+   * @param area - Storage area ("local" or "cache")
    */
-  private buildPath(locator: string | RXL): string {
+  private buildPath(locator: string | RXL, area: "local" | "cache"): string {
     const rxl = typeof locator === "string" ? parseRXL(locator) : locator;
-    const domain = rxl.domain ?? "localhost";
+    const resourceName = rxl.type ? `${rxl.name}.${rxl.type}` : rxl.name;
     const version = rxl.version ?? "latest";
 
-    let path = join(this.basePath, domain);
-    if (rxl.path) {
-      path = join(path, rxl.path);
+    if (area === "local") {
+      // local: {basePath}/local/{name}.{type}/{version}
+      return join(this.basePath, "local", resourceName, version);
+    } else {
+      // cache: {basePath}/cache/{domain}/{path}/{name}.{type}/{version}
+      const domain = rxl.domain ?? "localhost";
+      let path = join(this.basePath, "cache", domain);
+      if (rxl.path) {
+        path = join(path, rxl.path);
+      }
+      return join(path, resourceName, version);
     }
-
-    const resourceName = rxl.type ? `${rxl.name}.${rxl.type}` : rxl.name;
-
-    return join(path, resourceName, version);
   }
 
-  async publish(_resource: RXR): Promise<void> {
-    // TODO: Implement remote publishing based on domain
-    throw new RegistryError("Remote publish not implemented yet");
+  /**
+   * Determine if a locator refers to a local-only resource (no domain or localhost).
+   */
+  private isLocalOnlyLocator(locator: string | RXL): boolean {
+    const rxl = typeof locator === "string" ? parseRXL(locator) : locator;
+    return !rxl.domain || rxl.domain === "localhost";
   }
 
-  async link(resource: RXR): Promise<void> {
-    const locator = resource.manifest.toLocator();
-    const resourcePath = this.buildPath(locator);
-
-    // Ensure directory exists
-    await mkdir(resourcePath, { recursive: true });
-
-    // Write manifest (text/json)
+  /**
+   * Check if a resource exists at a specific path.
+   */
+  private async existsAt(resourcePath: string): Promise<boolean> {
     const manifestPath = join(resourcePath, "manifest.json");
-    await writeFile(manifestPath, JSON.stringify(resource.manifest.toJSON(), null, 2), "utf-8");
-
-    // Serialize content using type handler chain
-    const contentPath = join(resourcePath, "content.tar.gz");
-    const serialized = await this.typeHandler.serialize(resource);
-    await writeFile(contentPath, serialized);
+    try {
+      await stat(manifestPath);
+      return true;
+    } catch {
+      return false;
+    }
   }
 
-  async get(locator: string): Promise<RXR> {
-    // Check exists first
-    if (!(await this.exists(locator))) {
-      throw new RegistryError(`Resource not found: ${locator}`);
+  /**
+   * Find which area a resource exists in.
+   * Returns the area ("local" or "cache") or null if not found.
+   */
+  private async findArea(locator: string): Promise<"local" | "cache" | null> {
+    // Check local first
+    const localPath = this.buildPath(locator, "local");
+    if (await this.existsAt(localPath)) {
+      return "local";
     }
 
-    const resourcePath = this.buildPath(locator);
+    // Then check cache
+    const cachePath = this.buildPath(locator, "cache");
+    if (await this.existsAt(cachePath)) {
+      return "cache";
+    }
 
+    return null;
+  }
+
+  /**
+   * Load resource from a specific path.
+   */
+  private async loadFrom(resourcePath: string): Promise<RXR> {
     // Read manifest first to determine type
     const manifestPath = join(resourcePath, "manifest.json");
     const manifestContent = await readFile(manifestPath, "utf-8");
@@ -97,6 +128,45 @@ export class LocalRegistry implements Registry {
     return this.typeHandler.deserialize(data, manifest);
   }
 
+  async pull(_locator: string, _options?: PullOptions): Promise<void> {
+    // TODO: Implement in #018 (GitHubRegistry)
+    throw new RegistryError("Pull not implemented yet - see issue #018");
+  }
+
+  async publish(_resource: RXR, _options: PublishOptions): Promise<void> {
+    // TODO: Implement in #018 (GitHubRegistry)
+    throw new RegistryError("Publish not implemented yet - see issue #018");
+  }
+
+  async link(resource: RXR): Promise<void> {
+    // Always link to local/ directory (development area)
+    const locator = resource.manifest.toLocator();
+    const resourcePath = this.buildPath(locator, "local");
+
+    // Ensure directory exists
+    await mkdir(resourcePath, { recursive: true });
+
+    // Write manifest (text/json) - preserves original domain
+    const manifestPath = join(resourcePath, "manifest.json");
+    await writeFile(manifestPath, JSON.stringify(resource.manifest.toJSON(), null, 2), "utf-8");
+
+    // Serialize content using type handler chain
+    const contentPath = join(resourcePath, "content.tar.gz");
+    const serialized = await this.typeHandler.serialize(resource);
+    await writeFile(contentPath, serialized);
+  }
+
+  async get(locator: string): Promise<RXR> {
+    // Find in local first, then cache
+    const area = await this.findArea(locator);
+    if (!area) {
+      throw new RegistryError(`Resource not found: ${locator}`);
+    }
+
+    const resourcePath = this.buildPath(locator, area);
+    return this.loadFrom(resourcePath);
+  }
+
   async resolve<TArgs = void, TResult = unknown>(
     locator: string
   ): Promise<ResolvedResource<TArgs, TResult>> {
@@ -107,55 +177,63 @@ export class LocalRegistry implements Registry {
   }
 
   async exists(locator: string): Promise<boolean> {
-    const resourcePath = this.buildPath(locator);
-    const manifestPath = join(resourcePath, "manifest.json");
-
-    try {
-      await stat(manifestPath);
-      return true;
-    } catch {
-      return false;
-    }
+    // Check both local and cache
+    const area = await this.findArea(locator);
+    return area !== null;
   }
 
   async delete(locator: string): Promise<void> {
-    // Check if exists first - silently return if not
-    if (!(await this.exists(locator))) {
-      return;
+    // Determine which area to delete from based on locator
+    // - If locator has no domain or localhost: delete from local/
+    // - If locator has domain: delete from cache/
+    const isLocal = this.isLocalOnlyLocator(locator);
+
+    if (isLocal) {
+      // Delete from local/
+      const localPath = this.buildPath(locator, "local");
+      if (await this.existsAt(localPath)) {
+        await rm(localPath, { recursive: true, force: true });
+      }
+    } else {
+      // Delete from cache/
+      const cachePath = this.buildPath(locator, "cache");
+      if (await this.existsAt(cachePath)) {
+        await rm(cachePath, { recursive: true, force: true });
+      }
     }
-
-    const resourcePath = this.buildPath(locator);
-
-    // Delete the entire version directory
-    await rm(resourcePath, { recursive: true, force: true });
   }
 
   async search(options?: SearchOptions): Promise<RXL[]> {
     const { query, limit, offset = 0 } = options ?? {};
 
-    // List all resources recursively from basePath
-    let entries: string[];
+    const locators: RXL[] = [];
+
+    // Search in local/ directory
+    const localDir = join(this.basePath, "local");
     try {
-      entries = await this.listRecursive(this.basePath);
+      const localEntries = await this.listRecursive(localDir);
+      for (const entry of localEntries) {
+        if (!entry.endsWith("manifest.json")) continue;
+        const relativePath = entry.slice(localDir.length + 1);
+        const rxl = this.parseLocalEntry(relativePath);
+        if (rxl) locators.push(rxl);
+      }
     } catch {
-      // If basePath doesn't exist, return empty array
-      return [];
+      // local/ doesn't exist
     }
 
-    // Filter for manifest.json files and extract locators
-    const locators: RXL[] = [];
-    for (const entry of entries) {
-      if (!entry.endsWith("manifest.json")) {
-        continue;
+    // Search in cache/ directory
+    const cacheDir = join(this.basePath, "cache");
+    try {
+      const cacheEntries = await this.listRecursive(cacheDir);
+      for (const entry of cacheEntries) {
+        if (!entry.endsWith("manifest.json")) continue;
+        const relativePath = entry.slice(cacheDir.length + 1);
+        const rxl = this.parseCacheEntry(relativePath);
+        if (rxl) locators.push(rxl);
       }
-
-      // Parse the path to extract RXL components
-      // Format: {domain}/{path}/{name}.{type}/{version}/manifest.json
-      const relativePath = entry.slice(this.basePath.length + 1); // Remove basePath/
-      const rxl = this.parseEntryToRXL(relativePath);
-      if (rxl) {
-        locators.push(rxl);
-      }
+    } catch {
+      // cache/ doesn't exist
     }
 
     // Filter by query if provided
@@ -204,10 +282,46 @@ export class LocalRegistry implements Registry {
   }
 
   /**
-   * Parse a file entry path to RXL.
+   * Parse a local entry path to RXL.
+   * Entry format: {name}.{type}/{version}/manifest.json
+   */
+  private parseLocalEntry(entry: string): RXL | null {
+    // Remove /manifest.json suffix
+    const dirPath = entry.replace(/[/\\]manifest\.json$/, "");
+    const parts = dirPath.split(/[/\\]/);
+
+    if (parts.length < 2) {
+      // Need at least: name.type, version
+      return null;
+    }
+
+    // Last part is version
+    const version = parts.pop()!;
+    // First part is {name}.{type} or {name}
+    const nameTypePart = parts.shift()!;
+
+    // Split name and type
+    const { name, type } = this.parseNameType(nameTypePart);
+
+    // Construct locator string (no domain for local)
+    let locatorStr = name;
+    if (type) {
+      locatorStr += `.${type}`;
+    }
+    locatorStr += `@${version}`;
+
+    try {
+      return parseRXL(locatorStr);
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Parse a cache entry path to RXL.
    * Entry format: {domain}/{path}/{name}.{type}/{version}/manifest.json
    */
-  private parseEntryToRXL(entry: string): RXL | null {
+  private parseCacheEntry(entry: string): RXL | null {
     // Remove /manifest.json suffix
     const dirPath = entry.replace(/[/\\]manifest\.json$/, "");
     const parts = dirPath.split(/[/\\]/);
@@ -227,19 +341,9 @@ export class LocalRegistry implements Registry {
     const path = parts.length > 0 ? parts.join("/") : undefined;
 
     // Split name and type
-    const dotIndex = nameTypePart.lastIndexOf(".");
-    let name: string;
-    let type: string | undefined;
+    const { name, type } = this.parseNameType(nameTypePart);
 
-    if (dotIndex !== -1) {
-      name = nameTypePart.substring(0, dotIndex);
-      type = nameTypePart.substring(dotIndex + 1);
-    } else {
-      name = nameTypePart;
-      type = undefined;
-    }
-
-    // Construct locator string and parse
+    // Construct locator string
     let locatorStr = domain;
     if (path) {
       locatorStr += `/${path}`;
@@ -254,6 +358,21 @@ export class LocalRegistry implements Registry {
       return parseRXL(locatorStr);
     } catch {
       return null;
+    }
+  }
+
+  /**
+   * Parse name and type from a combined string like "name.type" or "name".
+   */
+  private parseNameType(nameTypePart: string): { name: string; type: string | undefined } {
+    const dotIndex = nameTypePart.lastIndexOf(".");
+    if (dotIndex !== -1) {
+      return {
+        name: nameTypePart.substring(0, dotIndex),
+        type: nameTypePart.substring(dotIndex + 1),
+      };
+    } else {
+      return { name: nameTypePart, type: undefined };
     }
   }
 }

@@ -10,6 +10,9 @@ export type {
   LocalRegistryConfig,
   RemoteRegistryConfig,
   SearchOptions,
+  PullOptions,
+  PublishOptions,
+  PublishTarget,
 } from "./types.js";
 export { isRemoteConfig } from "./types.js";
 export { RegistryError } from "./errors.js";

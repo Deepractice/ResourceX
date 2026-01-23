@@ -344,8 +344,8 @@ Then("results should contain {string}", async function (this: RegistryWorld, nam
 Then(
   "the resource should be stored in {string}",
   async function (this: RegistryWorld, path: string) {
-    // New storage structure: {basePath}/{domain}/{name}.{type}/{version}/
-    const fullPath = join(process.cwd(), path, "localhost", "test.text", "1.0.0");
+    // New storage structure: {basePath}/local/{name}.{type}/{version}/
+    const fullPath = join(process.cwd(), path, "local", "test.text", "1.0.0");
     try {
       await stat(fullPath);
       assert.ok(true);

@@ -1,4 +1,10 @@
-import type { Registry, RemoteRegistryConfig, SearchOptions } from "./types.js";
+import type {
+  Registry,
+  RemoteRegistryConfig,
+  SearchOptions,
+  PullOptions,
+  PublishOptions,
+} from "./types.js";
 import type { RXR, RXL, ManifestData } from "@resourcexjs/core";
 import { parseRXL, createRXM } from "@resourcexjs/core";
 import { TypeHandlerChain } from "@resourcexjs/type";
@@ -23,7 +29,11 @@ export class RemoteRegistry implements Registry {
     this.typeHandler.register(type);
   }
 
-  async publish(_resource: RXR): Promise<void> {
+  async pull(_locator: string, _options?: PullOptions): Promise<void> {
+    throw new RegistryError("Cannot pull to remote registry - use local registry for pulling");
+  }
+
+  async publish(_resource: RXR, _options: PublishOptions): Promise<void> {
     throw new RegistryError("Remote registry publish not implemented yet");
   }
 

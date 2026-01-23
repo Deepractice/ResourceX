@@ -212,31 +212,58 @@ const all = await registry.search();
 
 ## Storage Structure
 
-Resources are stored in Maven-style structure:
+Resources are stored in two separate areas:
+
+- **local/** - Development resources (organized by name.type/version)
+- **cache/** - Remote cached resources (organized by domain/path/name.type/version)
 
 ```
 ~/.resourcex/
-└── {domain}/
-    └── {path}/
-        └── {name}.{type}/
-            └── {version}/
-                ├── manifest.json    # RXM metadata
-                └── content.tar.gz   # RXC archive
+├── local/                              # Development area
+│   └── {name}.{type}/
+│       └── {version}/
+│           ├── manifest.json
+│           └── content.tar.gz
+│
+└── cache/                              # Remote cache area
+    └── {domain}/
+        └── {path}/
+            └── {name}.{type}/
+                └── {version}/
+                    ├── manifest.json
+                    └── content.tar.gz
 ```
 
 ### Example
 
-For resource `deepractice.ai/prompts/assistant.prompt@1.0.0`:
+For a local development resource `my-prompt.text@1.0.0`:
 
 ```
 ~/.resourcex/
-└── deepractice.ai/
-    └── prompts/
-        └── assistant.prompt/
-            └── 1.0.0/
-                ├── manifest.json
-                └── content.tar.gz
+└── local/
+    └── my-prompt.text/
+        └── 1.0.0/
+            ├── manifest.json    # domain can be "deepractice.ai" or "localhost"
+            └── content.tar.gz
 ```
+
+For a cached remote resource `deepractice.ai/prompts/assistant.text@1.0.0`:
+
+```
+~/.resourcex/
+└── cache/
+    └── deepractice.ai/
+        └── prompts/
+            └── assistant.text/
+                └── 1.0.0/
+                    ├── manifest.json
+                    └── content.tar.gz
+```
+
+### Resolution Order
+
+1. **local/** is checked first (development resources)
+2. **cache/** is checked second (remote cached resources)
 
 **manifest.json:**
 

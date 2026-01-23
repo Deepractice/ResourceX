@@ -31,7 +31,7 @@ export interface RemoteRegistryConfig {
 }
 
 /**
- * Registry configuration - either local or remote.
+ * Registry configuration - local or remote.
  */
 export type RegistryConfig = LocalRegistryConfig | RemoteRegistryConfig;
 
@@ -63,6 +63,39 @@ export interface SearchOptions {
 }
 
 /**
+ * Options for pulling resources from remote registry.
+ */
+export interface PullOptions {
+  /**
+   * Pull from a specific registry instead of auto-discovering.
+   */
+  from?: Registry;
+}
+
+/**
+ * Target configuration for publishing resources.
+ */
+export interface PublishTarget {
+  type: "http" | "git";
+  /** HTTP endpoint (for type: "http") */
+  endpoint?: string;
+  /** Git repository URL (for type: "git") */
+  url?: string;
+  /** Git ref - branch/tag (for type: "git"). Default: "main" */
+  ref?: string;
+}
+
+/**
+ * Options for publishing resources to remote registry.
+ */
+export interface PublishOptions {
+  /**
+   * Target registry configuration.
+   */
+  to: PublishTarget;
+}
+
+/**
  * Registry interface for resource storage and retrieval.
  */
 export interface Registry {
@@ -73,9 +106,20 @@ export interface Registry {
   supportType(type: ResourceType): void;
 
   /**
-   * Publish resource to remote registry (based on domain).
+   * Pull resource from remote registry to local cache.
+   * Discovers remote registry via well-known and caches locally.
+   * @param locator - Resource locator (must include domain)
+   * @param options - Pull options
    */
-  publish(resource: RXR): Promise<void>;
+  pull(locator: string, options?: PullOptions): Promise<void>;
+
+  /**
+   * Publish resource to remote registry.
+   * Resource must exist in local first.
+   * @param resource - Resource to publish
+   * @param options - Publish target configuration
+   */
+  publish(resource: RXR, options: PublishOptions): Promise<void>;
 
   /**
    * Link resource to local registry (for development/caching).
