@@ -99,4 +99,4 @@ jobs:
         run: bun run test
 
       - name: Run BDD Tests
-        run: bun run test:bdd
+        run: bun run test:bdd:ci

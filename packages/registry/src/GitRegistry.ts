@@ -75,18 +75,23 @@ export class GitRegistry implements Registry {
     const gitDir = join(this.cacheDir, ".git");
     const gitArl = this.arp.parse(this.toArpUrl(gitDir));
 
-    if (await gitArl.exists()) {
-      // Already cloned, fetch and pull
-      this.gitExec(`fetch origin`);
-      this.gitExec(`reset --hard origin/${this.getDefaultBranch()}`);
-    } else {
-      // Not cloned yet, create cache dir and clone
-      const cacheArl = this.arp.parse(this.toArpUrl(DEFAULT_GIT_CACHE));
-      await cacheArl.mkdir();
-      // Clone without --branch to use remote's default branch (main or master)
-      execSync(`git clone --depth 1 ${this.url} ${this.cacheDir}`, {
-        stdio: "pipe",
-      });
+    try {
+      if (await gitArl.exists()) {
+        // Already cloned, fetch and pull
+        this.gitExec(`fetch origin`);
+        this.gitExec(`reset --hard origin/${this.getDefaultBranch()}`);
+      } else {
+        // Not cloned yet, create cache dir and clone
+        const cacheArl = this.arp.parse(this.toArpUrl(DEFAULT_GIT_CACHE));
+        await cacheArl.mkdir();
+        // Clone without --branch to use remote's default branch (main or master)
+        execSync(`git clone --depth 1 ${this.url} ${this.cacheDir}`, {
+          stdio: "pipe",
+        });
+      }
+    } catch (error) {
+      const err = error as Error;
+      throw new RegistryError(`Git operation failed: ${err.message}`, { cause: err });
     }
   }
 
