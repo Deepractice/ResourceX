@@ -6,7 +6,7 @@
  */
 
 import type { Resource } from "./semantic/types.js";
-import type { TransportParams } from "./transport/types.js";
+import type { TransportParams, ListOptions } from "./transport/types.js";
 
 /**
  * ARI - Agent Resource Identifier
@@ -46,6 +46,17 @@ export interface ARL extends ARI {
    * Delete the resource
    */
   delete(): Promise<void>;
+
+  /**
+   * List directory contents (only supported by some transports)
+   * @param options - List options (recursive, pattern filter)
+   */
+  list(options?: ListOptions): Promise<string[]>;
+
+  /**
+   * Create directory (only supported by some transports)
+   */
+  mkdir(): Promise<void>;
 
   /**
    * Convert to ARP URL string

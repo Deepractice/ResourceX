@@ -23,3 +23,6 @@ export { LocalRegistry } from "./LocalRegistry.js";
 export { RemoteRegistry, discoverRegistry } from "./RemoteRegistry.js";
 export { GitRegistry } from "./GitRegistry.js";
 export { createRegistry } from "./createRegistry.js";
+
+// Middleware
+export { RegistryMiddleware, DomainValidation, withDomainValidation } from "./middleware/index.js";

@@ -1,15 +1,16 @@
 <div align="center">
   <h1>ResourceX</h1>
-  <p>
-    <strong>基于 ARP 协议的 AI Agent 统一资源管理器</strong>
-  </p>
-  <p>Unified resource manager for AI Agents based on ARP</p>
+  <p><strong>The resource layer for AI Agents</strong></p>
+  <p>AI Agent 的资源层</p>
+
+  <p>Manage, version, and share prompts, tools, skills, and everything</p>
+  <p>管理、版本化、共享 prompts、tools、skills 以及一切</p>
 
   <p>
-    <b>统一访问</b> · <b>原生协议</b> · <b>完全可扩展</b>
+    <b>Decentralized</b> · <b>Extensible</b> · <b>Universal</b>
   </p>
   <p>
-    <b>Unified Access</b> · <b>Web Native</b> · <b>Fully Extensible</b>
+    <b>去中心化</b> · <b>可扩展</b> · <b>通用</b>
   </p>
 
   <p>
@@ -23,28 +24,39 @@
     <a href="README.md">English</a> |
     <a href="README.zh-CN.md"><strong>简体中文</strong></a>
   </p>
+
+  <p>
+    <a href="#快速开始">快速开始</a> •
+    <a href="./docs/README.md">文档</a> •
+    <a href="./docs/api/core.md">API 参考</a>
+  </p>
 </div>
 
 ---
 
 ## 为什么需要 ResourceX？
 
-AI Agent 需要从不同来源访问资源：本地文件读取配置、远程 URL 获取提示词、云存储读取训练数据。每种来源都需要不同的代码：
+AI Agent 需要管理各种资源：**prompts**、**tools**、**agents**、**skills**、**配置文件**，以及更多。ResourceX 提供统一的资源层，包含协议、运行时和仓库。_万物皆资源。_
 
-```typescript
-// 不同来源 = 不同代码
-const localConfig = await fs.readFile("./config.txt", "utf-8");
-const remotePrompt = await fetch("https://api.example.com/prompt.txt").then((r) => r.text());
-const s3Data = await s3Client.getObject({ Bucket: "...", Key: "..." });
 ```
-
-**ResourceX 用统一协议解决这个问题**：一套 API 访问所有资源，无论来源和类型。
-
-```typescript
-// 一套 API 搞定所有
-const config = await rx.resolve("arp:text:file://./config.txt");
-const prompt = await rx.resolve("arp:text:https://api.example.com/prompt.txt");
-const data = await rx.resolve("arp:binary:s3://bucket/data.bin");
+┌─────────────────────────────────────────────────────────────┐
+│                     Registry 层                             │
+│                                                             │
+│  Local / Git / Remote    →  存储与发现                      │
+│  link / resolve / search →  资源操作                        │
+├─────────────────────────────────────────────────────────────┤
+│                    ResourceX 层                             │
+│                                                             │
+│  RXL (定位符)    →  deepractice.ai/assistant.prompt@1.0.0  │
+│  RXM (清单)      →  资源元数据                              │
+│  RXC (内容)      →  归档存储 (tar.gz)                       │
+│  类型系统        →  text / json / binary / custom           │
+├─────────────────────────────────────────────────────────────┤
+│                       ARP 层                                │
+│                                                             │
+│  格式: arp:{semantic}:{transport}://{location}              │
+│  底层 I/O 原语：file, http, https, rxr                      │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ## 快速开始
@@ -54,269 +66,97 @@ npm install resourcexjs
 ```
 
 ```typescript
-import { createResourceX } from "resourcexjs";
+import { createRegistry, parseRXL, createRXM, createRXC } from "resourcexjs";
 
-const rx = createResourceX();
-
-// 读取文本文件 - 标准格式
-const resource = await rx.resolve("arp:text:file://./hello.txt");
-console.log(resource.content); // "Hello World"
-
-// 或使用简写（默认 @ 别名）
-const resource = await rx.resolve("@text:file://./hello.txt");
-console.log(resource.content); // "Hello World"
-```
-
-### URL 前缀
-
-ResourceX 支持两种前缀：
-
-- `arp:` - 标准前缀（永远支持）
-- `@` - 简写别名（默认，可配置）
-
-```typescript
-// 两种都可以
-await rx.resolve("arp:text:file://./config.txt");
-await rx.resolve("@text:file://./config.txt");
-
-// 自定义别名
-const rx = createResourceX({ alias: "#" });
-await rx.resolve("#text:file://./config.txt");
-```
-
-## 核心功能
-
-### Resolve（读取资源）
-
-```typescript
-// 远程文本
-const text = await rx.resolve("arp:text:https://example.com/file.txt");
-console.log(text.content); // string
-
-// 本地二进制
-const image = await rx.resolve("arp:binary:file://./photo.png");
-console.log(image.content); // Buffer
-```
-
-### Deposit（写入资源）
-
-```typescript
-// 写入文本到本地文件
-await rx.deposit("arp:text:file://./config.txt", "hello world");
-
-// 写入二进制数据
-await rx.deposit("arp:binary:file://./image.png", imageBuffer);
-```
-
-### Exists & Delete（检查和删除）
-
-```typescript
-// 检查资源是否存在
-const exists = await rx.exists("arp:text:file://./config.txt");
-
-// 删除资源
-await rx.delete("arp:text:file://./config.txt");
-```
-
-## 工作原理
-
-ResourceX 使用 **ARP (Agent Resource Protocol)** 协议，一种将**资源类型**与**访问方式**分离的 URL 格式：
-
-```
-arp:{semantic}:{transport}://{location}
-```
-
-- **semantic**: 资源是什么（`text`、`binary`）
-- **transport**: 如何访问（`https`、`http`、`file`）
-- **location**: 资源位置
-
-### Semantic + Transport = 正交组合
-
-Semantic 和 Transport 可以任意组合：
-
-| Semantic | Transport | 示例                                        |
-| -------- | --------- | ------------------------------------------- |
-| `text`   | `file`    | `arp:text:file://./config.txt`              |
-| `text`   | `https`   | `arp:text:https://example.com/data.txt`     |
-| `binary` | `file`    | `arp:binary:file://./image.png`             |
-| `binary` | `s3`      | `arp:binary:s3://bucket/data.bin`（自定义） |
-
-### 内置 Handler
-
-**Semantic:**
-
-| 名称     | 内容类型 | 描述                 |
-| -------- | -------- | -------------------- |
-| `text`   | `string` | 纯文本（UTF-8 编码） |
-| `binary` | `Buffer` | 原始二进制（无转换） |
-
-**Transport:**
-
-| 名称      | 能力            | 描述                          |
-| --------- | --------------- | ----------------------------- |
-| `https`   | 读              | HTTPS 协议                    |
-| `http`    | 读              | HTTP 协议                     |
-| `file`    | 读/写/列表/删除 | 本地文件系统                  |
-| `agentvm` | 读/写/列表/删除 | AgentVM 本地存储 (~/.agentvm) |
-
-## 配置和自定义
-
-ResourceX 通过 `createResourceX()` 配置对象进行完全配置。
-
-### AgentVM Transport
-
-AgentVM 本地存储 transport，自动映射到 `~/.agentvm/`：
-
-```typescript
-import { createResourceX, agentvmHandler } from "resourcexjs";
-
-const rx = createResourceX({
-  transports: [agentvmHandler()],
+// 1. 创建资源
+const manifest = createRXM({
+  domain: "localhost",
+  name: "my-prompt",
+  type: "text",
+  version: "1.0.0",
 });
 
-// 自动映射到 ~/.agentvm/sandbox/logs/app.log
-await rx.deposit("arp:text:agentvm://sandbox/logs/app.log", "日志内容");
-
-// 自定义父目录（用于测试或自定义安装）
-const rx = createResourceX({
-  transports: [agentvmHandler({ parentDir: "/var/data" })],
-});
-// → /var/data/.agentvm/sandbox/logs/app.log
-```
-
-### 自定义 Resource（URL 快捷方式）
-
-厌倦了重复写长 URL？定义快捷方式：
-
-```typescript
-import { createResourceX } from "resourcexjs";
-import { join } from "path";
-import { homedir } from "os";
-
-const rx = createResourceX({
-  resources: [
-    {
-      name: "app-config",
-      semantic: "text",
-      transport: "file",
-      basePath: join(homedir(), ".myapp", "config"),
-    },
-  ],
-});
-
-// 简洁清晰
-await rx.deposit("app-config://settings.txt", "theme=dark");
-
-// 而不是
-await rx.deposit("arp:text:file://~/.myapp/config/settings.txt", "theme=dark");
-```
-
-### 自定义 Transport
-
-添加新的传输协议（S3、GCS、Redis 等）：
-
-```typescript
-const s3Transport = {
-  name: "s3",
-  capabilities: { canRead: true, canWrite: true, canList: true, canDelete: true, canStat: false },
-  async read(location: string): Promise<Buffer> {
-    // 你的 S3 实现
-    return buffer;
-  },
-  async write(location: string, content: Buffer): Promise<void> {
-    // 你的 S3 实现
-  },
+const rxr = {
+  locator: parseRXL(manifest.toLocator()),
+  manifest,
+  content: await createRXC({ content: "You are a helpful assistant." }),
 };
 
-const rx = createResourceX({
-  transports: [s3Transport],
-});
+// 2. 链接到本地 registry (~/.resourcex)
+const registry = createRegistry();
+await registry.link(rxr);
 
-// 使用
-await rx.resolve("arp:text:s3://bucket/key.txt");
+// 3. 随处解析
+const resource = await registry.resolve("localhost/my-prompt.text@1.0.0");
+const text = await resource.execute(); // "You are a helpful assistant."
 ```
 
-### 自定义 Semantic
+## [文档](./docs/README.md)
 
-添加新的语义类型（JSON、YAML、Image 等）：
+### [快速入门](./docs/getting-started/introduction.md)
 
-```typescript
-const jsonSemantic = {
-  name: "json",
-  async resolve(transport, location, context) {
-    const buffer = await transport.read(location);
-    return {
-      type: "json",
-      content: JSON.parse(buffer.toString()),
-      meta: { ...context, size: buffer.length, resolvedAt: context.timestamp.toISOString() },
-    };
-  },
-  async deposit(transport, location, data, context) {
-    const buffer = Buffer.from(JSON.stringify(data));
-    await transport.write(location, buffer);
-  },
-};
+- [介绍](./docs/getting-started/introduction.md) - 什么是 ResourceX
+- [安装](./docs/getting-started/installation.md) - 安装指南
+- [快速开始](./docs/getting-started/quick-start.md) - 5 分钟教程
 
-const rx = createResourceX({
-  semantics: [jsonSemantic],
-});
+### [核心概念](./docs/concepts/overview.md)
 
-// 使用
-const data = await rx.resolve("arp:json:https://api.example.com/data.json");
-console.log(data.content); // 解析后的对象
-```
+- [架构概览](./docs/concepts/overview.md) - 两层设计
+- **[ResourceX 层](./docs/concepts/resourcex/rxl-locator.md)**
+  - [RXL - 定位符](./docs/concepts/resourcex/rxl-locator.md) - `domain/path/name.type@version`
+  - [RXM - 清单](./docs/concepts/resourcex/rxm-manifest.md) - 资源元数据
+  - [RXC - 内容](./docs/concepts/resourcex/rxc-content.md) - 归档存储
+  - [RXR - 资源](./docs/concepts/resourcex/rxr-resource.md) - 完整资源对象
+  - [类型系统](./docs/concepts/resourcex/type-system.md) - 内置与自定义类型
+  - [Registry](./docs/concepts/resourcex/registry.md) - 存储与检索
+- **[ARP 层](./docs/concepts/arp/protocol.md)**
+  - [协议](./docs/concepts/arp/protocol.md) - Agent Resource Protocol
+  - [ARL](./docs/concepts/arp/arl.md) - ARP 资源定位符
+  - [Transport](./docs/concepts/arp/transport.md) - file, http, https, rxr
+  - [Semantic](./docs/concepts/arp/semantic.md) - text, binary
 
-### 组合使用
+### [使用指南](./docs/guides/local-registry.md)
 
-在一个配置中组合所有自定义：
+- [本地 Registry](./docs/guides/local-registry.md) - 开发工作流
+- [Git Registry](./docs/guides/git-registry.md) - 团队共享
+- [远程 Registry](./docs/guides/remote-registry.md) - HTTP API
+- [自定义类型](./docs/guides/custom-types.md) - 定义你自己的类型
+- [ARP 协议](./docs/guides/arp-protocol.md) - 底层 I/O
 
-```typescript
-const rx = createResourceX({
-  transports: [s3Transport, redisTransport],
-  semantics: [jsonSemantic, yamlSemantic],
-  resources: [
-    { name: "s3-data", semantic: "json", transport: "s3", basePath: "my-bucket/data" },
-    { name: "cache", semantic: "text", transport: "redis", basePath: "cache:" },
-  ],
-});
-```
+### [API 参考](./docs/api/core.md)
 
-## CLI
+- [Core API](./docs/api/core.md) - RXL, RXM, RXC, RXR
+- [Registry API](./docs/api/registry.md) - Registry 操作
+- [ARP API](./docs/api/arp.md) - Transport & Semantic
+- [错误处理](./docs/api/errors.md) - 错误类型
 
-```bash
-npm install -g @resourcexjs/cli
+### [设计与贡献](./docs/design/README.md)
 
-# 解析并打印内容
-arp "arp:text:https://example.com/file.txt"
-
-# 解析 URL 组件
-arp parse "arp:text:https://example.com/file.txt"
-
-# 输出为 JSON
-arp "arp:text:https://example.com/file.txt" --json
-```
+- [设计决策](./docs/design/README.md) - 架构原理
+- [开发环境](./docs/contributing/development.md) - 设置与命令
+- [开发流程](./docs/contributing/workflow.md) - BDD 流程
+- [代码规范](./docs/contributing/conventions.md) - 代码风格
 
 ## 包结构
 
-| 包                                     | 描述       |
-| -------------------------------------- | ---------- |
-| [`resourcexjs`](./packages/resourcex)  | 主包       |
-| [`@resourcexjs/core`](./packages/core) | 核心实现   |
-| [`@resourcexjs/cli`](./packages/cli)   | 命令行工具 |
+| 包                                             | 描述                          |
+| ---------------------------------------------- | ----------------------------- |
+| [`resourcexjs`](./packages/resourcex)          | 主包 - 你需要的一切           |
+| [`@resourcexjs/core`](./packages/core)         | 核心类型 (RXL, RXM, RXC, RXR) |
+| [`@resourcexjs/registry`](./packages/registry) | Registry 实现                 |
+| [`@resourcexjs/arp`](./packages/arp)           | ARP 协议                      |
 
 ## 生态系统
 
-[Deepractice](https://github.com/Deepractice) AI Agent 基础设施的一部分：
+[Deepractice](https://github.com/Deepractice) AI 基础设施的一部分：
 
-- **[PromptX](https://github.com/Deepractice/PromptX)** - AI Agent 上下文平台
-- **[AgentX](https://github.com/Deepractice/AgentX)** - AI Agent 运行时平台
-- **[ToolX](https://github.com/Deepractice/ToolX)** - 工具集成
-- **[UIX](https://github.com/Deepractice/UIX)** - AI-to-UI 协议层
-- **[SandboX](https://github.com/Deepractice/SandboX)** - Agent 沙箱
+- **[AgentVM](https://github.com/Deepractice/AgentVM)** - AI Agent 运行时
+- **[AgentX](https://github.com/Deepractice/AgentX)** - AI Agent 框架
+- **ResourceX** - 资源管理（本项目）
 
 ## 参与贡献
 
-查看 [CONTRIBUTING.md](./CONTRIBUTING.md) 了解开发设置和指南。
+查看 [CONTRIBUTING.md](./CONTRIBUTING.md) 和 [开发指南](./docs/contributing/development.md)。
 
 ## 许可证
 
@@ -325,7 +165,5 @@ arp "arp:text:https://example.com/file.txt" --json
 ---
 
 <div align="center">
-  <p>
-    Built with ❤️ by <a href="https://github.com/Deepractice">Deepractice</a>
-  </p>
+  由 <a href="https://github.com/Deepractice">Deepractice</a> 用心构建
 </div>

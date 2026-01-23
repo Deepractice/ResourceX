@@ -1,6 +1,5 @@
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { readFile, stat, readdir, mkdir } from "node:fs/promises";
 import { execSync } from "node:child_process";
 import type {
   Registry,
@@ -13,6 +12,7 @@ import type { RXR, RXL } from "@resourcexjs/core";
 import { parseRXL, createRXM } from "@resourcexjs/core";
 import { TypeHandlerChain } from "@resourcexjs/type";
 import type { ResourceType, ResolvedResource } from "@resourcexjs/type";
+import { createARP, type ARP } from "@resourcexjs/arp";
 import { RegistryError } from "./errors.js";
 
 const DEFAULT_GIT_CACHE = `${homedir()}/.resourcex/.git-cache`;
@@ -27,34 +27,15 @@ export class GitRegistry implements Registry {
   private readonly basePath: string;
   private readonly cacheDir: string;
   private readonly typeHandler: TypeHandlerChain;
-  private readonly trustedDomain?: string;
+  private readonly arp: ARP;
 
   constructor(config: GitRegistryConfig) {
     this.url = config.url;
     this.ref = config.ref ?? "main";
     this.basePath = config.basePath ?? ".resourcex";
     this.typeHandler = TypeHandlerChain.create();
-    this.trustedDomain = config.domain;
-
-    // Security check: remote URL requires domain binding
-    if (this.isRemoteUrl(config.url) && !config.domain) {
-      throw new RegistryError(
-        `Remote git registry requires a trusted domain.\n\n` +
-          `Either:\n` +
-          `1. Use discoverRegistry("your-domain.com") to auto-bind domain\n` +
-          `2. Explicitly set domain: createRegistry({ type: "git", url: "...", domain: "your-domain.com" })\n\n` +
-          `This ensures resources from untrusted sources cannot impersonate your domain.`
-      );
-    }
-
+    this.arp = createARP();
     this.cacheDir = this.buildCacheDir(config.url);
-  }
-
-  /**
-   * Check if URL is a remote git URL (not local path).
-   */
-  private isRemoteUrl(url: string): boolean {
-    return url.startsWith("git@") || url.startsWith("https://") || url.startsWith("http://");
   }
 
   /**
@@ -81,19 +62,27 @@ export class GitRegistry implements Registry {
   }
 
   /**
+   * Create ARP URL for a file path.
+   */
+  private toArpUrl(filePath: string): string {
+    return `arp:binary:file://${filePath}`;
+  }
+
+  /**
    * Ensure the repository is cloned and up to date.
    */
   private async ensureCloned(): Promise<void> {
     const gitDir = join(this.cacheDir, ".git");
+    const gitArl = this.arp.parse(this.toArpUrl(gitDir));
 
-    try {
-      await stat(gitDir);
+    if (await gitArl.exists()) {
       // Already cloned, fetch and pull
       this.gitExec(`fetch origin`);
       this.gitExec(`reset --hard origin/${this.getDefaultBranch()}`);
-    } catch {
-      // Not cloned yet, clone it
-      await mkdir(DEFAULT_GIT_CACHE, { recursive: true });
+    } else {
+      // Not cloned yet, create cache dir and clone
+      const cacheArl = this.arp.parse(this.toArpUrl(DEFAULT_GIT_CACHE));
+      await cacheArl.mkdir();
       // Clone without --branch to use remote's default branch (main or master)
       execSync(`git clone --depth 1 ${this.url} ${this.cacheDir}`, {
         stdio: "pipe",
@@ -152,29 +141,27 @@ export class GitRegistry implements Registry {
 
     const resourcePath = this.buildResourcePath(locator);
 
-    // Check exists
+    // Check exists using ARP
     const manifestPath = join(resourcePath, "manifest.json");
-    try {
-      await stat(manifestPath);
-    } catch {
+    const manifestArl = this.arp.parse(this.toArpUrl(manifestPath));
+    if (!(await manifestArl.exists())) {
       throw new RegistryError(`Resource not found: ${locator}`);
     }
 
-    // Read manifest
-    const manifestContent = await readFile(manifestPath, "utf-8");
+    // Read manifest using ARP
+    const manifestResource = await manifestArl.resolve();
+    const manifestContent = (manifestResource.content as Buffer).toString("utf-8");
     const manifestData = JSON.parse(manifestContent);
     const manifest = createRXM(manifestData);
 
-    // Validate domain if trustedDomain is set
-    if (this.trustedDomain && manifest.domain !== this.trustedDomain) {
-      throw new RegistryError(
-        `Untrusted domain: resource claims "${manifest.domain}" but registry only trusts "${this.trustedDomain}"`
-      );
-    }
+    // Domain validation is handled by middleware (DomainValidation)
+    // No longer done here - allows flexibility in how validation is configured
 
-    // Read content
+    // Read content using ARP
     const contentPath = join(resourcePath, "content.tar.gz");
-    const data = await readFile(contentPath);
+    const contentArl = this.arp.parse(this.toArpUrl(contentPath));
+    const contentResource = await contentArl.resolve();
+    const data = contentResource.content as Buffer;
 
     // Deserialize to RXR
     return this.typeHandler.deserialize(data, manifest);
@@ -192,8 +179,8 @@ export class GitRegistry implements Registry {
       await this.ensureCloned();
       const resourcePath = this.buildResourcePath(locator);
       const manifestPath = join(resourcePath, "manifest.json");
-      await stat(manifestPath);
-      return true;
+      const manifestArl = this.arp.parse(this.toArpUrl(manifestPath));
+      return await manifestArl.exists();
     } catch {
       return false;
     }
@@ -205,14 +192,14 @@ export class GitRegistry implements Registry {
     const { query, limit, offset = 0 } = options ?? {};
     const locators: RXL[] = [];
 
-    // Scan the basePath directory
+    // Scan the basePath directory using ARP list
     const baseDir = join(this.cacheDir, this.basePath);
     try {
-      const entries = await this.listRecursive(baseDir);
+      const baseArl = this.arp.parse(this.toArpUrl(baseDir));
+      const entries = await baseArl.list({ recursive: true, pattern: "*.json" });
       for (const entry of entries) {
         if (!entry.endsWith("manifest.json")) continue;
-        const relativePath = entry.slice(baseDir.length + 1);
-        const rxl = this.parseEntryToRXL(relativePath);
+        const rxl = this.parseEntryToRXL(entry);
         if (rxl) locators.push(rxl);
       }
     } catch {
@@ -238,25 +225,6 @@ export class GitRegistry implements Registry {
     }
 
     return result;
-  }
-
-  private async listRecursive(dir: string): Promise<string[]> {
-    const results: string[] = [];
-    try {
-      const entries = await readdir(dir, { withFileTypes: true });
-      for (const entry of entries) {
-        const fullPath = join(dir, entry.name);
-        if (entry.isDirectory()) {
-          const subEntries = await this.listRecursive(fullPath);
-          results.push(...subEntries);
-        } else {
-          results.push(fullPath);
-        }
-      }
-    } catch {
-      // Directory doesn't exist
-    }
-    return results;
   }
 
   private parseEntryToRXL(entry: string): RXL | null {

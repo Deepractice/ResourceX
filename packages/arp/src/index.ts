@@ -22,6 +22,7 @@ export {
   type TransportHandler,
   type TransportResult,
   type TransportParams,
+  type ListOptions,
   FileTransportHandler,
   fileTransport,
   HttpTransportHandler,

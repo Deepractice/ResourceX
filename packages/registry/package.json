@@ -37,6 +37,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
+    "@resourcexjs/arp": "workspace:*",
     "@resourcexjs/core": "workspace:*",
     "@resourcexjs/type": "workspace:*"
   },

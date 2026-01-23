@@ -10,7 +10,7 @@
 import { readFile, writeFile, readdir, mkdir, rm, access, stat } from "node:fs/promises";
 import { resolve, dirname, join } from "node:path";
 import { TransportError } from "../errors.js";
-import type { TransportHandler, TransportResult, TransportParams } from "./types.js";
+import type { TransportHandler, TransportResult, TransportParams, ListOptions } from "./types.js";
 
 export class FileTransportHandler implements TransportHandler {
   readonly name = "file";
@@ -179,6 +179,51 @@ export class FileTransportHandler implements TransportHandler {
         return;
       }
       throw new TransportError(`File delete error: ${err.code} - ${filePath}`, this.name, {
+        cause: err,
+      });
+    }
+  }
+
+  /**
+   * List directory contents
+   */
+  async list(location: string, options?: ListOptions): Promise<string[]> {
+    const dirPath = this.resolvePath(location);
+
+    try {
+      let entries: string[];
+
+      if (options?.recursive) {
+        entries = await this.listRecursive(dirPath, dirPath);
+      } else {
+        entries = await readdir(dirPath);
+      }
+
+      // Filter by pattern if provided
+      if (options?.pattern) {
+        entries = this.filterByPattern(entries, options.pattern);
+      }
+
+      return entries;
+    } catch (error) {
+      const err = error as Error & { code?: string };
+      throw new TransportError(`File list error: ${err.code} - ${dirPath}`, this.name, {
+        cause: err,
+      });
+    }
+  }
+
+  /**
+   * Create directory (recursively)
+   */
+  async mkdir(location: string): Promise<void> {
+    const dirPath = this.resolvePath(location);
+
+    try {
+      await mkdir(dirPath, { recursive: true });
+    } catch (error) {
+      const err = error as Error & { code?: string };
+      throw new TransportError(`File mkdir error: ${err.code} - ${dirPath}`, this.name, {
         cause: err,
       });
     }

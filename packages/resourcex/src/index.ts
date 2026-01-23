@@ -79,6 +79,11 @@ export type { Registry, RegistryConfig, DiscoveryResult } from "@resourcexjs/reg
 export { createRegistry, LocalRegistry, discoverRegistry } from "@resourcexjs/registry";
 
 // ============================================
+// Registry Middleware
+// ============================================
+export { RegistryMiddleware, DomainValidation, withDomainValidation } from "@resourcexjs/registry";
+
+// ============================================
 // Version
 // ============================================
 declare const __VERSION__: string | undefined;

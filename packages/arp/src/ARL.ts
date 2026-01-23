@@ -4,8 +4,8 @@
 
 import type { ARL as IARL } from "./types.js";
 import type { Resource, SemanticContext, SemanticHandler } from "./semantic/types.js";
-import type { TransportHandler, TransportParams } from "./transport/types.js";
-import { SemanticError } from "./errors.js";
+import type { TransportHandler, TransportParams, ListOptions } from "./transport/types.js";
+import { SemanticError, TransportError } from "./errors.js";
 
 /**
  * Handler resolver interface (implemented by ARP instance)
@@ -105,6 +105,38 @@ export class ARL implements IARL {
 
     // Fallback to transport delete
     await transport.delete(this.location);
+  }
+
+  /**
+   * List directory contents
+   */
+  async list(options?: ListOptions): Promise<string[]> {
+    const transport = this.resolver.getTransportHandler(this.transport);
+
+    if (!transport.list) {
+      throw new TransportError(
+        `Transport "${transport.name}" does not support list operation`,
+        this.transport
+      );
+    }
+
+    return transport.list(this.location, options);
+  }
+
+  /**
+   * Create directory
+   */
+  async mkdir(): Promise<void> {
+    const transport = this.resolver.getTransportHandler(this.transport);
+
+    if (!transport.mkdir) {
+      throw new TransportError(
+        `Transport "${transport.name}" does not support mkdir operation`,
+        this.transport
+      );
+    }
+
+    await transport.mkdir(this.location);
   }
 
   /**

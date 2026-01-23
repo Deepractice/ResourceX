@@ -1,6 +1,5 @@
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { readFile, writeFile, mkdir, rm, stat, readdir } from "node:fs/promises";
 import type {
   Registry,
   LocalRegistryConfig,
@@ -12,21 +11,24 @@ import type { RXR, RXL } from "@resourcexjs/core";
 import { parseRXL, createRXM } from "@resourcexjs/core";
 import { TypeHandlerChain } from "@resourcexjs/type";
 import type { ResourceType, ResolvedResource } from "@resourcexjs/type";
+import { createARP, type ARP } from "@resourcexjs/arp";
 import { RegistryError } from "./errors.js";
 
 const DEFAULT_PATH = `${homedir()}/.resourcex`;
 
 /**
  * Local filesystem-based registry implementation.
- * Uses Node.js fs module directly for storage operations.
+ * Uses ARP file transport for I/O operations.
  */
 export class LocalRegistry implements Registry {
   private readonly basePath: string;
   private readonly typeHandler: TypeHandlerChain;
+  private readonly arp: ARP;
 
   constructor(config?: LocalRegistryConfig) {
     this.basePath = config?.path ?? DEFAULT_PATH;
     this.typeHandler = TypeHandlerChain.create();
+    this.arp = createARP();
 
     // Register extension types
     if (config?.types) {
@@ -38,6 +40,13 @@ export class LocalRegistry implements Registry {
 
   supportType(type: ResourceType): void {
     this.typeHandler.register(type);
+  }
+
+  /**
+   * Create ARP URL for a file path.
+   */
+  private toArpUrl(filePath: string): string {
+    return `arp:binary:file://${filePath}`;
   }
 
   /**
@@ -82,12 +91,8 @@ export class LocalRegistry implements Registry {
    */
   private async existsAt(resourcePath: string): Promise<boolean> {
     const manifestPath = join(resourcePath, "manifest.json");
-    try {
-      await stat(manifestPath);
-      return true;
-    } catch {
-      return false;
-    }
+    const arl = this.arp.parse(this.toArpUrl(manifestPath));
+    return arl.exists();
   }
 
   /**
@@ -116,13 +121,17 @@ export class LocalRegistry implements Registry {
   private async loadFrom(resourcePath: string): Promise<RXR> {
     // Read manifest first to determine type
     const manifestPath = join(resourcePath, "manifest.json");
-    const manifestContent = await readFile(manifestPath, "utf-8");
+    const manifestArl = this.arp.parse(this.toArpUrl(manifestPath));
+    const manifestResource = await manifestArl.resolve();
+    const manifestContent = (manifestResource.content as Buffer).toString("utf-8");
     const manifestData = JSON.parse(manifestContent);
     const manifest = createRXM(manifestData);
 
     // Read content
     const contentPath = join(resourcePath, "content.tar.gz");
-    const data = await readFile(contentPath);
+    const contentArl = this.arp.parse(this.toArpUrl(contentPath));
+    const contentResource = await contentArl.resolve();
+    const data = contentResource.content as Buffer;
 
     // Deserialize to RXR
     return this.typeHandler.deserialize(data, manifest);
@@ -143,17 +152,24 @@ export class LocalRegistry implements Registry {
     const locator = resource.manifest.toLocator();
     const resourcePath = this.buildPath(locator, "local");
 
-    // Ensure directory exists
-    await mkdir(resourcePath, { recursive: true });
+    // Ensure directory exists using ARP mkdir
+    const dirArl = this.arp.parse(this.toArpUrl(resourcePath));
+    await dirArl.mkdir();
 
     // Write manifest (text/json) - preserves original domain
     const manifestPath = join(resourcePath, "manifest.json");
-    await writeFile(manifestPath, JSON.stringify(resource.manifest.toJSON(), null, 2), "utf-8");
+    const manifestArl = this.arp.parse(this.toArpUrl(manifestPath));
+    const manifestContent = Buffer.from(
+      JSON.stringify(resource.manifest.toJSON(), null, 2),
+      "utf-8"
+    );
+    await manifestArl.deposit(manifestContent);
 
     // Serialize content using type handler chain
     const contentPath = join(resourcePath, "content.tar.gz");
+    const contentArl = this.arp.parse(this.toArpUrl(contentPath));
     const serialized = await this.typeHandler.serialize(resource);
-    await writeFile(contentPath, serialized);
+    await contentArl.deposit(serialized);
   }
 
   async get(locator: string): Promise<RXR> {
@@ -192,13 +208,15 @@ export class LocalRegistry implements Registry {
       // Delete from local/
       const localPath = this.buildPath(locator, "local");
       if (await this.existsAt(localPath)) {
-        await rm(localPath, { recursive: true, force: true });
+        const arl = this.arp.parse(this.toArpUrl(localPath));
+        await arl.delete();
       }
     } else {
       // Delete from cache/
       const cachePath = this.buildPath(locator, "cache");
       if (await this.existsAt(cachePath)) {
-        await rm(cachePath, { recursive: true, force: true });
+        const arl = this.arp.parse(this.toArpUrl(cachePath));
+        await arl.delete();
       }
     }
   }
@@ -208,28 +226,28 @@ export class LocalRegistry implements Registry {
 
     const locators: RXL[] = [];
 
-    // Search in local/ directory
+    // Search in local/ directory using ARP list
     const localDir = join(this.basePath, "local");
     try {
-      const localEntries = await this.listRecursive(localDir);
+      const localArl = this.arp.parse(this.toArpUrl(localDir));
+      const localEntries = await localArl.list({ recursive: true, pattern: "*.json" });
       for (const entry of localEntries) {
         if (!entry.endsWith("manifest.json")) continue;
-        const relativePath = entry.slice(localDir.length + 1);
-        const rxl = this.parseLocalEntry(relativePath);
+        const rxl = this.parseLocalEntry(entry);
         if (rxl) locators.push(rxl);
       }
     } catch {
       // local/ doesn't exist
     }
 
-    // Search in cache/ directory
+    // Search in cache/ directory using ARP list
     const cacheDir = join(this.basePath, "cache");
     try {
-      const cacheEntries = await this.listRecursive(cacheDir);
+      const cacheArl = this.arp.parse(this.toArpUrl(cacheDir));
+      const cacheEntries = await cacheArl.list({ recursive: true, pattern: "*.json" });
       for (const entry of cacheEntries) {
         if (!entry.endsWith("manifest.json")) continue;
-        const relativePath = entry.slice(cacheDir.length + 1);
-        const rxl = this.parseCacheEntry(relativePath);
+        const rxl = this.parseCacheEntry(entry);
         if (rxl) locators.push(rxl);
       }
     } catch {
@@ -254,31 +272,6 @@ export class LocalRegistry implements Registry {
     }
 
     return result;
-  }
-
-  /**
-   * Recursively list all files in a directory.
-   */
-  private async listRecursive(dir: string): Promise<string[]> {
-    const results: string[] = [];
-
-    try {
-      const entries = await readdir(dir, { withFileTypes: true });
-
-      for (const entry of entries) {
-        const fullPath = join(dir, entry.name);
-        if (entry.isDirectory()) {
-          const subEntries = await this.listRecursive(fullPath);
-          results.push(...subEntries);
-        } else {
-          results.push(fullPath);
-        }
-      }
-    } catch {
-      // Directory doesn't exist or can't be read
-    }
-
-    return results;
   }
 
   /**

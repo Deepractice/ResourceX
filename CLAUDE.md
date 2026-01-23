@@ -209,10 +209,11 @@ const registry4 = createRegistry({
   domain: "deepractice.dev", // Required for remote URLs
 });
 
-// Well-known discovery (auto-binds domain)
+// Well-known discovery (for any remote registry, not just git)
 import { discoverRegistry } from "@resourcexjs/registry";
 const discovery = await discoverRegistry("deepractice.dev");
-// → { domain: "deepractice.dev", registries: ["git@github.com:..."] }
+// → { domain: "deepractice.dev", registries: ["git@github.com:...", "https://..."] }
+// Can return git URLs, HTTP endpoints, or any supported registry type
 ```
 
 **Well-known Format:**
@@ -221,20 +222,63 @@ const discovery = await discoverRegistry("deepractice.dev");
 // https://deepractice.dev/.well-known/resourcex
 {
   "version": "1.0",
-  "registries": ["git@github.com:Deepractice/Registry.git"]
+  "registries": ["git@github.com:Deepractice/Registry.git", "https://registry.deepractice.dev/v1"]
 }
 ```
 
+First registry is primary, rest are fallbacks. Supports git URLs, HTTP endpoints, etc.
+
 **Security:**
 
-- Remote git URLs require `domain` parameter (prevents impersonation)
+- Remote URLs require `domain` parameter (prevents impersonation)
 - Local paths (./repo) don't require domain (development use)
 - `discoverRegistry()` auto-binds domain from well-known
-- Domain validation: manifest.domain must match trustedDomain
+- Domain validation: middleware checks manifest.domain matches trustedDomain
+
+**Registry Middleware:**
+
+Middleware pattern for adding cross-cutting concerns:
+
+```typescript
+// Base class - delegates all operations to inner registry
+abstract class RegistryMiddleware implements Registry {
+  constructor(protected readonly inner: Registry) {}
+  // All methods delegate to inner by default
+}
+
+// DomainValidation - validates manifest.domain matches trusted domain
+class DomainValidation extends RegistryMiddleware {
+  constructor(inner: Registry, private trustedDomain: string) { ... }
+
+  async get(locator: string): Promise<RXR> {
+    const rxr = await this.inner.get(locator);
+    if (rxr.manifest.domain !== this.trustedDomain) {
+      throw new RegistryError(`Untrusted domain: ${rxr.manifest.domain}`);
+    }
+    return rxr;
+  }
+}
+
+// Factory function
+const registry = withDomainValidation(gitRegistry, "deepractice.ai");
+```
+
+**Auto-injected Middleware:**
+
+`createRegistry()` automatically wraps GitRegistry with DomainValidation when `domain` is provided:
+
+```typescript
+// This automatically wraps with DomainValidation
+const registry = createRegistry({
+  type: "git",
+  url: "git@github.com:Deepractice/Registry.git",
+  domain: "deepractice.ai", // Triggers auto-wrap
+});
+```
 
 **LocalRegistry Implementation:**
 
-- Uses Node.js `fs` module directly for local storage
+- Uses ARP file transport for I/O operations
 - Uses TypeHandlerChain for serialization/deserialization
 - Storage: `~/.resourcex/{domain}/{path}/{name}.{type}/{version}/`
 
@@ -246,10 +290,11 @@ const discovery = await discoverRegistry("deepractice.dev");
 
 **GitRegistry Implementation:**
 
+- Uses ARP file transport for I/O operations
 - Clones git repository to `~/.resourcex/.git-cache/{repo-name}/`
 - Every access does `git fetch` to stay current
 - Read-only (link/delete not supported)
-- Security: remote URLs require domain binding
+- Domain validation handled by middleware (not built-in)
 
 **Storage Structure (Local):**
 
@@ -300,6 +345,14 @@ interface TransportHandler {
   set(location: string, content: Buffer, params?: TransportParams): Promise<void>;
   exists(location: string): Promise<boolean>;
   delete(location: string): Promise<void>;
+  // Optional directory operations
+  list?(location: string, options?: ListOptions): Promise<string[]>;
+  mkdir?(location: string): Promise<void>;
+}
+
+interface ListOptions {
+  recursive?: boolean; // List recursively
+  pattern?: string; // Glob pattern filter (e.g., "*.json")
 }
 
 type TransportParams = Record<string, string>;
@@ -318,11 +371,12 @@ interface TransportResult {
 
 - `file` - Local filesystem (read-write)
   - `get`: Returns file content or directory listing (JSON array)
-  - Params: `recursive="true"`, `pattern="*.json"`
   - `set`/`delete`: Supported
+  - `list`: Supported (with recursive and pattern options)
+  - `mkdir`: Supported (creates directories recursively)
 - `http`, `https` - Network (read-only)
   - Merges URL query params with runtime params
-  - `set`/`delete` throw "read-only" error
+  - `set`/`delete`/`list`/`mkdir` throw "not supported" error
 - `rxr` - Access files inside resources (read-only)
   - Format: `arp:{semantic}:rxr://{rxl}/{internal-path}`
   - Example: `arp:text:rxr://localhost/hello.text@1.0.0/content`
@@ -330,7 +384,8 @@ interface TransportResult {
     - `localhost` → LocalRegistry (filesystem)
     - Other domains → RemoteRegistry (via well-known discovery)
   - Can manually inject Registry via constructor if needed
-  - `set`/`delete` throw "read-only" error
+  - `set`/`delete`/`mkdir` throw "read-only" error
+  - `list`: Supported (lists files in resource)
 
 **Built-in Semantics:**
 
@@ -468,9 +523,14 @@ interface DiscoveryResult {
 }
 
 // Classes
-LocalRegistry   // Filesystem-based
+LocalRegistry   // Filesystem-based (uses ARP)
 RemoteRegistry  // HTTP API-based
-GitRegistry     // Git clone-based (read-only)
+GitRegistry     // Git clone-based (uses ARP, read-only)
+
+// Middleware
+RegistryMiddleware              // Base class for custom middleware
+DomainValidation                // Validates manifest.domain
+withDomainValidation(registry, domain): Registry  // Factory function
 
 // Registry methods
 registry.link(rxr): Promise<void>
@@ -497,6 +557,8 @@ arl.resolve(params?: TransportParams): Promise<Resource>
 arl.deposit(data: unknown, params?: TransportParams): Promise<void>
 arl.exists(): Promise<boolean>
 arl.delete(): Promise<void>
+arl.list(options?: ListOptions): Promise<string[]>  // Directory listing
+arl.mkdir(): Promise<void>                          // Create directory
 
 // Built-in transports (standard protocols)
 fileTransport: TransportHandler
@@ -548,5 +610,8 @@ ARPError
 - [x] RemoteRegistry - HTTP client for remote registry access
 - [x] Well-known discovery - `discoverRegistry()` for service discovery
 - [x] RxrTransport auto-create - Auto-creates Registry based on domain
+- [x] ARP list/mkdir - Directory operations for file transport
+- [x] Registry Middleware - DomainValidation middleware with auto-injection
+- [x] Registry uses ARP - LocalRegistry and GitRegistry use ARP for I/O
 - [ ] Registry.publish() - Remote publishing to domain-based registry
 - [ ] Registry HTTP Server - Server-side routes (see `issues/015-registry-remote-support.md`)

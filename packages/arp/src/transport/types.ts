@@ -13,6 +13,21 @@
 export type TransportParams = Record<string, string>;
 
 /**
+ * Options for list operation
+ */
+export interface ListOptions {
+  /**
+   * Whether to list recursively
+   */
+  recursive?: boolean;
+
+  /**
+   * Glob pattern to filter results (e.g., "*.json")
+   */
+  pattern?: string;
+}
+
+/**
  * Result from transport get operation
  */
 export interface TransportResult {
@@ -97,4 +112,20 @@ export interface TransportHandler {
    * @param location - The location string (format depends on transport)
    */
   delete(location: string): Promise<void>;
+
+  /**
+   * List contents at location (optional - not all transports support this)
+   *
+   * @param location - The directory location
+   * @param options - List options (recursive, pattern filter)
+   * @returns Array of file/directory paths relative to location
+   */
+  list?(location: string, options?: ListOptions): Promise<string[]>;
+
+  /**
+   * Create directory at location (optional - not all transports support this)
+   *
+   * @param location - The directory location to create
+   */
+  mkdir?(location: string): Promise<void>;
 }
