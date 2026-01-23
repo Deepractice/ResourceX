@@ -88,15 +88,37 @@ export class GitRegistry implements Registry {
 
     try {
       await stat(gitDir);
-      // Already cloned, fetch and checkout
-      this.gitExec(`fetch origin ${this.ref}`);
-      this.gitExec(`checkout FETCH_HEAD`);
+      // Already cloned, fetch and pull
+      this.gitExec(`fetch origin`);
+      this.gitExec(`reset --hard origin/${this.getDefaultBranch()}`);
     } catch {
       // Not cloned yet, clone it
       await mkdir(DEFAULT_GIT_CACHE, { recursive: true });
-      execSync(`git clone --depth 1 --branch ${this.ref} ${this.url} ${this.cacheDir}`, {
+      // Clone without --branch to use remote's default branch (main or master)
+      execSync(`git clone --depth 1 ${this.url} ${this.cacheDir}`, {
         stdio: "pipe",
       });
+    }
+  }
+
+  /**
+   * Get the default branch name (main or master).
+   */
+  private getDefaultBranch(): string {
+    if (this.ref !== "main") {
+      return this.ref; // User specified a branch
+    }
+    // Auto-detect: try main first, fallback to master
+    try {
+      this.gitExec(`rev-parse --verify origin/main`);
+      return "main";
+    } catch {
+      try {
+        this.gitExec(`rev-parse --verify origin/master`);
+        return "master";
+      } catch {
+        return "main"; // Default to main if neither exists
+      }
     }
   }
 

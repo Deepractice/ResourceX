@@ -273,7 +273,7 @@ When(
   "I discover registry for {string}",
   { timeout: 30000 }, // 30s for network
   async function (this: GitRegistryWorld, domain: string) {
-    const { discoverRegistry } = await import("@resourcexjs/registry");
+    const { discoverRegistry } = await import("resourcexjs");
     try {
       this.discoveryResult = await discoverRegistry(domain);
       this.error = null;
@@ -308,7 +308,7 @@ Given(
   "I discover and create registry for {string}",
   { timeout: 60000 }, // 60s for git clone
   async function (this: GitRegistryWorld, domain: string) {
-    const { discoverRegistry, createRegistry } = await import("@resourcexjs/registry");
+    const { discoverRegistry, createRegistry } = await import("resourcexjs");
     try {
       const discovery = await discoverRegistry(domain);
       const registryUrl = discovery.registries[0];
