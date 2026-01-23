@@ -1,5 +1,17 @@
 # @resourcexjs/registry
 
+## 2.1.1
+
+### Patch Changes
+
+- bd97ee1: Replace execSync git commands with isomorphic-git
+  - Use isomorphic-git for clone/fetch operations (no system git required)
+  - Add retry mechanism with exponential backoff for transient network errors
+  - Properly handle local paths vs remote URLs
+  - @resourcexjs/core@2.1.1
+  - @resourcexjs/type@2.1.1
+  - @resourcexjs/arp@2.1.1
+
 ## 2.1.0
 
 ### Minor Changes
