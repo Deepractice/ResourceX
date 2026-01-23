@@ -1,5 +1,64 @@
 # resourcexjs
 
+## 2.1.0
+
+### Minor Changes
+
+- f52e49c: feat(arp): add list and mkdir operations to Transport interface
+  - Added `list()` method for directory listing with recursive and pattern options
+  - Added `mkdir()` method for creating directories
+  - FileTransport implements both operations
+  - ARL interface exposes list/mkdir methods
+
+  feat(registry): add middleware pattern for cross-cutting concerns
+  - Added `RegistryMiddleware` base class for creating custom middleware
+  - Added `DomainValidation` middleware for trusted domain validation
+  - Added `withDomainValidation()` factory function
+  - `createRegistry()` auto-injects DomainValidation when domain is provided
+
+  refactor(registry): use ARP for I/O operations
+  - LocalRegistry now uses ARP file transport for all I/O
+  - GitRegistry now uses ARP file transport for file reading
+  - Removed built-in domain validation from GitRegistry (handled by middleware)
+
+- 055ff6a: refactor: move RxrTransport from arp to main package
+
+  **Breaking Change for `@resourcexjs/arp` users:**
+
+  RxrTransport is no longer exported from `@resourcexjs/arp`. Use `resourcexjs/arp` instead.
+
+  **Before:**
+
+  ```typescript
+  import { createARP, RxrTransport } from "@resourcexjs/arp";
+  ```
+
+  **After:**
+
+  ```typescript
+  import { createARP, RxrTransport } from "resourcexjs/arp";
+  ```
+
+  **What changed:**
+  - `@resourcexjs/arp` now only includes standard protocols (file, http, https)
+  - `resourcexjs/arp` provides an enhanced `createARP()` that auto-registers RxrTransport
+  - This resolves the circular dependency between arp and registry packages
+
+  **Benefits:**
+  - `@resourcexjs/arp` has no dependencies (can be used standalone)
+  - Registry can now use ARP for I/O without circular dependencies
+  - Main package provides complete ResourceX integration
+
+### Patch Changes
+
+- Updated dependencies [f52e49c]
+- Updated dependencies [055ff6a]
+  - @resourcexjs/arp@2.1.0
+  - @resourcexjs/registry@2.1.0
+  - @resourcexjs/core@2.1.0
+  - @resourcexjs/type@2.1.0
+  - @resourcexjs/loader@2.1.0
+
 ## 2.0.0
 
 ### Major Changes
