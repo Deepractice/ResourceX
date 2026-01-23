@@ -1,6 +1,8 @@
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { execSync } from "node:child_process";
+import fs from "node:fs";
+import git from "isomorphic-git";
+import http from "isomorphic-git/http/node";
 import type {
   Registry,
   GitRegistryConfig,
@@ -21,6 +23,20 @@ const DEFAULT_GIT_CACHE = `${homedir()}/.resourcex/.git-cache`;
  * Git-based registry implementation.
  * Clones a git repository and reads resources from it.
  */
+const MAX_RETRIES = 2;
+
+/**
+ * Check if URL is a local path (not a remote URL).
+ */
+function isLocalPath(url: string): boolean {
+  return (
+    url.startsWith("/") ||
+    url.startsWith("./") ||
+    url.startsWith("../") ||
+    /^[a-zA-Z]:[\\/]/.test(url) // Windows absolute path
+  );
+}
+
 export class GitRegistry implements Registry {
   private readonly url: string;
   private readonly ref: string;
@@ -28,6 +44,7 @@ export class GitRegistry implements Registry {
   private readonly cacheDir: string;
   private readonly typeHandler: TypeHandlerChain;
   private readonly arp: ARP;
+  private readonly isLocal: boolean;
 
   constructor(config: GitRegistryConfig) {
     this.url = config.url;
@@ -35,7 +52,8 @@ export class GitRegistry implements Registry {
     this.basePath = config.basePath ?? ".resourcex";
     this.typeHandler = TypeHandlerChain.create();
     this.arp = createARP();
-    this.cacheDir = this.buildCacheDir(config.url);
+    this.isLocal = isLocalPath(config.url);
+    this.cacheDir = this.isLocal ? config.url : this.buildCacheDir(config.url);
   }
 
   /**
@@ -70,57 +88,103 @@ export class GitRegistry implements Registry {
 
   /**
    * Ensure the repository is cloned and up to date.
+   * For local paths, just verify the .git directory exists.
+   * For remote URLs, includes retry logic for transient network errors.
    */
   private async ensureCloned(): Promise<void> {
     const gitDir = join(this.cacheDir, ".git");
     const gitArl = this.arp.parse(this.toArpUrl(gitDir));
 
-    try {
-      if (await gitArl.exists()) {
-        // Already cloned, fetch and pull
-        this.gitExec(`fetch origin`);
-        this.gitExec(`reset --hard origin/${this.getDefaultBranch()}`);
-      } else {
-        // Not cloned yet, create cache dir and clone
-        const cacheArl = this.arp.parse(this.toArpUrl(DEFAULT_GIT_CACHE));
-        await cacheArl.mkdir();
-        // Clone without --branch to use remote's default branch (main or master)
-        execSync(`git clone --depth 1 ${this.url} ${this.cacheDir}`, {
-          stdio: "pipe",
-        });
+    // For local paths, just verify .git exists
+    if (this.isLocal) {
+      if (!(await gitArl.exists())) {
+        throw new RegistryError(`Local git repository not found: ${this.url}`);
       }
-    } catch (error) {
-      const err = error as Error;
-      throw new RegistryError(`Git operation failed: ${err.message}`, { cause: err });
+      return;
     }
+
+    // Remote URL: clone or fetch with retry
+    let lastError: Error | null = null;
+
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        if (await gitArl.exists()) {
+          // Already cloned, fetch and reset to remote
+          await git.fetch({
+            fs,
+            http,
+            dir: this.cacheDir,
+            remote: "origin",
+            singleBranch: true,
+          });
+          const branch = await this.getDefaultBranch();
+          await git.checkout({
+            fs,
+            dir: this.cacheDir,
+            ref: `origin/${branch}`,
+            force: true,
+          });
+        } else {
+          // Not cloned yet, create cache dir and clone
+          const cacheArl = this.arp.parse(this.toArpUrl(DEFAULT_GIT_CACHE));
+          await cacheArl.mkdir();
+          await git.clone({
+            fs,
+            http,
+            dir: this.cacheDir,
+            url: this.url,
+            depth: 1,
+            singleBranch: true,
+          });
+        }
+        return; // Success
+      } catch (error) {
+        lastError = error as Error;
+
+        // Retry on transient errors
+        if (attempt < MAX_RETRIES) {
+          await new Promise((resolve) => setTimeout(resolve, Math.pow(2, attempt) * 100));
+          continue;
+        }
+      }
+    }
+
+    throw new RegistryError(`Git operation failed: ${lastError?.message}`, {
+      cause: lastError,
+    });
   }
 
   /**
    * Get the default branch name (main or master).
    */
-  private getDefaultBranch(): string {
+  private async getDefaultBranch(): Promise<string> {
     if (this.ref !== "main") {
       return this.ref; // User specified a branch
     }
-    // Auto-detect: try main first, fallback to master
-    try {
-      this.gitExec(`rev-parse --verify origin/main`);
-      return "main";
-    } catch {
-      try {
-        this.gitExec(`rev-parse --verify origin/master`);
-        return "master";
-      } catch {
-        return "main"; // Default to main if neither exists
-      }
-    }
-  }
 
-  /**
-   * Execute git command in the cache directory.
-   */
-  private gitExec(command: string): void {
-    execSync(`git -C ${this.cacheDir} ${command}`, { stdio: "pipe" });
+    // For local paths, just return the configured ref
+    if (this.isLocal) {
+      return this.ref;
+    }
+
+    // Auto-detect from remote info
+    try {
+      const info = await git.getRemoteInfo({
+        http,
+        url: this.url,
+      });
+      // HEAD usually points to the default branch
+      if (info.HEAD) {
+        const match = info.HEAD.match(/refs\/heads\/(.+)/);
+        if (match) return match[1];
+      }
+      // Check if refs/heads/main exists
+      if (info.refs?.heads?.main) return "main";
+      if (info.refs?.heads?.master) return "master";
+    } catch {
+      // Fallback to main
+    }
+    return "main";
   }
 
   /**
