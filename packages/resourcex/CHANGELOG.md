@@ -1,5 +1,16 @@
 # resourcexjs
 
+## 2.2.0
+
+### Patch Changes
+
+- Updated dependencies [6790bb0]
+  - @resourcexjs/registry@2.2.0
+  - @resourcexjs/core@2.2.0
+  - @resourcexjs/type@2.2.0
+  - @resourcexjs/loader@2.2.0
+  - @resourcexjs/arp@2.2.0
+
 ## 2.1.1
 
 ### Patch Changes

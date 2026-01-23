@@ -1,5 +1,11 @@
 # @resourcexjs/type
 
+## 2.2.0
+
+### Patch Changes
+
+- @resourcexjs/core@2.2.0
+
 ## 2.1.1
 
 ### Patch Changes

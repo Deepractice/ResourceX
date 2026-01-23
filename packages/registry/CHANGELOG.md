@@ -1,5 +1,43 @@
 # @resourcexjs/registry
 
+## 2.2.0
+
+### Minor Changes
+
+- 6790bb0: Refactor Registry API: rename link() to add(), add new link() for symlinks
+
+  **Breaking Changes:**
+  - `link(resource: RXR)` renamed to `add(source: string | RXR)`
+  - New `link(path: string)` creates symlink to development directory
+  - `publish(source: string | RXR, options)` now accepts path or RXR
+
+  **New Features:**
+  - `link(path)` - Symlink to dev directory, changes reflect immediately
+  - `add(source)` - Copy to local registry (supports path or RXR object)
+  - `publish(source, options)` - Publish to remote (supports path or RXR object)
+
+  **Migration:**
+
+  ```typescript
+  // Before
+  await registry.link(rxr);
+
+  // After
+  await registry.add(rxr);
+  // Or from directory
+  await registry.add("./my-resource");
+
+  // New: symlink for live development
+  await registry.link("./my-resource");
+  ```
+
+### Patch Changes
+
+- @resourcexjs/core@2.2.0
+- @resourcexjs/type@2.2.0
+- @resourcexjs/loader@2.2.0
+- @resourcexjs/arp@2.2.0
+
 ## 2.1.1
 
 ### Patch Changes
