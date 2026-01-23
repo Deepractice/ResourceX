@@ -1,5 +1,34 @@
 # @resourcexjs/registry
 
+## 2.1.0
+
+### Minor Changes
+
+- f52e49c: feat(arp): add list and mkdir operations to Transport interface
+  - Added `list()` method for directory listing with recursive and pattern options
+  - Added `mkdir()` method for creating directories
+  - FileTransport implements both operations
+  - ARL interface exposes list/mkdir methods
+
+  feat(registry): add middleware pattern for cross-cutting concerns
+  - Added `RegistryMiddleware` base class for creating custom middleware
+  - Added `DomainValidation` middleware for trusted domain validation
+  - Added `withDomainValidation()` factory function
+  - `createRegistry()` auto-injects DomainValidation when domain is provided
+
+  refactor(registry): use ARP for I/O operations
+  - LocalRegistry now uses ARP file transport for all I/O
+  - GitRegistry now uses ARP file transport for file reading
+  - Removed built-in domain validation from GitRegistry (handled by middleware)
+
+### Patch Changes
+
+- Updated dependencies [f52e49c]
+- Updated dependencies [055ff6a]
+  - @resourcexjs/arp@2.1.0
+  - @resourcexjs/core@2.1.0
+  - @resourcexjs/type@2.1.0
+
 ## 2.0.0
 
 ### Major Changes
