@@ -249,15 +249,24 @@ const rxr: RXR = {
 
 ### Registry
 
-Resource storage and retrieval:
+Resource storage and retrieval (local or remote):
 
 ```typescript
-import { createRegistry } from "resourcexjs";
+import { createRegistry, discoverRegistry } from "resourcexjs";
 
-const registry = createRegistry({
-  path: "~/.resourcex", // optional, default
-  types: [textType, jsonType], // optional, defaults to built-in types
+// Local registry (default)
+const registry = createRegistry();
+const registry2 = createRegistry({ path: "./custom-path" });
+
+// Remote registry
+const registry3 = createRegistry({
+  endpoint: "https://registry.deepractice.ai/v1",
 });
+
+// Well-known discovery
+const endpoint = await discoverRegistry("deepractice.ai");
+// → fetches https://deepractice.ai/.well-known/resourcex
+// → returns { "version": "1.0", "registry": "https://..." }
 
 // Link to local (like npm link)
 await registry.link(rxr);
@@ -346,11 +355,11 @@ const result = await chain.resolve<string>(rxr);
 For direct file/network I/O without Registry:
 
 ```typescript
-import { createARP } from "resourcexjs/arp";
+import { createARP, RxrTransport } from "resourcexjs/arp";
 
 const arp = createARP(); // Auto-registers file, http, https, text, binary
 
-// Read
+// Read local file
 const arl = arp.parse("arp:text:file://./config.txt");
 const resource = await arl.resolve();
 console.log(resource.content); // string
@@ -363,6 +372,14 @@ const exists = await arl.exists();
 
 // Delete
 await arl.delete();
+
+// Access files inside a resource via RxrTransport
+const rxrTransport = new RxrTransport(); // Auto-creates Registry based on domain
+arp.registerTransport(rxrTransport);
+
+const arl2 = arp.parse("arp:text:rxr://localhost/my-prompt.text@1.0.0/content");
+const inner = await arl2.resolve();
+// localhost → LocalRegistry, other domains → RemoteRegistry via well-known
 ```
 
 ## Packages
@@ -382,9 +399,10 @@ Resources are stored in:
 ~/.resourcex/
 ├── {domain}/
 │   └── {path}/
-│       └── {name}.{type}@{version}/
-│           ├── manifest.json    # RXM serialized
-│           └── content          # RXC as tar.gz archive
+│       └── {name}.{type}/
+│           └── {version}/
+│               ├── manifest.json    # RXM serialized
+│               └── content.tar.gz   # RXC as tar.gz archive
 ```
 
 Example:
@@ -392,14 +410,16 @@ Example:
 ```
 ~/.resourcex/
 ├── localhost/
-│   └── my-prompt.text@1.0.0/
-│       ├── manifest.json
-│       └── content
+│   └── my-prompt.text/
+│       └── 1.0.0/
+│           ├── manifest.json
+│           └── content.tar.gz
 └── deepractice.ai/
     └── sean/
-        └── assistant.prompt@1.0.0/
-            ├── manifest.json
-            └── content
+        └── assistant.prompt/
+            └── 1.0.0/
+                ├── manifest.json
+                └── content.tar.gz
 ```
 
 ## Workflow
