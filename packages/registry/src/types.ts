@@ -31,15 +31,36 @@ export interface RemoteRegistryConfig {
 }
 
 /**
- * Registry configuration - local or remote.
+ * Git registry configuration.
+ * Uses git clone to fetch registry content.
  */
-export type RegistryConfig = LocalRegistryConfig | RemoteRegistryConfig;
+export interface GitRegistryConfig {
+  type: "git";
+  /** Git repository URL (SSH format: git@github.com:owner/repo.git) */
+  url: string;
+  /** Git ref (branch, tag, or commit). Default: "main" */
+  ref?: string;
+  /** Base path in repo for resources. Default: ".resourcex" */
+  basePath?: string;
+}
+
+/**
+ * Registry configuration - local, remote, or git.
+ */
+export type RegistryConfig = LocalRegistryConfig | RemoteRegistryConfig | GitRegistryConfig;
 
 /**
  * Type guard to check if config is for remote registry.
  */
 export function isRemoteConfig(config?: RegistryConfig): config is RemoteRegistryConfig {
   return config !== undefined && "endpoint" in config;
+}
+
+/**
+ * Type guard to check if config is for git registry.
+ */
+export function isGitConfig(config?: RegistryConfig): config is GitRegistryConfig {
+  return config !== undefined && "type" in config && config.type === "git";
 }
 
 /**
