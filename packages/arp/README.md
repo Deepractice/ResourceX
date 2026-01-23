@@ -19,7 +19,7 @@ arp:{semantic}:{transport}://{location}
 ```
 
 - **semantic**: Content interpretation (text, binary)
-- **transport**: Storage backend (file, http, https, rxr)
+- **transport**: Storage backend (file, http, https)
 - **location**: Resource location (path, URL)
 
 ### Examples
@@ -27,18 +27,19 @@ arp:{semantic}:{transport}://{location}
 ```
 arp:text:file://~/data.txt
 arp:binary:https://example.com/image.png
-arp:text:rxr://localhost/my-prompt.text@1.0.0/content
 ```
 
 ### Built-in Handlers
 
-**createARP()** auto-registers all built-in handlers:
+**createARP()** auto-registers standard protocol handlers:
 
 **Transports:**
 
 - `file` - Local filesystem (read-write)
 - `http`, `https` - Network resources (read-only)
-- `rxr` - Files inside resources (read-only, auto-creates Registry)
+
+> **Note:** For `rxr` transport (ResourceX-specific), use `resourcexjs/arp` instead.
+> The main package provides an enhanced `createARP()` that includes RxrTransport.
 
 **Semantics:**
 
@@ -306,13 +307,20 @@ const result = await arl.resolve({ lang: "en" });
 
 ### RXR Transport (`rxr`)
 
-Access files inside ResourceX resources (read-only).
+> **Moved to main package:** RxrTransport is now available in `resourcexjs/arp`.
+> Use the main package for ResourceX-specific functionality.
 
 ```typescript
-// Format: arp:{semantic}:rxr://{rxl}/{internal-path}
-arp.parse("arp:text:rxr://localhost/my-prompt.text@1.0.0/content");
-arp.parse("arp:text:rxr://deepractice.ai/nuwa.text@1.0.0/thought/first-principles.md");
+// Use resourcexjs/arp for rxr transport
+import { createARP, RxrTransport } from "resourcexjs/arp";
+
+// createARP() from main package auto-registers RxrTransport
+const arp = createARP();
+const arl = arp.parse("arp:text:rxr://localhost/my-prompt.text@1.0.0/content");
+const { content } = await arl.resolve();
 ```
+
+**Format:** `arp:{semantic}:rxr://{rxl}/{internal-path}`
 
 **Operations:**
 
@@ -325,27 +333,6 @@ arp.parse("arp:text:rxr://deepractice.ai/nuwa.text@1.0.0/thought/first-principle
 
 - `localhost` domain → LocalRegistry (filesystem)
 - Other domains → RemoteRegistry (via well-known discovery)
-
-```typescript
-// No manual setup needed - works out of the box!
-const arp = createARP();
-const arl = arp.parse("arp:text:rxr://localhost/hello.text@1.0.0/content");
-const { content } = await arl.resolve();
-// RxrTransport automatically creates LocalRegistry for localhost
-```
-
-**Manual Registry injection (optional):**
-
-```typescript
-import { createRegistry } from "@resourcexjs/registry";
-import { createARP, RxrTransport } from "@resourcexjs/arp";
-
-const registry = createRegistry({ path: "./custom-path" });
-const rxrTransport = new RxrTransport(registry);
-
-const arp = createARP();
-arp.registerTransport(rxrTransport); // Override default rxr transport
-```
 
 ## Error Handling
 

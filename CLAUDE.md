@@ -2,6 +2,17 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Important Rules
+
+### Versioning
+
+**NEVER use `major` version in changesets.** Always use `minor` or `patch`:
+
+- `patch` - Bug fixes, internal improvements
+- `minor` - New features, enhancements, breaking changes (treated as minor)
+
+This project does not use major version bumps. All breaking changes should be documented but versioned as `minor`.
+
 ## Project Overview
 
 ResourceX is a resource management protocol for AI Agents, similar to npm for packages.
@@ -473,8 +484,11 @@ registry.publish(rxr): Promise<void>        // TODO: remote publish
 
 ### ARP Package (`@resourcexjs/arp`)
 
+Base ARP package with standard protocols only (file, http, https).
+For RxrTransport, use the main `resourcexjs` package.
+
 ```typescript
-createARP(config?: ARPConfig): ARP
+createARP(config?: ARPConfig): ARP  // file, http, https only
 
 arp.parse(url: string): ARL
 arp.registerTransport(transport: TransportHandler): void
@@ -484,23 +498,29 @@ arl.deposit(data: unknown, params?: TransportParams): Promise<void>
 arl.exists(): Promise<boolean>
 arl.delete(): Promise<void>
 
-// Transports (for direct use)
+// Built-in transports (standard protocols)
 fileTransport: TransportHandler
 httpTransport: TransportHandler
 httpsTransport: TransportHandler
-RxrTransport: class  // Auto-creates Registry based on domain
+```
 
-// RxrTransport usage (auto mode - recommended)
-const rxrTransport = new RxrTransport();  // No registry needed!
-arp.registerTransport(rxrTransport);
-// localhost → LocalRegistry, other domains → RemoteRegistry via well-known
+### Main Package ARP (`resourcexjs/arp`)
 
-// RxrTransport usage (manual mode)
-const rxrTransport = new RxrTransport(registry);  // Inject specific registry
-arp.registerTransport(rxrTransport);
+Enhanced ARP with ResourceX integration (includes RxrTransport).
 
+```typescript
+import { createARP, RxrTransport } from "resourcexjs/arp";
+
+// createARP() auto-registers RxrTransport
+const arp = createARP(); // file, http, https, rxr
+
+// Access files inside resources
 const arl = arp.parse("arp:text:rxr://localhost/hello.text@1.0.0/content");
 const resource = await arl.resolve();
+
+// RxrTransport usage (manual mode for testing)
+const rxrTransport = new RxrTransport(registry); // Inject specific registry
+const arp2 = createARP({ transports: [rxrTransport] }); // Override default
 ```
 
 ## Error Hierarchy

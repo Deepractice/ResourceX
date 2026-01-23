@@ -158,3 +158,42 @@ function createStorage(config: StorageConfig): Storage {
 ## 备注
 
 这是一个较大的重构，建议在当前功能稳定后进行。
+
+---
+
+## 前置工作已完成
+
+### RxrTransport 移动到主包
+
+已将 RxrTransport 从 `@resourcexjs/arp` 移动到 `resourcexjs` 主包，解决了循环依赖问题：
+
+**之前：**
+
+```
+arp → registry (因为 RxrTransport)
+registry → arp? (如果用 arp 做 I/O) ❌ 循环
+```
+
+**之后：**
+
+```
+arp (只有 file, http, https - 公开协议)
+  ↑
+registry (可以用 arp 做 I/O)
+  ↑
+resourcexjs (包含 RxrTransport)
+```
+
+**用户使用：**
+
+```typescript
+// 主包的 createARP 自动注册 RxrTransport
+import { createARP } from "resourcexjs/arp";
+const arp = createARP(); // file, http, https, rxr
+
+// 基础 arp 包只有公开协议
+import { createARP } from "@resourcexjs/arp";
+const arp = createARP(); // file, http, https only
+```
+
+现在可以进行 Storage 层抽象，让 Registry 使用 ARP 做底层 I/O。

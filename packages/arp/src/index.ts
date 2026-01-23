@@ -17,7 +17,7 @@ export { ARP, createARP, type ARPConfig } from "./ARP.js";
 // Errors
 export { ARPError, ParseError, TransportError, SemanticError } from "./errors.js";
 
-// Transport
+// Transport (standard protocols only; for RXR transport use resourcexjs)
 export {
   type TransportHandler,
   type TransportResult,
@@ -27,9 +27,6 @@ export {
   HttpTransportHandler,
   httpsTransport,
   httpTransport,
-  RxrTransport,
-  clearRegistryCache,
-  type RxrTransportRegistry,
 } from "./transport/index.js";
 
 // Semantic

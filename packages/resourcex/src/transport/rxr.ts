@@ -10,8 +10,8 @@
  * - Other domains: Uses RemoteRegistry with well-known discovery
  */
 
-import { TransportError } from "../errors.js";
-import type { TransportHandler, TransportResult, TransportParams } from "./types.js";
+import { TransportError } from "@resourcexjs/arp";
+import type { TransportHandler, TransportResult, TransportParams } from "@resourcexjs/arp";
 import { createRegistry, discoverRegistry } from "@resourcexjs/registry";
 import type { Registry } from "@resourcexjs/registry";
 

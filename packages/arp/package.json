@@ -38,9 +38,7 @@
     "test": "bun test",
     "clean": "rm -rf dist"
   },
-  "dependencies": {
-    "@resourcexjs/registry": "workspace:*"
-  },
+  "dependencies": {},
   "devDependencies": {},
   "publishConfig": {
     "access": "public"
