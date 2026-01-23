@@ -3,3 +3,7 @@ reports/*.html
 
 # Environment
 .env.local
+
+# Test artifacts
+custom-registry/
+.test-*/

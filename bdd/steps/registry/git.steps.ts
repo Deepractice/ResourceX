@@ -394,4 +394,22 @@ When(
   }
 );
 
+Given(
+  "I create a git registry for local path {string} with domain {string}",
+  async function (this: GitRegistryWorld, _path: string, domain: string) {
+    const { createRegistry } = await import("resourcexjs");
+    // Always use TEST_GIT_REPO (ignore the path parameter, it's just for readability)
+    try {
+      this.gitRegistry = createRegistry({
+        type: "git",
+        url: TEST_GIT_REPO,
+        domain,
+      });
+      this.error = null;
+    } catch (e) {
+      this.error = e as Error;
+    }
+  }
+);
+
 // Note: "it should not throw an error" is defined in registry.steps.ts

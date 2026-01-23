@@ -16,7 +16,6 @@
     "format:check": "prettier --check .",
     "test": "turbo test",
     "test:bdd": "cd bdd && bun run test",
-    "test:bdd:ci": "cd bdd && bun run test:ci",
     "clean": "turbo clean && rm -rf node_modules",
     "prepare": "lefthook install || true",
     "version": "changeset version",

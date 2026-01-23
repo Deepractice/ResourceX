@@ -124,17 +124,21 @@ Feature: Git Registry
     Then discovery should return domain "deepractice.dev"
     And discovery should return registry URL containing "Deepractice/Registry"
 
-  @discovery @network @domain
-  Scenario: Access non-existent domain resource via discovery fails
-    Given I discover and create registry for "deepractice.dev"
-    When I get "deepractice.ai/hello.text@1.0.0" from discovered registry
+  @domain
+  Scenario: Domain validation rejects mismatched domain
+    Given a local git registry at "./test-git-repo"
+    And the git repo has resource "evil.com/hello.text@1.0.0" with content "Hello"
+    And I create a git registry for local path "./test-git-repo" with domain "deepractice.dev"
+    When I get "evil.com/hello.text@1.0.0" from git registry
     Then it should throw a RegistryError
-    And error message should contain "not found"
+    And error message should contain "Untrusted domain"
 
-  @discovery @network @domain
-  Scenario: Access resource with matching domain via discovery succeeds
-    Given I discover and create registry for "deepractice.dev"
-    When I get "deepractice.dev/hello.text@1.0.0" from discovered registry
+  @domain
+  Scenario: Domain validation allows matching domain
+    Given a local git registry at "./test-git-repo"
+    And the git repo has resource "deepractice.dev/hello.text@1.0.0" with content "Hello"
+    And I create a git registry for local path "./test-git-repo" with domain "deepractice.dev"
+    When I get "deepractice.dev/hello.text@1.0.0" from git registry
     Then I should receive a git RXR object
     And the git manifest domain should be "deepractice.dev"
 
