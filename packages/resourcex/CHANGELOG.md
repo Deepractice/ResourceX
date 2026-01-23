@@ -1,5 +1,67 @@
 # resourcexjs
 
+## 2.0.0
+
+### Major Changes
+
+- 4cd6fc8: BREAKING CHANGE: Separate local and cache storage directories
+
+  ## Storage Structure Changed
+
+  **Old:**
+
+  ```
+  ~/.resourcex/
+  └── {domain}/{path}/{name}.{type}/{version}/
+  ```
+
+  **New:**
+
+  ```
+  ~/.resourcex/
+  ├── local/                     # Development resources
+  │   └── {name}.{type}/{version}/
+  │
+  └── cache/                     # Remote cached resources
+      └── {domain}/{path}/{name}.{type}/{version}/
+  ```
+
+  ## Migration
+
+  Delete `~/.resourcex` and re-link/pull resources:
+
+  ```bash
+  rm -rf ~/.resourcex
+  ```
+
+  ## New API
+  - `registry.pull(locator)` - Pull resource from remote to local cache (TODO)
+  - `registry.publish(rxr, options)` - Publish to remote registry (TODO)
+
+  ## Resolution Order
+  1. **local/** is checked first (development resources)
+  2. **cache/** is checked second (remote cached resources)
+
+### Minor Changes
+
+- aaeb9d2: feat(registry): add GitRegistry with domain security
+  - Add GitRegistry for git-based remote registries
+  - Security: remote URLs require domain binding to prevent impersonation
+  - Well-known format updated to use `registries` array (for future fallback support)
+  - `discoverRegistry()` now returns `DiscoveryResult` with domain binding
+  - RxrTransport auto-creates GitRegistry for git URLs with domain binding
+  - Local paths don't require domain (development use)
+
+### Patch Changes
+
+- Updated dependencies [aaeb9d2]
+- Updated dependencies [4cd6fc8]
+  - @resourcexjs/registry@2.0.0
+  - @resourcexjs/arp@2.0.0
+  - @resourcexjs/core@2.0.0
+  - @resourcexjs/type@2.0.0
+  - @resourcexjs/loader@2.0.0
+
 ## 1.7.0
 
 ### Minor Changes
