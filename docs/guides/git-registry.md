@@ -277,7 +277,7 @@ GitRegistry is read-only. These operations throw errors:
 
 ```typescript
 // All of these throw RegistryError
-await registry.link(resource);
+await registry.add(resource);
 // "GitRegistry is read-only - use LocalRegistry.link()"
 
 await registry.delete("deepractice.dev/hello.text@1.0.0");

@@ -49,7 +49,7 @@ Given(
       content: await createRXC(files),
     };
 
-    await this.registry!.link(rxr);
+    await this.registry!.add(rxr);
   }
 );
 

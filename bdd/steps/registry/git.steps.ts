@@ -187,7 +187,7 @@ When("I try to link a resource to git registry", async function (this: GitRegist
   };
 
   try {
-    await this.gitRegistry!.link(rxr);
+    await this.gitRegistry!.add(rxr);
     this.error = null;
   } catch (e) {
     this.error = e as Error;

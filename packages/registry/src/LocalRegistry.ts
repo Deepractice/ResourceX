@@ -1,5 +1,6 @@
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { join, resolve as resolvePath } from "node:path";
+import { symlink, lstat, readlink } from "node:fs/promises";
 import type {
   Registry,
   LocalRegistryConfig,
@@ -12,6 +13,7 @@ import { parseRXL, createRXM } from "@resourcexjs/core";
 import { TypeHandlerChain } from "@resourcexjs/type";
 import type { ResourceType, ResolvedResource } from "@resourcexjs/type";
 import { createARP, type ARP } from "@resourcexjs/arp";
+import { loadResource } from "@resourcexjs/loader";
 import { RegistryError } from "./errors.js";
 
 const DEFAULT_PATH = `${homedir()}/.resourcex`;
@@ -116,10 +118,29 @@ export class LocalRegistry implements Registry {
   }
 
   /**
+   * Check if a path is a symlink.
+   */
+  private async isSymlink(path: string): Promise<boolean> {
+    try {
+      const stats = await lstat(path);
+      return stats.isSymbolicLink();
+    } catch {
+      return false;
+    }
+  }
+
+  /**
    * Load resource from a specific path.
+   * If path is a symlink, loads from the linked directory using FolderLoader.
    */
   private async loadFrom(resourcePath: string): Promise<RXR> {
-    // Read manifest first to determine type
+    // Check if this is a symlink (created by link())
+    if (await this.isSymlink(resourcePath)) {
+      const targetPath = await readlink(resourcePath);
+      return loadResource(targetPath);
+    }
+
+    // Regular resource: read manifest and content
     const manifestPath = join(resourcePath, "manifest.json");
     const manifestArl = this.arp.parse(this.toArpUrl(manifestPath));
     const manifestResource = await manifestArl.resolve();
@@ -137,20 +158,45 @@ export class LocalRegistry implements Registry {
     return this.typeHandler.deserialize(data, manifest);
   }
 
-  async pull(_locator: string, _options?: PullOptions): Promise<void> {
-    // TODO: Implement in #018 (GitHubRegistry)
-    throw new RegistryError("Pull not implemented yet - see issue #018");
+  async link(path: string): Promise<void> {
+    // Load resource from directory to get locator info
+    const rxr = await loadResource(path);
+    const locator = rxr.manifest.toLocator();
+    const resourcePath = this.buildPath(locator, "local");
+
+    // Remove existing if any
+    try {
+      const arl = this.arp.parse(this.toArpUrl(resourcePath));
+      if (await arl.exists()) {
+        await arl.delete();
+      }
+    } catch {
+      // Ignore
+    }
+
+    // Ensure parent directory exists
+    const parentPath = join(resourcePath, "..");
+    const parentArl = this.arp.parse(this.toArpUrl(parentPath));
+    await parentArl.mkdir();
+
+    // Create symlink to absolute path
+    const absolutePath = resolvePath(path);
+    await symlink(absolutePath, resourcePath);
   }
 
-  async publish(_resource: RXR, _options: PublishOptions): Promise<void> {
-    // TODO: Implement in #018 (GitHubRegistry)
-    throw new RegistryError("Publish not implemented yet - see issue #018");
-  }
+  async add(source: string | RXR): Promise<void> {
+    // Load resource if path is provided
+    const resource = typeof source === "string" ? await loadResource(source) : source;
 
-  async link(resource: RXR): Promise<void> {
-    // Always link to local/ directory (development area)
+    // Always add to local/ directory
     const locator = resource.manifest.toLocator();
     const resourcePath = this.buildPath(locator, "local");
+
+    // Remove existing symlink if any
+    if (await this.isSymlink(resourcePath)) {
+      const arl = this.arp.parse(this.toArpUrl(resourcePath));
+      await arl.delete();
+    }
 
     // Ensure directory exists using ARP mkdir
     const dirArl = this.arp.parse(this.toArpUrl(resourcePath));
@@ -170,6 +216,16 @@ export class LocalRegistry implements Registry {
     const contentArl = this.arp.parse(this.toArpUrl(contentPath));
     const serialized = await this.typeHandler.serialize(resource);
     await contentArl.deposit(serialized);
+  }
+
+  async pull(_locator: string, _options?: PullOptions): Promise<void> {
+    // TODO: Implement in #018 (GitHubRegistry)
+    throw new RegistryError("Pull not implemented yet - see issue #018");
+  }
+
+  async publish(_source: string | RXR, _options: PublishOptions): Promise<void> {
+    // TODO: Implement in #018 (GitHubRegistry)
+    throw new RegistryError("Publish not implemented yet - see issue #018");
   }
 
   async get(locator: string): Promise<RXR> {

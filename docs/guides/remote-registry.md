@@ -194,7 +194,7 @@ RemoteRegistry is read-only. These operations throw errors:
 
 ```typescript
 // All of these throw RegistryError
-await registry.link(resource);
+await registry.add(resource);
 // "Cannot link to remote registry - use local registry for linking"
 
 await registry.delete("domain/resource.text@1.0.0");

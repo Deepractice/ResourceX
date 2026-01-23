@@ -66,7 +66,7 @@ const rxr = await loadResource("./my-prompt");
 
 // Link to registry
 const registry = createRegistry();
-await registry.link(rxr);
+await registry.add(rxr);
 
 // Now available at: ~/.resourcex/localhost/my-prompt.text@1.0.0/
 ```
@@ -135,7 +135,7 @@ Link a resource to local registry.
 - `resource: RXR` - Complete resource object
 
 ```typescript
-await registry.link(rxr);
+await registry.add(rxr);
 ```
 
 #### `resolve(locator: string): Promise<RXR>`
@@ -358,7 +358,7 @@ const rxr = await loadResource("./my-prompts/assistant");
 const registry = createRegistry();
 
 // 3. Link to local registry
-await registry.link(rxr);
+await registry.add(rxr);
 
 // 4. Resolve later
 const resolved = await registry.resolve("localhost/assistant.prompt@1.0.0");
@@ -374,9 +374,9 @@ console.log(text);
 const registry = createRegistry();
 
 // Link multiple versions
-await registry.link(promptV1); // v1.0.0
-await registry.link(promptV2); // v2.0.0
-await registry.link(promptV3); // v3.0.0
+await registry.add(promptV1); // v1.0.0
+await registry.add(promptV2); // v2.0.0
+await registry.add(promptV3); // v3.0.0
 
 // Resolve specific version
 const v1 = await registry.resolve("localhost/prompt.text@1.0.0");
@@ -392,7 +392,7 @@ const registry = createRegistry({
   path: "./project-registry",
 });
 
-await registry.link(rxr);
+await registry.add(rxr);
 // Stored at: ./project-registry/localhost/...
 ```
 
@@ -406,9 +406,9 @@ const registry = createRegistry({
 });
 
 // Now can handle these custom types
-await registry.link(promptResource);
-await registry.link(toolResource);
-await registry.link(agentResource);
+await registry.add(promptResource);
+await registry.add(toolResource);
+await registry.add(agentResource);
 ```
 
 ## Resolution Strategy

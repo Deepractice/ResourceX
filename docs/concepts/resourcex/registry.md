@@ -80,7 +80,7 @@ const resource = {
   content: await createRXC({ content: "Tool content" }),
 };
 
-await registry.link(resource);
+await registry.add(resource);
 ```
 
 ### get() - Retrieve Raw Resource
@@ -391,7 +391,7 @@ try {
 import { ResourceTypeError } from "@resourcexjs/type";
 
 try {
-  await registry.link(resourceWithUnknownType);
+  await registry.add(resourceWithUnknownType);
 } catch (error) {
   if (error instanceof ResourceTypeError) {
     console.log(error.message); // "Unsupported resource type: unknown"
@@ -435,7 +435,7 @@ const resource = {
   content: await createRXC({ content: "Dev content" }),
 };
 
-await registry.link(resource);
+await registry.add(resource);
 
 // Test resolution
 const resolved = await registry.resolve("my-prompt.text@1.0.0");
@@ -468,7 +468,7 @@ const promptResource = {
   }),
 };
 
-await registry.link(promptResource);
+await registry.add(promptResource);
 ```
 
 ### Search and Filter

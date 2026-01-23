@@ -168,7 +168,7 @@ const rxr = {
 
 // Store it
 const registry = createRegistry();
-await registry.link(rxr);
+await registry.add(rxr);
 
 // Retrieve it
 const resolved = await registry.resolve("hello.text@1.0.0");

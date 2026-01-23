@@ -81,7 +81,7 @@ import { createRegistry } from "resourcexjs";
 const registry = createRegistry();
 
 // Store the resource
-await registry.link(rxr);
+await registry.add(rxr);
 ```
 
 ### Retrieving from Registry
@@ -199,7 +199,7 @@ const devResource = {
   content: await createRXC({ content: "Development prompt" }),
 };
 
-await registry.link(devResource);
+await registry.add(devResource);
 ```
 
 ### Creating Multi-File Resource
@@ -236,7 +236,7 @@ const v2: RXR = {
   content: v1.content, // Reuse content
 };
 
-await registry.link(v2);
+await registry.add(v2);
 ```
 
 ## RXR vs ResolvedResource

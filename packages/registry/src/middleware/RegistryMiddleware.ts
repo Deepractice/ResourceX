@@ -22,16 +22,20 @@ export abstract class RegistryMiddleware implements Registry {
     this.inner.supportType(type);
   }
 
+  link(path: string): Promise<void> {
+    return this.inner.link(path);
+  }
+
+  add(source: string | RXR): Promise<void> {
+    return this.inner.add(source);
+  }
+
   pull(locator: string, options?: PullOptions): Promise<void> {
     return this.inner.pull(locator, options);
   }
 
-  publish(resource: RXR, options: PublishOptions): Promise<void> {
-    return this.inner.publish(resource, options);
-  }
-
-  link(resource: RXR): Promise<void> {
-    return this.inner.link(resource);
+  publish(source: string | RXR, options: PublishOptions): Promise<void> {
+    return this.inner.publish(source, options);
   }
 
   get(locator: string): Promise<RXR> {

@@ -94,7 +94,7 @@ const resource = {
 };
 
 // Link to registry
-await registry.link(resource);
+await registry.add(resource);
 ```
 
 ### Multi-File Resource
@@ -115,7 +115,7 @@ const manifest = createRXM({
   version: "1.0.0",
 });
 
-await registry.link({
+await registry.add({
   locator: parseRXL(manifest.toLocator()),
   manifest,
   content,
@@ -137,7 +137,7 @@ const manifest = createRXM({
 
 const content = await createRXC({ content: "You are an assistant" });
 
-await registry.link({
+await registry.add({
   locator: parseRXL(manifest.toLocator()),
   manifest,
   content,
@@ -320,14 +320,14 @@ import { ResourceTypeError } from "@resourcexjs/type";
 
 try {
   // Assuming "custom" type is not registered
-  await registry.link(resourceWithCustomType);
+  await registry.add(resourceWithCustomType);
 } catch (error) {
   if (error instanceof ResourceTypeError) {
     console.log(error.message); // "Unsupported resource type: custom"
 
     // Solution: Register the type first
     registry.supportType(customType);
-    await registry.link(resourceWithCustomType);
+    await registry.add(resourceWithCustomType);
   }
 }
 ```
@@ -361,7 +361,7 @@ async function main() {
 
   const content = await createRXC({ content: "Hello, ResourceX!" });
 
-  await registry.link({
+  await registry.add({
     locator: parseRXL(manifest.toLocator()),
     manifest,
     content,

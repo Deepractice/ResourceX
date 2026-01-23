@@ -620,7 +620,7 @@ async function accessResourceFiles() {
     "advanced/plugins.md": "# Plugins\n...",
   });
 
-  await registry.link({
+  await registry.add({
     locator: parseRXL(manifest.toLocator()),
     manifest,
     content,

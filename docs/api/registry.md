@@ -59,9 +59,10 @@ The main interface for resource operations.
 ```typescript
 interface Registry {
   supportType(type: ResourceType): void;
+  link(path: string): Promise<void>;
+  add(source: string | RXR): Promise<void>;
   pull(locator: string, options?: PullOptions): Promise<void>;
-  publish(resource: RXR, options: PublishOptions): Promise<void>;
-  link(resource: RXR): Promise<void>;
+  publish(source: string | RXR, options: PublishOptions): Promise<void>;
   get(locator: string): Promise<RXR>;
   resolve<TArgs = void, TResult = unknown>(
     locator: string
@@ -98,17 +99,45 @@ registry.supportType(myCustomType);
 
 ### link
 
-Link a resource to the local registry for development or caching.
+Create a symlink to a development directory. Changes in the source directory are immediately reflected when resolving.
 
 ```typescript
-link(resource: RXR): Promise<void>
+link(path: string): Promise<void>
 ```
 
 **Parameters:**
 
-| Name       | Type  | Description      |
-| ---------- | ----- | ---------------- |
-| `resource` | `RXR` | Resource to link |
+| Name   | Type     | Description                                          |
+| ------ | -------- | ---------------------------------------------------- |
+| `path` | `string` | Path to resource directory (must have resource.json) |
+
+**Example:**
+
+```typescript
+import { createRegistry } from "@resourcexjs/registry";
+
+const registry = createRegistry();
+
+// Link development directory - changes reflect immediately
+await registry.link("./my-prompt");
+
+// Now you can resolve it
+const resolved = await registry.resolve("my-prompt.text@1.0.0");
+```
+
+### add
+
+Add a resource to the local registry by copying its content.
+
+```typescript
+add(source: string | RXR): Promise<void>
+```
+
+**Parameters:**
+
+| Name     | Type            | Description                           |
+| -------- | --------------- | ------------------------------------- |
+| `source` | `string \| RXR` | Resource directory path or RXR object |
 
 **Example:**
 
@@ -118,16 +147,19 @@ import { createRXM, createRXC, parseRXL } from "@resourcexjs/core";
 
 const registry = createRegistry();
 
+// Add from directory path
+await registry.add("./my-prompt");
+
+// Or add from RXR object
 const manifest = createRXM({
   domain: "localhost",
   name: "hello",
   type: "text",
   version: "1.0.0",
 });
-
 const content = await createRXC({ content: "Hello, World!" });
 
-await registry.link({
+await registry.add({
   locator: parseRXL(manifest.toLocator()),
   manifest,
   content,
@@ -301,15 +333,15 @@ pull(locator: string, options?: PullOptions): Promise<void>
 Publish a resource to a remote registry.
 
 ```typescript
-publish(resource: RXR, options: PublishOptions): Promise<void>
+publish(source: string | RXR, options: PublishOptions): Promise<void>
 ```
 
 **Parameters:**
 
-| Name       | Type             | Description                  |
-| ---------- | ---------------- | ---------------------------- |
-| `resource` | `RXR`            | Resource to publish          |
-| `options`  | `PublishOptions` | Publish target configuration |
+| Name      | Type             | Description                           |
+| --------- | ---------------- | ------------------------------------- |
+| `source`  | `string \| RXR`  | Resource directory path or RXR object |
+| `options` | `PublishOptions` | Publish target configuration          |
 
 **Note:** Not yet implemented. See issue #018.
 
@@ -683,17 +715,21 @@ async function main() {
   // Create local registry
   const registry = createRegistry();
 
-  // Create and link a resource
+  // Option 1: Link development directory (live changes)
+  await registry.link("./my-greeting");
+
+  // Option 2: Add from directory (snapshot)
+  await registry.add("./my-greeting");
+
+  // Option 3: Add from RXR object
   const manifest = createRXM({
     domain: "localhost",
     name: "greeting",
     type: "text",
     version: "1.0.0",
   });
-
   const content = await createRXC({ content: "Hello, ResourceX!" });
-
-  await registry.link({
+  await registry.add({
     locator: parseRXL(manifest.toLocator()),
     manifest,
     content,

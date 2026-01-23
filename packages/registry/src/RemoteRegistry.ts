@@ -29,16 +29,20 @@ export class RemoteRegistry implements Registry {
     this.typeHandler.register(type);
   }
 
+  async link(_path: string): Promise<void> {
+    throw new RegistryError("Cannot link to remote registry - use local registry for linking");
+  }
+
+  async add(_source: string | RXR): Promise<void> {
+    throw new RegistryError("Cannot add to remote registry - use local registry for adding");
+  }
+
   async pull(_locator: string, _options?: PullOptions): Promise<void> {
     throw new RegistryError("Cannot pull to remote registry - use local registry for pulling");
   }
 
-  async publish(_resource: RXR, _options: PublishOptions): Promise<void> {
+  async publish(_source: string | RXR, _options: PublishOptions): Promise<void> {
     throw new RegistryError("Remote registry publish not implemented yet");
-  }
-
-  async link(_resource: RXR): Promise<void> {
-    throw new RegistryError("Cannot link to remote registry - use local registry for linking");
   }
 
   async get(locator: string): Promise<RXR> {

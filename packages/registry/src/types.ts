@@ -157,6 +157,20 @@ export interface Registry {
   supportType(type: ResourceType): void;
 
   /**
+   * Link a development directory to local registry.
+   * Creates a symlink so changes are reflected immediately.
+   * @param path - Path to resource directory (must contain resource.json)
+   */
+  link(path: string): Promise<void>;
+
+  /**
+   * Add resource to local registry.
+   * Copies resource content to local storage.
+   * @param source - Resource directory path or RXR object
+   */
+  add(source: string | RXR): Promise<void>;
+
+  /**
    * Pull resource from remote registry to local cache.
    * Discovers remote registry via well-known and caches locally.
    * @param locator - Resource locator (must include domain)
@@ -166,16 +180,10 @@ export interface Registry {
 
   /**
    * Publish resource to remote registry.
-   * Resource must exist in local first.
-   * @param resource - Resource to publish
-   * @param options - Publish target configuration
+   * @param source - Resource directory path or RXR object
+   * @param options - Publish target configuration (required)
    */
-  publish(resource: RXR, options: PublishOptions): Promise<void>;
-
-  /**
-   * Link resource to local registry (for development/caching).
-   */
-  link(resource: RXR): Promise<void>;
+  publish(source: string | RXR, options: PublishOptions): Promise<void>;
 
   /**
    * Get raw resource by locator string.

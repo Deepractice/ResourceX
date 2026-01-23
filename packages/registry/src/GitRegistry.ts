@@ -334,16 +334,20 @@ export class GitRegistry implements Registry {
   }
 
   // Read-only operations - not supported
+  async link(_path: string): Promise<void> {
+    throw new RegistryError("GitRegistry is read-only - use LocalRegistry.link()");
+  }
+
+  async add(_source: string | RXR): Promise<void> {
+    throw new RegistryError("GitRegistry is read-only - use LocalRegistry.add()");
+  }
+
   async pull(_locator: string, _options?: PullOptions): Promise<void> {
     throw new RegistryError("GitRegistry is read-only - use LocalRegistry.pull()");
   }
 
-  async publish(_resource: RXR, _options: PublishOptions): Promise<void> {
+  async publish(_source: string | RXR, _options: PublishOptions): Promise<void> {
     throw new RegistryError("GitRegistry is read-only - use LocalRegistry.publish()");
-  }
-
-  async link(_resource: RXR): Promise<void> {
-    throw new RegistryError("GitRegistry is read-only - use LocalRegistry.link()");
   }
 
   async delete(_locator: string): Promise<void> {

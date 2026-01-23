@@ -58,7 +58,7 @@ Given(
       content: rxc,
     };
 
-    await this.registry.link(rxr);
+    await this.registry.add(rxr);
   }
 );
 

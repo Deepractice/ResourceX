@@ -84,7 +84,7 @@ const rxr = {
 
 // 2. 链接到本地 registry (~/.resourcex)
 const registry = createRegistry();
-await registry.link(rxr);
+await registry.add(rxr);
 
 // 3. 随处解析
 const resource = await registry.resolve("localhost/my-prompt.text@1.0.0");

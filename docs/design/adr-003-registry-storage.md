@@ -62,7 +62,7 @@ Storage is separated into two distinct areas:
 - Contains resources being developed
 - Organized by `name.type/version` only (no domain hierarchy)
 - Manifest may have any domain (including target publish domain)
-- Written by `registry.link()`
+- Written by `registry.add()`
 - Searched first during resolution
 
 **Cache Area** (`cache/`):

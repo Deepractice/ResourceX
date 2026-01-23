@@ -93,7 +93,7 @@ Given(
       content: await createRXC({ content }),
     };
 
-    await this.registry!.link(rxr);
+    await this.registry!.add(rxr);
   }
 );
 
@@ -114,7 +114,7 @@ Given("a linked resource {string}", async function (this: RegistryWorld, locator
     content: await createRXC({ content: "test content" }),
   };
 
-  await this.registry!.link(rxr);
+  await this.registry!.add(rxr);
 });
 
 Given(
@@ -138,14 +138,14 @@ Given(
         content: await createRXC({ content: "test content" }),
       };
 
-      await this.registry!.link(rxr);
+      await this.registry!.add(rxr);
     }
   }
 );
 
 When("I link the resource", async function (this: RegistryWorld) {
   try {
-    await this.registry!.link(this.resource!);
+    await this.registry!.add(this.resource!);
     this.error = null;
   } catch (e) {
     this.error = e as Error;
@@ -170,7 +170,7 @@ When("I link a resource {string}", async function (this: RegistryWorld, locator:
   };
 
   try {
-    await this.registry!.link(this.resource);
+    await this.registry!.add(this.resource);
     this.error = null;
   } catch (e) {
     this.error = e as Error;

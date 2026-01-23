@@ -102,7 +102,7 @@ Given(
       content: await createRXC({ content: `${typeName} content` }),
     };
 
-    await this.registry!.link(rxr);
+    await this.registry!.add(rxr);
   }
 );
 
@@ -142,7 +142,7 @@ When(
       content: await createRXC({ content: `${typeName} content` }),
     };
 
-    await this.registry!.link(rxr);
+    await this.registry!.add(rxr);
   }
 );
 
@@ -166,7 +166,7 @@ When(
     };
 
     try {
-      await this.registry!.link(rxr);
+      await this.registry!.add(rxr);
       this.error = null;
     } catch (e) {
       this.error = e as Error;
@@ -245,7 +245,7 @@ Given(
       content: await createRXC({ content: "add function" }),
     };
 
-    await this.registry!.link(rxr);
+    await this.registry!.add(rxr);
   }
 );
 
@@ -315,7 +315,7 @@ Given("a linked tool resource {string}", async function (this: ResolveWorld, loc
     content: await createRXC({ content: "tool content" }),
   };
 
-  await this.registry!.link(rxr);
+  await this.registry!.add(rxr);
 });
 
 // Isolation test

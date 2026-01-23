@@ -182,7 +182,7 @@ Given(
       content: await createRXC({ content: "test content" }),
     };
 
-    await this.registry!.link(rxr);
+    await this.registry!.add(rxr);
   }
 );
 

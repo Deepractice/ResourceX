@@ -39,6 +39,7 @@
   "dependencies": {
     "@resourcexjs/arp": "workspace:*",
     "@resourcexjs/core": "workspace:*",
+    "@resourcexjs/loader": "workspace:*",
     "@resourcexjs/type": "workspace:*",
     "isomorphic-git": "^1.36.1"
   },

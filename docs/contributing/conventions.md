@@ -242,7 +242,7 @@ Given("a text resource {string}", async function (locator: string) {
 });
 
 When("the resource is linked", async function () {
-  await this.registry.link(this.resource);
+  await this.registry.add(this.resource);
 });
 
 Then("the resource should exist", async function () {

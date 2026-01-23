@@ -84,7 +84,7 @@ const rxr = {
 
 // 2. Link to local registry (~/.resourcex)
 const registry = createRegistry();
-await registry.link(rxr);
+await registry.add(rxr);
 
 // 3. Resolve anywhere
 const resource = await registry.resolve("localhost/my-prompt.text@1.0.0");

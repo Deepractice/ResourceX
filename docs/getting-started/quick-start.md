@@ -60,7 +60,7 @@ import { createRegistry } from "resourcexjs";
 const registry = createRegistry();
 
 // Link the resource
-await registry.link(resource);
+await registry.add(resource);
 
 console.log("Resource linked successfully!");
 ```
@@ -131,7 +131,7 @@ async function main() {
 
   // 2. Link to registry
   const registry = createRegistry();
-  await registry.link(resource);
+  await registry.add(resource);
   console.log("Linked:", resource.locator.toString());
 
   // 3. Resolve and use
@@ -201,7 +201,7 @@ import { loadResource, createRegistry } from "resourcexjs";
 
 const resource = await loadResource("./my-prompt");
 const registry = createRegistry();
-await registry.link(resource);
+await registry.add(resource);
 ```
 
 ## Next Steps

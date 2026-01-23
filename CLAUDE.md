@@ -174,13 +174,14 @@ Used by Registry to delegate serialization logic.
 
 ```typescript
 interface Registry {
-  link(resource: RXR): Promise<void>; // Link to local (~/.resourcex)
+  link(path: string): Promise<void>; // Symlink to dev directory (live changes)
+  add(source: string | RXR): Promise<void>; // Copy to local (~/.resourcex)
   get(locator: string): Promise<RXR>; // Get raw RXR without resolving
   resolve(locator: string): Promise<ResolvedResource>; // Resolve with execute()
   exists(locator: string): Promise<boolean>;
   delete(locator: string): Promise<void>;
   search(options?: SearchOptions): Promise<RXL[]>;
-  publish(resource: RXR): Promise<void>; // TODO: remote publish
+  publish(source: string | RXR, options: PublishOptions): Promise<void>; // Publish to remote
 }
 
 interface SearchOptions {
@@ -431,10 +432,10 @@ Registry delegates serialization to TypeHandlerChain, keeping concerns separated
 class LocalRegistry implements Registry {
   private typeChain: TypeHandlerChain;
 
-  async link(rxr: RXR) {
+  async add(source: string | RXR) {
+    const rxr = typeof source === "string" ? await loadResource(source) : source;
     // Delegate to chain
     const buffer = await this.typeChain.serialize(rxr);
-
     // Store using fs
     await writeFile(contentPath, buffer);
   }
@@ -533,13 +534,14 @@ DomainValidation                // Validates manifest.domain
 withDomainValidation(registry, domain): Registry  // Factory function
 
 // Registry methods
-registry.link(rxr): Promise<void>
+registry.link(path): Promise<void>          // Symlink to dev directory
+registry.add(source): Promise<void>         // Copy to local (source: path | RXR)
 registry.get(locator): Promise<RXR>         // Raw RXR without resolving
 registry.resolve(locator): Promise<ResolvedResource>
 registry.exists(locator): Promise<boolean>
 registry.delete(locator): Promise<void>
 registry.search(options?): Promise<RXL[]>   // { query?, limit?, offset? }
-registry.publish(rxr): Promise<void>        // TODO: remote publish
+registry.publish(source, options): Promise<void>  // Publish to remote
 ```
 
 ### ARP Package (`@resourcexjs/arp`)

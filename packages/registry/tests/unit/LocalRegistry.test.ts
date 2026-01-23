@@ -31,12 +31,12 @@ describe("LocalRegistry", () => {
     await rm(TEST_DIR, { recursive: true, force: true });
   });
 
-  describe("link", () => {
-    it("links a resource to local registry", async () => {
+  describe("add", () => {
+    it("adds a resource to local registry", async () => {
       const registry = createRegistry({ path: TEST_DIR });
       const rxr = await createTestRXR("test-prompt", "Hello, {{name}}!");
 
-      await registry.link(rxr);
+      await registry.add(rxr);
 
       const exists = await registry.exists("localhost/test-prompt.text@1.0.0");
       expect(exists).toBe(true);
@@ -48,7 +48,7 @@ describe("LocalRegistry", () => {
       const registry = createRegistry({ path: TEST_DIR });
       const rxr = await createTestRXR("hello", "Hello World!");
 
-      await registry.link(rxr);
+      await registry.add(rxr);
 
       const resolved = await registry.resolve("localhost/hello.text@1.0.0");
 
@@ -76,7 +76,7 @@ describe("LocalRegistry", () => {
       const registry = createRegistry({ path: TEST_DIR });
       const rxr = await createTestRXR("exists-test", "content");
 
-      await registry.link(rxr);
+      await registry.add(rxr);
 
       const exists = await registry.exists("localhost/exists-test.text@1.0.0");
       expect(exists).toBe(true);
@@ -95,7 +95,7 @@ describe("LocalRegistry", () => {
       const registry = createRegistry({ path: TEST_DIR });
       const rxr = await createTestRXR("to-delete", "content");
 
-      await registry.link(rxr);
+      await registry.add(rxr);
       expect(await registry.exists("localhost/to-delete.text@1.0.0")).toBe(true);
 
       await registry.delete("localhost/to-delete.text@1.0.0");
@@ -118,7 +118,7 @@ describe("LocalRegistry", () => {
         content: await createRXC({ content: "Hello via alias!" }),
       };
 
-      await registry.link(rxr);
+      await registry.add(rxr);
 
       const resolved = await registry.resolve("localhost/alias-test.txt@1.0.0");
       const content = await resolved.execute();
@@ -139,7 +139,7 @@ describe("LocalRegistry", () => {
         content: await createRXC({ content: '{"key": "value"}' }),
       };
 
-      await registry.link(rxr);
+      await registry.add(rxr);
 
       const resolved = await registry.resolve<void, { key: string }>(
         "localhost/config-test.config@1.0.0"
@@ -163,7 +163,7 @@ describe("LocalRegistry", () => {
         content: await createRXC({ content: binaryData }),
       };
 
-      await registry.link(rxr);
+      await registry.add(rxr);
 
       const resolved = await registry.resolve<void, Buffer>("localhost/binary-test.bin@1.0.0");
       const content = await resolved.execute();
@@ -198,7 +198,7 @@ describe("LocalRegistry", () => {
         content: await createRXC({ content: "Hello, {{name}}!" }),
       };
 
-      await registry.link(rxr);
+      await registry.add(rxr);
 
       const resolved = await registry.resolve("localhost/greet.prompt@1.0.0");
       const content = await resolved.execute();

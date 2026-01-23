@@ -428,7 +428,7 @@ const content = await createRXC({
   content: "Hello, {{name}}! Welcome to {{place}}.",
 });
 
-await registry.link({
+await registry.add({
   locator: parseRXL(manifest.toLocator()),
   manifest,
   content,
@@ -631,10 +631,10 @@ chain.register(type2); // Error: Alias 'bar' conflicts with existing type or ali
 
 ```typescript
 // Type not registered
-await registry.link(resourceWithUnknownType);
+await registry.add(resourceWithUnknownType);
 // ResourceTypeError: Unsupported resource type: unknown
 
 // Solution: Register the type first
 registry.supportType(unknownType);
-await registry.link(resourceWithUnknownType);
+await registry.add(resourceWithUnknownType);
 ```
