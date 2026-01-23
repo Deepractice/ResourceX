@@ -266,24 +266,28 @@ interface TransportResult {
 
 **Built-in Transports:**
 
-- `file` - Local filesystem
+- `file` - Local filesystem (read-write)
   - `get`: Returns file content or directory listing (JSON array)
   - Params: `recursive="true"`, `pattern="*.json"`
+  - `set`/`delete`: Supported
 - `http`, `https` - Network (read-only)
   - Merges URL query params with runtime params
   - `set`/`delete` throw "read-only" error
 - `rxr` - Access files inside resources (read-only)
   - Format: `arp:{semantic}:rxr://{rxl}/{internal-path}`
   - Example: `arp:text:rxr://localhost/hello.text@1.0.0/content`
-  - Requires Registry instance (manual registration)
-  - See `issues/004-registry-http-protocol.md` for future auto-registration
+  - Auto-creates Registry based on domain:
+    - `localhost` → LocalRegistry (filesystem)
+    - Other domains → RemoteRegistry (via well-known discovery)
+  - Can manually inject Registry via constructor if needed
+  - `set`/`delete` throw "read-only" error
 
-**Semantic handlers:**
+**Built-in Semantics:**
 
-- `text` - UTF-8 text
+- `text` - UTF-8 text (string)
 - `binary` - Raw bytes (Buffer, Uint8Array, ArrayBuffer, number[])
 
-**Default registration:** `createARP()` auto-registers all built-in handlers.
+**Default registration:** `createARP()` auto-registers all built-in transports and semantics.
 
 ## Development Workflow
 

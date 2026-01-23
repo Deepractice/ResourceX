@@ -355,9 +355,12 @@ const result = await chain.resolve<string>(rxr);
 For direct file/network I/O without Registry:
 
 ```typescript
-import { createARP, RxrTransport } from "resourcexjs/arp";
+import { createARP } from "resourcexjs/arp";
 
-const arp = createARP(); // Auto-registers file, http, https, text, binary
+// createARP() auto-registers built-in handlers:
+// Transports: file, http, https, rxr
+// Semantics: text, binary
+const arp = createARP();
 
 // Read local file
 const arl = arp.parse("arp:text:file://./config.txt");
@@ -373,14 +376,26 @@ const exists = await arl.exists();
 // Delete
 await arl.delete();
 
-// Access files inside a resource via RxrTransport
-const rxrTransport = new RxrTransport(); // Auto-creates Registry based on domain
-arp.registerTransport(rxrTransport);
+// Read from HTTP
+const arl2 = arp.parse("arp:text:https://example.com/data.json");
+const remote = await arl2.resolve();
 
-const arl2 = arp.parse("arp:text:rxr://localhost/my-prompt.text@1.0.0/content");
-const inner = await arl2.resolve();
+// Access files inside a resource (rxr transport - auto-registered)
+const arl3 = arp.parse("arp:text:rxr://localhost/my-prompt.text@1.0.0/content");
+const inner = await arl3.resolve();
 // localhost → LocalRegistry, other domains → RemoteRegistry via well-known
 ```
+
+**Built-in Transports:**
+
+- `file` - Local filesystem (read-write)
+- `http`, `https` - Network resources (read-only)
+- `rxr` - Files inside resources (read-only, auto-creates Registry)
+
+**Built-in Semantics:**
+
+- `text` - UTF-8 text → string
+- `binary` - Raw bytes → Buffer
 
 ## Packages
 

@@ -10,36 +10,47 @@ bun add @resourcexjs/registry
 
 ## Overview
 
-The `@resourcexjs/registry` package provides a Maven-style registry for storing and resolving resources locally.
+The `@resourcexjs/registry` package provides a Maven-style registry for storing and resolving resources (local or remote).
 
 ### Key Concepts
 
 - **Registry**: Interface for resource storage and retrieval
-- **ARPRegistry**: Implementation using ARP (Agent Resource Protocol) for I/O
-- **Local-first**: Resources cached locally at `~/.resourcex`
-- **Maven-style**: Organized by `domain/path/name.type@version`
+- **LocalRegistry**: Filesystem-based implementation for local storage
+- **RemoteRegistry**: HTTP API-based implementation for remote access
+- **Well-known discovery**: Auto-discover registry endpoint via `/.well-known/resourcex`
+- **Maven-style**: Organized by `domain/path/name.type/version`
 
 ## Usage
 
 ### Create Registry
 
 ```typescript
-import { createRegistry } from "@resourcexjs/registry";
+import { createRegistry, discoverRegistry } from "@resourcexjs/registry";
 
-// Default configuration (~/.resourcex)
+// Local registry (default)
 const registry = createRegistry();
 
-// Custom path
-const registry = createRegistry({
+// Local registry with custom path
+const registry2 = createRegistry({
   path: "./my-registry",
 });
 
-// With extension types
+// Local registry with extension types
 import { promptType } from "@my-org/types";
 
-const registry = createRegistry({
+const registry3 = createRegistry({
+  path: "~/.resourcex",
   types: [promptType],
 });
+
+// Remote registry
+const registry4 = createRegistry({
+  endpoint: "https://registry.deepractice.ai/v1",
+});
+
+// Remote registry with well-known discovery
+const endpoint = await discoverRegistry("deepractice.ai");
+const registry5 = createRegistry({ endpoint });
 ```
 
 ### Link Resource
@@ -207,9 +218,10 @@ Resources are stored in Maven-style structure:
 ~/.resourcex/
 └── {domain}/
     └── {path}/
-        └── {name}.{type}@{version}/
-            ├── manifest.json    # RXM metadata
-            └── content          # Serialized content
+        └── {name}.{type}/
+            └── {version}/
+                ├── manifest.json    # RXM metadata
+                └── content.tar.gz   # RXC archive
 ```
 
 ### Example
@@ -220,9 +232,10 @@ For resource `deepractice.ai/prompts/assistant.prompt@1.0.0`:
 ~/.resourcex/
 └── deepractice.ai/
     └── prompts/
-        └── assistant.prompt@1.0.0/
-            ├── manifest.json
-            └── content
+        └── assistant.prompt/
+            └── 1.0.0/
+                ├── manifest.json
+                └── content.tar.gz
 ```
 
 **manifest.json:**
@@ -237,7 +250,7 @@ For resource `deepractice.ai/prompts/assistant.prompt@1.0.0`:
 }
 ```
 
-**content:** (serialized by type's serializer)
+**content.tar.gz:** Archive containing resource files (managed by TypeHandlerChain)
 
 ## Extension Types
 
@@ -373,31 +386,47 @@ await registry.link(agentResource);
 
 ## Resolution Strategy
 
-1. **Check local registry** (`~/.resourcex` or custom path)
-2. **If not found**: (TODO) Fetch from remote registry based on domain
-3. **Cache locally** after fetching
-4. **Return** resource
+### LocalRegistry
 
-Currently only local resolution is implemented. Remote fetching is planned.
+1. **Check local filesystem** (`~/.resourcex` or custom path)
+2. **If not found**: Throw RegistryError
+3. **Return** RXR
+
+### RemoteRegistry
+
+1. **Fetch from HTTP API** (`GET /resource` + `GET /content`)
+2. **Return** RXR (no local caching)
+
+### Future: Hybrid Strategy (TODO)
+
+1. Check local cache first
+2. If not found, fetch from remote based on domain
+3. Cache locally
+4. Return RXR
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────┐
-│          Registry Interface         │
-└──────────────┬──────────────────────┘
-               │
-        ┌──────▼──────┐
-        │ARPRegistry  │
-        │(implements) │
-        └──────┬──────┘
-               │
-     ┌─────────┴─────────┐
-     │                   │
-┌────▼────┐      ┌──────▼──────┐
-│   ARP   │      │TypeHandler  │
-│(I/O)    │      │Chain        │
-└─────────┘      └─────────────┘
+┌─────────────────────────────────────────┐
+│         Registry Interface              │
+└────────────┬────────────────────────────┘
+             │
+    ┌────────┴────────┐
+    │                 │
+┌───▼──────────┐  ┌──▼──────────────┐
+│LocalRegistry │  │RemoteRegistry   │
+│(filesystem)  │  │(HTTP API)       │
+└───┬──────────┘  └──┬──────────────┘
+    │                │
+┌───▼───────┐    ┌──▼──────┐
+│ Node.js   │    │ fetch   │
+│ fs module │    │         │
+└───────────┘    └─────────┘
+     │                │
+┌────▼────────────────▼─────┐
+│   TypeHandlerChain        │
+│  (serialization logic)    │
+└───────────────────────────┘
 ```
 
 ## Type Safety
