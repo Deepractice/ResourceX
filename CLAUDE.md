@@ -179,13 +179,37 @@ interface SearchOptions {
 }
 ```
 
+**Registry Configuration:**
+
+```typescript
+// Local registry (default)
+const registry = createRegistry();
+const registry2 = createRegistry({ path: "./custom-path" });
+
+// Remote registry
+const registry3 = createRegistry({
+  endpoint: "https://registry.deepractice.ai/v1",
+});
+
+// Well-known discovery
+import { discoverRegistry } from "@resourcexjs/registry";
+const endpoint = await discoverRegistry("deepractice.ai");
+// → fetches https://deepractice.ai/.well-known/resourcex
+```
+
 **LocalRegistry Implementation:**
 
 - Uses Node.js `fs` module directly for local storage
 - Uses TypeHandlerChain for serialization/deserialization
 - Storage: `~/.resourcex/{domain}/{path}/{name}.{type}/{version}/`
 
-**Storage Structure:**
+**RemoteRegistry Implementation:**
+
+- Uses HTTP API for resource access
+- Read-only (link/delete not supported)
+- Endpoints: `/resource`, `/content`, `/exists`, `/search`
+
+**Storage Structure (Local):**
 
 ```
 ~/.resourcex/
@@ -202,16 +226,15 @@ interface SearchOptions {
 ```
 registry.resolve("deepractice.ai/assistant.prompt@1.0.0")
   ↓
-1. Check local: ~/.resourcex/deepractice.ai/assistant.prompt@1.0.0/manifest.json
-2. If exists:
-   - Read manifest.json → createRXM(json)
-   - Get ResourceType by manifest.type
-   - Read content → Buffer
-   - typeChain.deserialize(buffer, manifest) → RXR
-3. If not exists:
-   - TODO: Fetch from remote registry (domain-based)
-   - Cache to local
-   - Return RXR
+LocalRegistry:
+1. Check local: ~/.resourcex/deepractice.ai/...
+2. Read manifest.json + content.tar.gz
+3. typeChain.deserialize → RXR
+
+RemoteRegistry:
+1. GET /resource?locator=... → manifest
+2. GET /content?locator=... → content
+3. typeChain.deserialize → RXR
 ```
 
 ### ARP Layer
@@ -374,8 +397,19 @@ createTypeHandlerChain(types?: ResourceType[]): TypeHandlerChain
 ### Registry Package (`@resourcexjs/registry`)
 
 ```typescript
-createRegistry(config?: { path?, types? }): Registry
+// Create registry (local or remote)
+createRegistry(): Registry                              // LocalRegistry with default path
+createRegistry({ path?: string, types?: ResourceType[] }): Registry  // LocalRegistry
+createRegistry({ endpoint: string }): Registry          // RemoteRegistry
 
+// Well-known discovery
+discoverRegistry(domain: string): Promise<string>       // Returns registry endpoint
+
+// Classes
+LocalRegistry   // Filesystem-based
+RemoteRegistry  // HTTP API-based
+
+// Registry methods
 registry.link(rxr): Promise<void>
 registry.get(locator): Promise<RXR>         // Raw RXR without resolving
 registry.resolve(locator): Promise<ResolvedResource>
@@ -402,11 +436,17 @@ arl.delete(): Promise<void>
 fileTransport: TransportHandler
 httpTransport: TransportHandler
 httpsTransport: TransportHandler
-RxrTransport: class  // Requires registry instance
+RxrTransport: class  // Auto-creates Registry based on domain
 
-// RxrTransport usage
-const rxrTransport = new RxrTransport(registry);
+// RxrTransport usage (auto mode - recommended)
+const rxrTransport = new RxrTransport();  // No registry needed!
 arp.registerTransport(rxrTransport);
+// localhost → LocalRegistry, other domains → RemoteRegistry via well-known
+
+// RxrTransport usage (manual mode)
+const rxrTransport = new RxrTransport(registry);  // Inject specific registry
+arp.registerTransport(rxrTransport);
+
 const arl = arp.parse("arp:text:rxr://localhost/hello.text@1.0.0/content");
 const resource = await arl.resolve();
 ```
@@ -433,6 +473,8 @@ ARPError
 - [x] Registry.search() - Implemented with query/limit/offset options
 - [x] Registry.get() - Get raw RXR without resolving
 - [x] RxrTransport - Access files inside resources via ARP
-- [ ] Registry HTTP Protocol - See `issues/004-registry-http-protocol.md`
+- [x] RemoteRegistry - HTTP client for remote registry access
+- [x] Well-known discovery - `discoverRegistry()` for service discovery
+- [x] RxrTransport auto-create - Auto-creates Registry based on domain
 - [ ] Registry.publish() - Remote publishing to domain-based registry
-- [ ] Remote resolution - Fetch from remote when not in local cache
+- [ ] Registry HTTP Server - Server-side routes (see `issues/015-registry-remote-support.md`)
