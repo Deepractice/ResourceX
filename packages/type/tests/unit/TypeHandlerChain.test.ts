@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from "bun:test";
 import { TypeHandlerChain, ResourceTypeError, textType } from "../../src/index.js";
 import type { RXR, ResourceType } from "../../src/types.js";
-import { createRXM, createRXC, parseRXL } from "@resourcexjs/core";
+import { createRXM, createRXA, parseRXL } from "@resourcexjs/core";
 
 describe("TypeHandlerChain", () => {
   let chain: TypeHandlerChain;
@@ -135,7 +135,7 @@ describe("TypeHandlerChain", () => {
       const rxr: RXR = {
         locator: parseRXL(manifest.toLocator()),
         manifest,
-        content: await createRXC({ content: "Hello, World!" }),
+        archive: await createRXA({ content: "Hello, World!" }),
       };
 
       const buffer = await chain.serialize(rxr);
@@ -155,7 +155,7 @@ describe("TypeHandlerChain", () => {
       const rxr: RXR = {
         locator: parseRXL(manifest.toLocator()),
         manifest,
-        content: await createRXC({ content: '{"key": "value"}' }),
+        archive: await createRXA({ content: '{"key": "value"}' }),
       };
 
       const buffer = await chain.serialize(rxr);
@@ -175,7 +175,7 @@ describe("TypeHandlerChain", () => {
       const rxr: RXR = {
         locator: parseRXL(manifest.toLocator()),
         manifest,
-        content: await createRXC({ content: "test" }),
+        archive: await createRXA({ content: "test" }),
       };
 
       await expect(chain.serialize(rxr)).rejects.toThrow(ResourceTypeError);
@@ -192,12 +192,12 @@ describe("TypeHandlerChain", () => {
         version: "1.0.0",
       });
       // Create a proper tar.gz buffer
-      const originalRxc = await createRXC({ content: "Hello, World!" });
-      const data = await originalRxc.buffer();
+      const originalRxa = await createRXA({ content: "Hello, World!" });
+      const data = await originalRxa.buffer();
 
       const rxr = await chain.deserialize(data, manifest);
 
-      const contentBuffer = await rxr.content.file("content");
+      const contentBuffer = await rxr.archive.extract().then((pkg) => pkg.file("content"));
       expect(contentBuffer.toString()).toBe("Hello, World!");
     });
 
@@ -208,12 +208,12 @@ describe("TypeHandlerChain", () => {
         type: "txt", // Using alias
         version: "1.0.0",
       });
-      const originalRxc = await createRXC({ content: "Via alias" });
-      const data = await originalRxc.buffer();
+      const originalRxa = await createRXA({ content: "Via alias" });
+      const data = await originalRxa.buffer();
 
       const rxr = await chain.deserialize(data, manifest);
 
-      const contentBuffer = await rxr.content.file("content");
+      const contentBuffer = await rxr.archive.extract().then((pkg) => pkg.file("content"));
       expect(contentBuffer.toString()).toBe("Via alias");
     });
 
@@ -224,8 +224,8 @@ describe("TypeHandlerChain", () => {
         type: "unknown",
         version: "1.0.0",
       });
-      const originalRxc = await createRXC({ content: "test" });
-      const data = await originalRxc.buffer();
+      const originalRxa = await createRXA({ content: "test" });
+      const data = await originalRxa.buffer();
 
       await expect(chain.deserialize(data, manifest)).rejects.toThrow(ResourceTypeError);
     });
@@ -242,7 +242,7 @@ describe("TypeHandlerChain", () => {
       const rxr: RXR = {
         locator: parseRXL(manifest.toLocator()),
         manifest,
-        content: await createRXC({ content: "Hello" }),
+        archive: await createRXA({ content: "Hello" }),
       };
 
       const result = await chain.resolve<void, string>(rxr);
@@ -264,7 +264,7 @@ describe("TypeHandlerChain", () => {
       const rxr: RXR = {
         locator: parseRXL(manifest.toLocator()),
         manifest,
-        content: await createRXC({ content: '{"key": "value"}' }),
+        archive: await createRXA({ content: '{"key": "value"}' }),
       };
 
       const result = await chain.resolve<void, { key: string }>(rxr);
@@ -286,7 +286,7 @@ describe("TypeHandlerChain", () => {
       const rxr: RXR = {
         locator: parseRXL(manifest.toLocator()),
         manifest,
-        content: await createRXC({ content: "test" }),
+        archive: await createRXA({ content: "test" }),
       };
 
       await expect(chain.resolve(rxr)).rejects.toThrow(ResourceTypeError);

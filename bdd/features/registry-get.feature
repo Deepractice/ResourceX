@@ -17,7 +17,7 @@ Feature: Registry Get
     Then I should receive a raw RXR
     And rxr.locator should have name "hello"
     And rxr.manifest should have type "text"
-    And rxr.content should be accessible
+    And rxr.archive should be accessible
 
   @raw-rxr
   Scenario: Get multi-file resource
@@ -28,7 +28,7 @@ Feature: Registry Get
       | README.md         | # Project         |
     When I get "localhost/project.text@1.0.0"
     Then I should receive a raw RXR
-    And rxr.content.files() should have 3 files
+    And rxr.archive.extract().files() should have 3 files
     And rxr file "src/index.ts" should contain "console.log"
 
   # ============================================
@@ -50,5 +50,5 @@ Feature: Registry Get
     Given a linked resource "localhost/data.json@1.0.0" with content '{"key": "value"}'
     When I get "localhost/data.json@1.0.0"
     Then I should receive a raw RXR
-    And rxr.content should be raw archive content
+    And rxr.archive should be raw archive content
     And I can read file content as Buffer

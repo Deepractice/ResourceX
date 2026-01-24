@@ -15,9 +15,9 @@ export { parseRXL } from "~/locator/index.js";
 export type { RXM, ManifestData } from "~/manifest/index.js";
 export { createRXM } from "~/manifest/index.js";
 
-// Content (RXC)
-export type { RXC, RXCInput } from "~/content/index.js";
-export { createRXC } from "~/content/index.js";
+// Archive (RXA) and Package (RXP)
+export type { RXA, RXP, RXAInput, PathNode } from "~/archive/index.js";
+export { createRXA } from "~/archive/index.js";
 
 // Resource (RXR)
 export type { RXR } from "~/resource/index.js";

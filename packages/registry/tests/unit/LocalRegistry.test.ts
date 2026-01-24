@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { join } from "node:path";
 import { rm, mkdir } from "node:fs/promises";
 import { createRegistry, RegistryError } from "../../src/index.js";
-import { createRXM, createRXC, parseRXL } from "@resourcexjs/core";
+import { createRXM, createRXA, parseRXL } from "@resourcexjs/core";
 import type { RXR } from "@resourcexjs/core";
 
 const TEST_DIR = join(process.cwd(), ".test-registry");
@@ -18,7 +18,7 @@ async function createTestRXR(name: string, content: string): Promise<RXR> {
   return {
     locator: parseRXL(manifest.toLocator()),
     manifest,
-    content: await createRXC({ content }),
+    archive: await createRXA({ content }),
   };
 }
 
@@ -115,7 +115,7 @@ describe("LocalRegistry", () => {
       const rxr: RXR = {
         locator: parseRXL(manifest.toLocator()),
         manifest,
-        content: await createRXC({ content: "Hello via alias!" }),
+        archive: await createRXA({ content: "Hello via alias!" }),
       };
 
       await registry.add(rxr);
@@ -136,7 +136,7 @@ describe("LocalRegistry", () => {
       const rxr: RXR = {
         locator: parseRXL(manifest.toLocator()),
         manifest,
-        content: await createRXC({ content: '{"key": "value"}' }),
+        archive: await createRXA({ content: '{"key": "value"}' }),
       };
 
       await registry.add(rxr);
@@ -160,7 +160,7 @@ describe("LocalRegistry", () => {
       const rxr: RXR = {
         locator: parseRXL(manifest.toLocator()),
         manifest,
-        content: await createRXC({ content: binaryData }),
+        archive: await createRXA({ content: binaryData }),
       };
 
       await registry.add(rxr);
@@ -195,7 +195,7 @@ describe("LocalRegistry", () => {
       const rxr: RXR = {
         locator: parseRXL(manifest.toLocator()),
         manifest,
-        content: await createRXC({ content: "Hello, {{name}}!" }),
+        archive: await createRXA({ content: "Hello, {{name}}!" }),
       };
 
       await registry.add(rxr);

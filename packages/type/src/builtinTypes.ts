@@ -5,21 +5,21 @@ import type {
   ResolvedResource,
 } from "./types.js";
 import type { RXR, RXM } from "@resourcexjs/core";
-import { createRXC, parseRXL } from "@resourcexjs/core";
+import { createRXA, parseRXL } from "@resourcexjs/core";
 
 /**
- * Text serializer - stores RXC archive as-is
+ * Text serializer - stores RXA archive as-is
  */
 const textSerializer: ResourceSerializer = {
   async serialize(rxr: RXR): Promise<Buffer> {
-    return rxr.content.buffer();
+    return rxr.archive.buffer();
   },
 
   async deserialize(data: Buffer, manifest: RXM): Promise<RXR> {
     return {
       locator: parseRXL(manifest.toLocator()),
       manifest,
-      content: await createRXC({ archive: data }),
+      archive: await createRXA({ buffer: data }),
     };
   },
 };
@@ -34,7 +34,8 @@ const textResolver: ResourceResolver<void, string> = {
       resource: rxr,
       schema: undefined,
       execute: async () => {
-        const buffer = await rxr.content.file("content");
+        const pkg = await rxr.archive.extract();
+        const buffer = await pkg.file("content");
         return buffer.toString("utf-8");
       },
     };
@@ -53,18 +54,18 @@ export const textType: ResourceType<void, string> = {
 };
 
 /**
- * JSON serializer - stores RXC archive as-is
+ * JSON serializer - stores RXA archive as-is
  */
 const jsonSerializer: ResourceSerializer = {
   async serialize(rxr: RXR): Promise<Buffer> {
-    return rxr.content.buffer();
+    return rxr.archive.buffer();
   },
 
   async deserialize(data: Buffer, manifest: RXM): Promise<RXR> {
     return {
       locator: parseRXL(manifest.toLocator()),
       manifest,
-      content: await createRXC({ archive: data }),
+      archive: await createRXA({ buffer: data }),
     };
   },
 };
@@ -79,7 +80,8 @@ const jsonResolver: ResourceResolver<void, unknown> = {
       resource: rxr,
       schema: undefined,
       execute: async () => {
-        const buffer = await rxr.content.file("content");
+        const pkg = await rxr.archive.extract();
+        const buffer = await pkg.file("content");
         return JSON.parse(buffer.toString("utf-8"));
       },
     };
@@ -98,18 +100,18 @@ export const jsonType: ResourceType<void, unknown> = {
 };
 
 /**
- * Binary serializer - stores RXC archive as-is
+ * Binary serializer - stores RXA archive as-is
  */
 const binarySerializer: ResourceSerializer = {
   async serialize(rxr: RXR): Promise<Buffer> {
-    return rxr.content.buffer();
+    return rxr.archive.buffer();
   },
 
   async deserialize(data: Buffer, manifest: RXM): Promise<RXR> {
     return {
       locator: parseRXL(manifest.toLocator()),
       manifest,
-      content: await createRXC({ archive: data }),
+      archive: await createRXA({ buffer: data }),
     };
   },
 };
@@ -124,7 +126,8 @@ const binaryResolver: ResourceResolver<void, Buffer> = {
       resource: rxr,
       schema: undefined,
       execute: async () => {
-        return rxr.content.file("content");
+        const pkg = await rxr.archive.extract();
+        return pkg.file("content");
       },
     };
   },

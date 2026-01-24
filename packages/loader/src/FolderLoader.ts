@@ -2,7 +2,7 @@ import { join, relative } from "node:path";
 import { stat, readFile, readdir } from "node:fs/promises";
 import type { ResourceLoader } from "./types.js";
 import type { RXR } from "@resourcexjs/core";
-import { createRXM, createRXC, parseRXL, ResourceXError } from "@resourcexjs/core";
+import { createRXM, createRXA, parseRXL, ResourceXError } from "@resourcexjs/core";
 
 /**
  * Default ResourceLoader implementation for loading resources from folders.
@@ -25,7 +25,7 @@ import { createRXM, createRXC, parseRXL, ResourceXError } from "@resourcexjs/cor
  * }
  * ```
  *
- * All files in the folder (except resource.json) will be packaged into the RXC.
+ * All files in the folder (except resource.json) will be packaged into the RXA.
  */
 export class FolderLoader implements ResourceLoader {
   async canLoad(source: string): Promise<boolean> {
@@ -94,8 +94,8 @@ export class FolderLoader implements ResourceLoader {
       throw new ResourceXError("No content files found in resource folder");
     }
 
-    // 6. Create RXC
-    const content = await createRXC(files);
+    // 6. Create RXA
+    const archive = await createRXA(files);
 
     // 7. Assemble RXR
     const locator = parseRXL(manifest.toLocator());
@@ -103,7 +103,7 @@ export class FolderLoader implements ResourceLoader {
     return {
       locator,
       manifest,
-      content,
+      archive,
     };
   }
 

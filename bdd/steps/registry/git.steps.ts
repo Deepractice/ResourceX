@@ -25,7 +25,7 @@ interface GitRegistryWorld {
 
 // Helper to create resource in git repo
 async function createResourceInGitRepo(repoPath: string, locator: string, content: string) {
-  const { parseRXL, createRXM, createRXC, TypeHandlerChain } = await import("resourcexjs");
+  const { parseRXL, createRXM, createRXA, TypeHandlerChain } = await import("resourcexjs");
 
   const rxl = parseRXL(locator);
   const domain = rxl.domain ?? "localhost";
@@ -51,15 +51,15 @@ async function createResourceInGitRepo(repoPath: string, locator: string, conten
   await writeFile(join(resourcePath, "manifest.json"), JSON.stringify(manifest.toJSON(), null, 2));
 
   // Write content
-  const rxc = await createRXC({ content });
+  const rxa = await createRXA({ content });
   const typeHandler = TypeHandlerChain.create();
   const rxr: RXR = {
     locator: rxl,
     manifest,
-    content: rxc,
+    archive: rxa,
   };
   const serialized = await typeHandler.serialize(rxr);
-  await writeFile(join(resourcePath, "content.tar.gz"), serialized);
+  await writeFile(join(resourcePath, "archive.tar.gz"), serialized);
 
   // Git commit
   execSync(`git -C ${repoPath} add -A`, { stdio: "pipe" });
@@ -173,7 +173,7 @@ When(
 );
 
 When("I try to link a resource to git registry", async function (this: GitRegistryWorld) {
-  const { createRXM, createRXC, parseRXL } = await import("resourcexjs");
+  const { createRXM, createRXA, parseRXL } = await import("resourcexjs");
   const manifest = createRXM({
     domain: "test.com",
     name: "test",
@@ -183,7 +183,7 @@ When("I try to link a resource to git registry", async function (this: GitRegist
   const rxr: RXR = {
     locator: parseRXL("test.com/test.text@1.0.0"),
     manifest,
-    content: await createRXC({ content: "test" }),
+    archive: await createRXA({ content: "test" }),
   };
 
   try {
@@ -211,7 +211,7 @@ Then("I should receive a git RXR object", async function (this: GitRegistryWorld
   assert.ok(this.rxr, "Should receive an RXR");
   assert.ok(this.rxr?.locator, "RXR should have locator");
   assert.ok(this.rxr?.manifest, "RXR should have manifest");
-  assert.ok(this.rxr?.content, "RXR should have content");
+  assert.ok(this.rxr?.archive, "RXR should have archive");
 });
 
 Then(

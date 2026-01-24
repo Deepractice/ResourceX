@@ -41,10 +41,10 @@ export type { RXM, ManifestData } from "@resourcexjs/core";
 export { createRXM } from "@resourcexjs/core";
 
 // ============================================
-// RXC - ResourceX Content
+// RXA/RXP - ResourceX Archive and Package
 // ============================================
-export type { RXC, RXCInput } from "@resourcexjs/core";
-export { createRXC } from "@resourcexjs/core";
+export type { RXA, RXP, RXAInput, PathNode } from "@resourcexjs/core";
+export { createRXA } from "@resourcexjs/core";
 
 // ============================================
 // RXR - ResourceX Resource

@@ -26,8 +26,9 @@ ResourceX is a resource management protocol for AI Agents, similar to npm for pa
 2. **ResourceX** - High-level resource management
    - RXL (Locator): `[domain/path/]name[.type][@version]`
    - RXM (Manifest): Resource metadata
-   - RXC (Content): Archive-based content (tar.gz internally)
-   - RXR (Resource): RXL + RXM + RXC
+   - RXA (Archive): Archive container (tar.gz) for storage/transfer
+   - RXP (Package): Extracted package for runtime file access
+   - RXR (Resource): RXL + RXM + RXA
    - Registry: Maven-style resource storage (link/resolve/exists/delete/search)
    - TypeSystem: Custom resource types with serializer & resolver
 
@@ -69,7 +70,7 @@ bun run format
 ```
 packages/
 ├── arp/         # @resourcexjs/arp - ARP protocol (low-level I/O)
-├── core/        # @resourcexjs/core - RXL, RXM, RXC, RXR, ResourceType
+├── core/        # @resourcexjs/core - RXL, RXM, RXA, RXP, RXR
 ├── registry/    # @resourcexjs/registry - Registry implementation
 └── resourcex/   # resourcexjs - Main package (re-exports)
 ```
@@ -92,19 +93,32 @@ createRXM({ domain, path?, name, type, version })
 // → { domain, path, name, type, version, toLocator(), toJSON() }
 ```
 
-**RXC (Content)** - Archive-based content (tar.gz internally)
+**RXA (Archive)** - Archive container (tar.gz format) for storage/transfer
 
 ```typescript
-// Create from files
-await createRXC({ content: "Hello" })                    // single file
-await createRXC({ 'index.ts': '...', 'styles.css': '...' }) // multi-file
-await createRXC({ archive: tarGzBuffer })                // from existing archive
+// Create archive
+await createRXA({ content: "Hello" })                    // single file
+await createRXA({ 'index.ts': '...', 'styles.css': '...' }) // multi-file
+await createRXA({ buffer: tarGzBuffer })                 // from existing archive
 
 // Methods
-rxc.file(path): Promise<Buffer>        // read single file
-rxc.files(): Promise<Map<string, Buffer>> // read all files
-rxc.buffer(): Promise<Buffer>          // raw tar.gz buffer
-rxc.stream: ReadableStream             // tar.gz stream
+rxa.buffer(): Promise<Buffer>          // raw tar.gz buffer
+rxa.stream: ReadableStream             // tar.gz stream
+rxa.extract(): Promise<RXP>            // extract to package
+```
+
+**RXP (Package)** - Extracted package for runtime file access
+
+```typescript
+// Created from RXA.extract()
+const pkg = await rxa.extract();
+
+// Methods
+pkg.paths(): string[]                     // flat list of file paths
+pkg.tree(): PathNode[]                    // tree structure
+pkg.file(path): Promise<Buffer>           // read single file
+pkg.files(): Promise<Map<string, Buffer>> // read all files
+pkg.pack(): Promise<RXA>                  // pack back to archive
 ```
 
 **RXR (Resource)** - Complete resource (pure DTO)
@@ -113,11 +127,11 @@ rxc.stream: ReadableStream             // tar.gz stream
 interface RXR {
   locator: RXL;
   manifest: RXM;
-  content: RXC;
+  archive: RXA;
 }
 
 // Create from literals
-const rxr: RXR = { locator, manifest, content };
+const rxr: RXR = { locator, manifest, archive };
 ```
 
 ### Type System
@@ -305,7 +319,7 @@ const registry = createRegistry({
 │   └── {name}.{type}/
 │       └── {version}/
 │           ├── manifest.json
-│           └── content.tar.gz
+│           └── archive.tar.gz
 │
 └── cache/                              # Remote cached resources
     └── {domain}/
@@ -313,7 +327,7 @@ const registry = createRegistry({
             └── {name}.{type}/
                 └── {version}/
                     ├── manifest.json
-                    └── content.tar.gz
+                    └── archive.tar.gz
 ```
 
 ### Resolution Flow
@@ -324,7 +338,7 @@ registry.resolve("my-tool.text@1.0.0")
 LocalRegistry:
 1. Check local/ first: ~/.resourcex/local/my-tool.text/1.0.0/
 2. If not found, check cache/: ~/.resourcex/cache/.../my-tool.text/1.0.0/
-3. Read manifest.json + content.tar.gz
+3. Read manifest.json + archive.tar.gz
 4. typeChain.deserialize → RXR
 
 RemoteRegistry:
@@ -463,22 +477,28 @@ class LocalRegistry implements Registry {
 
 This allows swapping storage implementations without changing serialization logic.
 
-### Archive-based Content
+### Archive and Package
 
-RXC stores content as tar.gz archive internally, supporting single or multi-file resources:
+RXA stores content as tar.gz archive for storage/transfer. RXP provides runtime file access:
 
 ```typescript
-// Single file resource
-const content = await createRXC({ content: "Hello" });
-const buffer = await content.file("content"); // ✅ Buffer
+// Create archive
+const archive = await createRXA({ content: "Hello" }); // single file
+const archive = await createRXA({ "src/index.ts": "code" }); // multi-file
+
+// Extract to package for file access
+const pkg = await archive.extract();
+const buffer = await pkg.file("content"); // ✅ Buffer
 buffer.toString(); // "Hello"
 
-// Multi-file resource
-const content = await createRXC({
-  "src/index.ts": "main code",
-  "src/utils.ts": "helper code",
-});
-const files = await content.files(); // Map<string, Buffer>
+// Get all file paths
+const paths = pkg.paths(); // ["content"] or ["src/index.ts", ...]
+
+// Read all files
+const files = await pkg.files(); // Map<string, Buffer>
+
+// Pack back to archive
+const newArchive = await pkg.pack();
 ```
 
 ### Type Aliases
@@ -507,9 +527,9 @@ parseRXL(locator: string): RXL
 // Manifest
 createRXM(data: ManifestData): RXM
 
-// Content
-createRXC(files: Record<string, Buffer | string>): Promise<RXC>
-createRXC({ archive: Buffer }): Promise<RXC>
+// Archive and Package
+createRXA(files: Record<string, Buffer | string>): Promise<RXA>
+createRXA({ buffer: Buffer }): Promise<RXA>
 
 // ResourceType
 defineResourceType<T>(config: ResourceType<T>): ResourceType<T>
@@ -612,7 +632,7 @@ const arp2 = createARP({ transports: [rxrTransport] }); // Override default
 ResourceXError
 ├── LocatorError (RXL parsing)
 ├── ManifestError (RXM validation)
-├── ContentError (RXC consumption)
+├── ContentError (RXA/RXP operations)
 └── ResourceTypeError (Type not found)
 
 RegistryError (Registry operations)

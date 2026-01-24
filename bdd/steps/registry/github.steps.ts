@@ -189,7 +189,7 @@ When("I try to link a resource using the URL registry", async function (this: Gi
 });
 
 When("I try to add a resource using the URL registry", async function (this: GitHubWorld) {
-  const { createRXM, createRXC, parseRXL } = await import("resourcexjs");
+  const { createRXM, createRXA, parseRXL } = await import("resourcexjs");
   const manifest = createRXM({
     domain: "test.com",
     name: "test",
@@ -199,7 +199,7 @@ When("I try to add a resource using the URL registry", async function (this: Git
   const rxr: RXR = {
     locator: parseRXL("test.com/test.text@1.0.0"),
     manifest,
-    content: await createRXC({ content: "test" }),
+    archive: await createRXA({ content: "test" }),
   };
 
   try {

@@ -149,7 +149,7 @@ export class LocalRegistry implements Registry {
     const manifest = createRXM(manifestData);
 
     // Read content
-    const contentPath = join(resourcePath, "content.tar.gz");
+    const contentPath = join(resourcePath, "archive.tar.gz");
     const contentArl = this.arp.parse(this.toArpUrl(contentPath));
     const contentResource = await contentArl.resolve();
     const data = contentResource.content as Buffer;
@@ -212,7 +212,7 @@ export class LocalRegistry implements Registry {
     await manifestArl.deposit(manifestContent);
 
     // Serialize content using type handler chain
-    const contentPath = join(resourcePath, "content.tar.gz");
+    const contentPath = join(resourcePath, "archive.tar.gz");
     const contentArl = this.arp.parse(this.toArpUrl(contentPath));
     const serialized = await this.typeHandler.serialize(resource);
     await contentArl.deposit(serialized);

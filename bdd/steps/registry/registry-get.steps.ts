@@ -27,7 +27,7 @@ Given(
     locator: string,
     dataTable: { hashes: () => Array<{ path: string; content: string }> }
   ) {
-    const { createRXM, createRXC, parseRXL } = await import("resourcexjs");
+    const { createRXM, createRXA, parseRXL } = await import("resourcexjs");
 
     const rxl = parseRXL(locator);
     const manifest = createRXM({
@@ -46,7 +46,7 @@ Given(
     const rxr: RXR = {
       locator: rxl,
       manifest,
-      content: await createRXC(files),
+      archive: await createRXA(files),
     };
 
     await this.registry!.add(rxr);
@@ -68,7 +68,7 @@ Then("I should receive a raw RXR", async function (this: RegistryGetWorld) {
   assert.ok(this.rxr, "Should receive an RXR");
   assert.ok(this.rxr?.locator, "RXR should have locator");
   assert.ok(this.rxr?.manifest, "RXR should have manifest");
-  assert.ok(this.rxr?.content, "RXR should have content");
+  assert.ok(this.rxr?.archive, "RXR should have archive");
 });
 
 Then(
@@ -85,17 +85,19 @@ Then(
   }
 );
 
-Then("rxr.content should be accessible", async function (this: RegistryGetWorld) {
-  assert.ok(this.rxr?.content, "Content should exist");
-  // Verify we can access content methods
-  const files = await this.rxr!.content.files();
+Then("rxr.archive should be accessible", async function (this: RegistryGetWorld) {
+  assert.ok(this.rxr?.archive, "Archive should exist");
+  // Verify we can access archive methods
+  const pkg = await this.rxr!.archive.extract();
+  const files = await pkg.files();
   assert.ok(files instanceof Map, "files() should return a Map");
 });
 
 Then(
-  "rxr.content.files\\() should have {int} files",
+  "rxr.archive.extract\\().files\\() should have {int} files",
   async function (this: RegistryGetWorld, count: number) {
-    const files = await this.rxr!.content.files();
+    const pkg = await this.rxr!.archive.extract();
+    const files = await pkg.files();
     assert.equal(files.size, count);
   }
 );
@@ -103,21 +105,23 @@ Then(
 Then(
   "rxr file {string} should contain {string}",
   async function (this: RegistryGetWorld, path: string, expected: string) {
-    const file = await this.rxr!.content.file(path);
+    const pkg = await this.rxr!.archive.extract();
+    const file = await pkg.file(path);
     assert.ok(file, `File ${path} should exist`);
     assert.ok(file.toString().includes(expected), `File should contain "${expected}"`);
   }
 );
 
-Then("rxr.content should be raw archive content", async function (this: RegistryGetWorld) {
-  assert.ok(this.rxr?.content, "Content should exist");
-  // Verify content is accessible as raw archive
-  const buffer = await this.rxr!.content.buffer();
+Then("rxr.archive should be raw archive content", async function (this: RegistryGetWorld) {
+  assert.ok(this.rxr?.archive, "Archive should exist");
+  // Verify archive is accessible as raw buffer
+  const buffer = await this.rxr!.archive.buffer();
   assert.ok(Buffer.isBuffer(buffer), "buffer() should return a Buffer");
 });
 
 Then("I can read file content as Buffer", async function (this: RegistryGetWorld) {
-  const files = await this.rxr!.content.files();
+  const pkg = await this.rxr!.archive.extract();
+  const files = await pkg.files();
   for (const [, content] of files) {
     assert.ok(Buffer.isBuffer(content), "File content should be a Buffer");
   }
@@ -127,7 +131,8 @@ Then(
   "the raw content should be {string}",
   async function (this: RegistryGetWorld, expected: string) {
     assert.ok(this.rxr, "Should have rxr from get()");
-    const file = await this.rxr!.content.file("content");
+    const pkg = await this.rxr!.archive.extract();
+    const file = await pkg.file("content");
     assert.ok(file, "Should have content file");
     assert.equal(file.toString(), expected, "Content should match");
   }
