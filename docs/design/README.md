@@ -28,7 +28,7 @@ An ADR is a lightweight document that records important architectural decisions.
 ResourceX adopts a two-layer architecture:
 
 - **ARP (Agent Resource Protocol)**: Low-level I/O protocol providing unified resource access primitives
-- **ResourceX**: High-level resource management layer with RXL/RXM/RXC/RXR core objects and Registry functionality
+- **ResourceX**: High-level resource management layer with RXL/RXM/RXA/RXP/RXR core objects and Registry functionality
 
 This layered design allows flexible extension of transports (file, http, git, etc.) while the upper layer provides a consistent resource management API.
 

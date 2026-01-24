@@ -18,8 +18,9 @@ ResourceX provides a unified way to manage, version, and share AI resources such
 
 - [RXL - Resource Locator](./concepts/rxl.md) - Unique resource identifier format
 - [RXM - Resource Manifest](./concepts/rxm.md) - Resource metadata description
-- [RXC - Resource Content](./concepts/rxc.md) - Archive-based content storage
-- [RXR - Complete Resource](./concepts/rxr.md) - Locator + Manifest + Content
+- [RXA - Resource Archive](./concepts/resourcex/rxa-archive.md) - Archive for storage/transfer
+- [RXP - Resource Package](./concepts/resourcex/rxp-package.md) - Extracted files for runtime
+- [RXR - Complete Resource](./concepts/resourcex/rxr-resource.md) - Locator + Manifest + Archive
 
 ### Guides
 
@@ -51,7 +52,7 @@ ResourceX provides a unified way to manage, version, and share AI resources such
 
 ```
 resourcexjs           # Main package - includes everything
-@resourcexjs/core     # Core types: RXL, RXM, RXC, RXR
+@resourcexjs/core     # Core types: RXL, RXM, RXA, RXP, RXR
 @resourcexjs/registry # Registry implementations
 @resourcexjs/arp      # ARP protocol
 ```
@@ -59,7 +60,7 @@ resourcexjs           # Main package - includes everything
 ## Quick Example
 
 ```typescript
-import { createRegistry, parseRXL, createRXM, createRXC } from "resourcexjs";
+import { createRegistry, parseRXL, createRXM, createRXA } from "resourcexjs";
 
 // Create local registry
 const registry = createRegistry();
@@ -75,7 +76,7 @@ const manifest = createRXM({
 const rxr = {
   locator: parseRXL(manifest.toLocator()),
   manifest,
-  content: await createRXC({ content: "You are a helpful assistant." }),
+  archive: await createRXA({ content: "You are a helpful assistant." }),
 };
 
 // Link to local registry

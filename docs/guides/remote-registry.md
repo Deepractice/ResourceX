@@ -154,7 +154,7 @@ const rxr = await registry.get("deepractice.ai/hello.text@1.0.0");
 console.log(rxr.manifest.name); // "hello"
 
 // Access content
-const files = await rxr.content.files();
+const files = await rxr.archive.extract().then(pkg => pkg.files();
 ```
 
 ### Checking Existence
@@ -402,7 +402,7 @@ app.get("/content", async (req, res) => {
 
   try {
     const rxr = await registry.get(locator as string);
-    const buffer = await rxr.content.buffer();
+    const buffer = await rxr.archive.buffer();
     res.type("application/gzip").send(buffer);
   } catch (error) {
     res.status(404).json({ error: "Resource not found" });

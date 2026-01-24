@@ -196,7 +196,7 @@ GitRegistry expects resources in a specific directory structure:
             └── {name}.{type}/
                 └── {version}/
                     ├── manifest.json
-                    └── content.tar.gz
+                    └── archive.tar.gz
 ```
 
 ### Example Repository Layout
@@ -208,15 +208,15 @@ Registry/
         ├── hello.text/
         │   └── 1.0.0/
         │       ├── manifest.json
-        │       └── content.tar.gz
+        │       └── archive.tar.gz
         └── sean/
             └── assistant.text/
                 ├── 1.0.0/
                 │   ├── manifest.json
-                │   └── content.tar.gz
+                │   └── archive.tar.gz
                 └── 2.0.0/
                     ├── manifest.json
-                    └── content.tar.gz
+                    └── archive.tar.gz
 ```
 
 ### Custom Base Path

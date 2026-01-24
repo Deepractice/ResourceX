@@ -601,7 +601,7 @@ const resource = await downloadAndCache("https://example.com/data.bin", "./cache
 
 ```typescript
 import { createARP } from "resourcexjs/arp";
-import { createRegistry, createRXM, createRXC, parseRXL } from "resourcexjs";
+import { createRegistry, createRXM, createRXA, parseRXL } from "resourcexjs";
 
 async function accessResourceFiles() {
   // First, create and link a multi-file resource
@@ -614,7 +614,7 @@ async function accessResourceFiles() {
     version: "1.0.0",
   });
 
-  const content = await createRXC({
+  const content = await createRXA({
     "getting-started.md": "# Getting Started\n...",
     "advanced/configuration.md": "# Configuration\n...",
     "advanced/plugins.md": "# Plugins\n...",

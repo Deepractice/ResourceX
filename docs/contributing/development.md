@@ -54,7 +54,7 @@ bun run typecheck   # TypeScript validation
 ResourceX/
 ├── packages/
 │   ├── arp/              # @resourcexjs/arp - Low-level I/O protocol
-│   ├── core/             # @resourcexjs/core - RXL, RXM, RXC, RXR
+│   ├── core/             # @resourcexjs/core - RXL, RXM, RXA, RXP, RXR
 │   ├── registry/         # @resourcexjs/registry - Registry implementations
 │   └── resourcex/        # resourcexjs - Main package (re-exports)
 ├── bdd/                  # BDD tests (Cucumber)

@@ -9,7 +9,7 @@ ResourceX uses a layered architecture that separates concerns between high-level
 ```
 +--------------------------------------------------+
 |                   ResourceX Layer                 |
-|  (RXL, RXM, RXC, RXR, Registry, TypeSystem)      |
+|  (RXL, RXM, RXA, RXP, RXR, Registry, TypeSystem) |
 +--------------------------------------------------+
                          |
                          v
@@ -25,8 +25,9 @@ The ResourceX layer provides:
 
 - **RXL (Locator)**: Human-readable resource addresses
 - **RXM (Manifest)**: Resource metadata (domain, name, type, version)
-- **RXC (Content)**: Archive-based content storage (tar.gz)
-- **RXR (Resource)**: Complete resource combining locator, manifest, and content
+- **RXA (Archive)**: Compressed archive for storage/transfer (tar.gz)
+- **RXP (Package)**: Extracted package for runtime file access
+- **RXR (Resource)**: Complete resource combining locator, manifest, and archive
 - **Registry**: Resource storage and retrieval operations
 - **TypeSystem**: Extensible type handling with serialization and resolution
 
@@ -49,10 +50,16 @@ The ARP (Agent Resource Protocol) layer provides:
                              | parsed from
                              v
 +---------------+    +----------------+    +----------------+
-|      RXC      |    |      RXM       |    |  TypeSystem    |
-|   (Content)   |<---|   (Manifest)   |--->| (ResourceType) |
+|      RXA      |    |      RXM       |    |  TypeSystem    |
+|   (Archive)   |<---|   (Manifest)   |--->| (ResourceType) |
 +-------+-------+    +-------+--------+    +----------------+
         |                    |
+        | extract()          |
+        v                    |
++---------------+            |
+|      RXP      |            |
+|   (Package)   |            |
++-------+-------+            |
         |                    |
         +--------+   +-------+
                  |   |
@@ -77,7 +84,8 @@ Each component has a single responsibility:
 
 - **RXL** handles addressing (where is the resource?)
 - **RXM** handles metadata (what is the resource?)
-- **RXC** handles content (what does the resource contain?)
+- **RXA** handles storage (compressed archive for transfer)
+- **RXP** handles access (extracted files for runtime)
 - **RXR** combines them into a complete unit
 
 ### 2. Pure Data Transfer Objects
@@ -88,11 +96,11 @@ RXR is designed as a pure DTO (Data Transfer Object):
 interface RXR {
   locator: RXL;
   manifest: RXM;
-  content: RXC;
+  archive: RXA;
 }
 
 // Create directly from object literals
-const rxr: RXR = { locator, manifest, content };
+const rxr: RXR = { locator, manifest, archive };
 ```
 
 No factory functions or complex construction - just plain objects.
@@ -104,6 +112,13 @@ All content is stored as tar.gz archives internally:
 - Unified format for single and multi-file resources
 - Streaming support for large files
 - Standard compression for efficient storage
+
+The archive (RXA) is extracted to a package (RXP) for runtime file access:
+
+```typescript
+const pkg = await archive.extract();
+const content = await pkg.file("content");
+```
 
 ### 4. Lazy Execution
 
@@ -130,7 +145,7 @@ Custom resource types can define:
 ```
 packages/
 ├── core/        # @resourcexjs/core
-│                # RXL, RXM, RXC, RXR definitions
+│                # RXL, RXM, RXA, RXP, RXR definitions
 │
 ├── type/        # @resourcexjs/type
 │                # ResourceType, TypeHandlerChain
@@ -148,7 +163,7 @@ packages/
 ## Quick Start
 
 ```typescript
-import { createRegistry, createRXM, createRXC, parseRXL } from "resourcexjs";
+import { createRegistry, createRXM, createRXA, parseRXL } from "resourcexjs";
 
 // Create a resource
 const manifest = createRXM({
@@ -158,12 +173,12 @@ const manifest = createRXM({
   version: "1.0.0",
 });
 
-const content = await createRXC({ content: "Hello, World!" });
+const archive = await createRXA({ content: "Hello, World!" });
 
 const rxr = {
   locator: parseRXL(manifest.toLocator()),
   manifest,
-  content,
+  archive,
 };
 
 // Store it
@@ -180,7 +195,8 @@ console.log(text); // "Hello, World!"
 
 - [RXL - Resource Locator](./resourcex/rxl-locator.md)
 - [RXM - Resource Manifest](./resourcex/rxm-manifest.md)
-- [RXC - Resource Content](./resourcex/rxc-content.md)
+- [RXA - Resource Archive](./resourcex/rxa-archive.md)
+- [RXP - Resource Package](./resourcex/rxp-package.md)
 - [RXR - Complete Resource](./resourcex/rxr-resource.md)
 - [Type System](./resourcex/type-system.md)
 - [Registry](./resourcex/registry.md)

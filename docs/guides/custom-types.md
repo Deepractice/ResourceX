@@ -43,19 +43,19 @@ interface ResourceSerializer {
 Most types use the archive-based approach, storing content as tar.gz:
 
 ```typescript
-import { createRXC, parseRXL } from "@resourcexjs/core";
+import { createRXA, parseRXL } from "@resourcexjs/core";
 
 const mySerializer: ResourceSerializer = {
   async serialize(rxr: RXR): Promise<Buffer> {
     // Return the raw archive buffer
-    return rxr.content.buffer();
+    return rxr.archive.buffer();
   },
 
   async deserialize(data: Buffer, manifest: RXM): Promise<RXR> {
     return {
       locator: parseRXL(manifest.toLocator()),
       manifest,
-      content: await createRXC({ archive: data }),
+      archive: await createRXA({ buffer: data }),
     };
   },
 };
@@ -69,7 +69,7 @@ If you need custom serialization logic:
 const jsonConfigSerializer: ResourceSerializer = {
   async serialize(rxr: RXR): Promise<Buffer> {
     // Read the config file
-    const configBuffer = await rxr.content.file("config.json");
+    const configBuffer = await rxr.archive.extract().then(pkg => pkg.file("config.json");
     const config = JSON.parse(configBuffer.toString());
 
     // Add metadata before storing
@@ -82,7 +82,7 @@ const jsonConfigSerializer: ResourceSerializer = {
     };
 
     // Store as single-file archive
-    const enrichedContent = await createRXC({
+    const enrichedContent = await createRXA({
       content: JSON.stringify(enriched, null, 2),
     });
 
@@ -94,7 +94,7 @@ const jsonConfigSerializer: ResourceSerializer = {
     return {
       locator: parseRXL(manifest.toLocator()),
       manifest,
-      content: await createRXC({ archive: data }),
+      archive: await createRXA({ buffer: data }),
     };
   },
 };
@@ -132,7 +132,7 @@ const promptResolver: ResourceResolver<void, string> = {
 
       // Lazy execution - content read only when called
       execute: async () => {
-        const buffer = await rxr.content.file("content");
+        const buffer = await rxr.archive.extract().then(pkg => pkg.file("content");
         return buffer.toString("utf-8");
       },
     };
@@ -201,7 +201,7 @@ const scriptToolResolver: ResourceResolver<ScriptToolArgs, ScriptToolResult> = {
 
   async resolve(rxr: RXR): Promise<ResolvedResource<ScriptToolArgs, ScriptToolResult>> {
     // Load the script at resolution time
-    const scriptBuffer = await rxr.content.file("script.js");
+    const scriptBuffer = await rxr.archive.extract().then(pkg => pkg.file("script.js");
     const scriptCode = scriptBuffer.toString("utf-8");
 
     // Create a function from the code
@@ -240,7 +240,7 @@ import type {
   ResourceResolver,
   ResolvedResource,
 } from "@resourcexjs/type";
-import { createRXC, parseRXL } from "@resourcexjs/core";
+import { createRXA, parseRXL } from "@resourcexjs/core";
 
 interface PromptArgs {
   variables?: Record<string, string>;
@@ -248,13 +248,13 @@ interface PromptArgs {
 
 const promptSerializer: ResourceSerializer = {
   async serialize(rxr) {
-    return rxr.content.buffer();
+    return rxr.archive.buffer();
   },
   async deserialize(data, manifest) {
     return {
       locator: parseRXL(manifest.toLocator()),
       manifest,
-      content: await createRXC({ archive: data }),
+      archive: await createRXA({ buffer: data }),
     };
   },
 };
@@ -276,7 +276,7 @@ const promptResolver: ResourceResolver<PromptArgs, string> = {
       schema: this.schema,
 
       execute: async (args?: PromptArgs) => {
-        const buffer = await rxr.content.file("content");
+        const buffer = await rxr.archive.extract().then(pkg => pkg.file("content");
         let template = buffer.toString("utf-8");
 
         // Substitute variables
@@ -318,13 +318,13 @@ interface ToolResult {
 
 const toolSerializer: ResourceSerializer = {
   async serialize(rxr) {
-    return rxr.content.buffer();
+    return rxr.archive.buffer();
   },
   async deserialize(data, manifest) {
     return {
       locator: parseRXL(manifest.toLocator()),
       manifest,
-      content: await createRXC({ archive: data }),
+      archive: await createRXA({ buffer: data }),
     };
   },
 };
@@ -337,11 +337,11 @@ const toolResolver: ResourceResolver<ToolArgs, ToolResult> = {
 
   async resolve(rxr): Promise<ResolvedResource<ToolArgs, ToolResult>> {
     // Load tool definition
-    const defBuffer = await rxr.content.file("tool.json");
+    const defBuffer = await rxr.archive.extract().then(pkg => pkg.file("tool.json");
     const definition = JSON.parse(defBuffer.toString());
 
     // Load handler code
-    const handlerBuffer = await rxr.content.file("handler.js");
+    const handlerBuffer = await rxr.archive.extract().then(pkg => pkg.file("handler.js");
     const handlerCode = handlerBuffer.toString();
 
     return {
@@ -424,7 +424,7 @@ const manifest = createRXM({
   version: "1.0.0",
 });
 
-const content = await createRXC({
+const content = await createRXA({
   content: "Hello, {{name}}! Welcome to {{place}}.",
 });
 
@@ -487,13 +487,13 @@ Most types can use the standard archive-based serializer:
 ```typescript
 const standardSerializer: ResourceSerializer = {
   async serialize(rxr) {
-    return rxr.content.buffer();
+    return rxr.archive.buffer();
   },
   async deserialize(data, manifest) {
     return {
       locator: parseRXL(manifest.toLocator()),
       manifest,
-      content: await createRXC({ archive: data }),
+      archive: await createRXA({ buffer: data }),
     };
   },
 };
@@ -506,12 +506,12 @@ Only read content when `execute()` is called:
 ```typescript
 // Good - lazy
 execute: async () => {
-  const buffer = await rxr.content.file("content");
+  const buffer = await rxr.archive.extract().then(pkg => pkg.file("content");
   return buffer.toString();
 };
 
 // Bad - eager (reads on resolve)
-const buffer = await rxr.content.file("content"); // During resolve
+const buffer = await rxr.archive.extract().then(pkg => pkg.file("content"); // During resolve
 execute: async () => {
   return buffer.toString();
 };

@@ -118,7 +118,7 @@ ARP is the foundation layer that ResourceX builds upon:
 ```
 ┌─────────────────────────────────────────────────────┐
 │                    ResourceX                         │
-│  (RXL, RXM, RXC, RXR, Registry, TypeSystem)         │
+│  (RXL, RXM, RXA, RXP, RXR, Registry, TypeSystem)         │
 └────────────────────────┬────────────────────────────┘
                          │ uses
 ┌────────────────────────┴────────────────────────────┐
@@ -131,7 +131,7 @@ ARP is the foundation layer that ResourceX builds upon:
 
 - RXL (Locator): `name.type@version`
 - RXM (Manifest): Resource metadata
-- RXC (Content): Archive-based content
+- RXA (Archive): Archive-based content
 - RXR (Resource): Complete resource package
 
 **ARP** provides the underlying I/O:

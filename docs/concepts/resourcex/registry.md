@@ -77,7 +77,7 @@ const resource = {
     type: "text",
     version: "1.0.0",
   }),
-  content: await createRXC({ content: "Tool content" }),
+  archive: await createRXA({ content: "Tool content" }),
 };
 
 await registry.add(resource);
@@ -92,7 +92,7 @@ const rxr = await registry.get("my-tool.text@1.0.0");
 
 // Access raw data
 console.log(rxr.manifest.version);
-const files = await rxr.content.files();
+const files = await rxr.archive.extract().then(pkg => pkg.files();
 ```
 
 ### resolve() - Get Executable Resource
@@ -167,7 +167,7 @@ The local registry uses a two-directory structure:
 │   └── {name}.{type}/
 │       └── {version}/
 │           ├── manifest.json
-│           └── content.tar.gz
+│           └── archive.tar.gz
 │
 └── cache/                              # Cached remote resources
     └── {domain}/
@@ -175,7 +175,7 @@ The local registry uses a two-directory structure:
             └── {name}.{type}/
                 └── {version}/
                     ├── manifest.json
-                    └── content.tar.gz
+                    └── archive.tar.gz
 ```
 
 **Example:**
@@ -186,11 +186,11 @@ The local registry uses a two-directory structure:
 │   ├── my-prompt.text/
 │   │   └── 1.0.0/
 │   │       ├── manifest.json
-│   │       └── content.tar.gz
+│   │       └── archive.tar.gz
 │   └── my-tool.binary/
 │       └── 2.0.0/
 │           ├── manifest.json
-│           └── content.tar.gz
+│           └── archive.tar.gz
 │
 └── cache/
     └── deepractice.ai/
@@ -198,7 +198,7 @@ The local registry uses a two-directory structure:
             └── nuwa.text/
                 └── 1.0.0/
                     ├── manifest.json
-                    └── content.tar.gz
+                    └── archive.tar.gz
 ```
 
 ### Git Registry
@@ -214,7 +214,7 @@ Git registries clone to a cache directory:
                 └── {name}.{type}/
                     └── {version}/
                         ├── manifest.json
-                        └── content.tar.gz
+                        └── archive.tar.gz
 ```
 
 ## Resolution Flow
@@ -432,7 +432,7 @@ const resource = {
     type: "text",
     version: "1.0.0",
   }),
-  content: await createRXC({ content: "Dev content" }),
+  archive: await createRXA({ content: "Dev content" }),
 };
 
 await registry.add(resource);
@@ -462,7 +462,7 @@ const promptResource = {
     type: "prompt",
     version: "1.0.0",
   }),
-  content: await createRXC({
+  archive: await createRXA({
     "template.txt": "Hello, {{name}}!",
     "schema.json": '{"type":"object","properties":{"name":{"type":"string"}}}',
   }),

@@ -9,7 +9,7 @@ Error
 ├── ResourceXError (base class)
 │   ├── LocatorError (RXL parsing)
 │   ├── ManifestError (RXM validation)
-│   ├── ContentError (RXC operations)
+│   ├── ContentError (RXA/RXP operations)
 │   └── ResourceTypeError (type handling)
 ├── RegistryError (registry operations)
 └── ARPError (ARP base class)
@@ -133,7 +133,7 @@ try {
 
 ### ContentError
 
-Thrown when RXC (Resource Content) operations fail.
+Thrown when RXA (Resource Archive) operations fail.
 
 ```typescript
 class ContentError extends ResourceXError {
@@ -151,9 +151,9 @@ class ContentError extends ResourceXError {
 **Example:**
 
 ```typescript
-import { createRXC, ContentError } from "@resourcexjs/core";
+import { createRXA, ContentError } from "@resourcexjs/core";
 
-const content = await createRXC({ content: "Hello" });
+const content = await createRXA({ content: "Hello" });
 
 try {
   await content.file("nonexistent"); // File not in archive
