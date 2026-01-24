@@ -3,10 +3,12 @@ import { join } from "node:path";
 import type {
   Registry,
   GitHubRegistryConfig,
+  UrlRegistryConfig,
   SearchOptions,
   PullOptions,
   PublishOptions,
 } from "./types.js";
+import { withDomainValidation } from "./middleware/DomainValidation.js";
 import type { RXR, RXL } from "@resourcexjs/core";
 import { parseRXL, createRXM } from "@resourcexjs/core";
 import { TypeHandlerChain } from "@resourcexjs/type";
@@ -63,6 +65,26 @@ export function isGitHubUrl(url: string): boolean {
  * Uses GitHub's archive API to download tarball (faster than git clone).
  */
 export class GitHubRegistry implements Registry {
+  /**
+   * Check if this handler can handle the given URL.
+   * Matches: https://github.com/owner/repo
+   */
+  static canHandle(url: string): boolean {
+    return isGitHubUrl(url);
+  }
+
+  /**
+   * Create a GitHubRegistry for the given URL config.
+   */
+  static create(config: UrlRegistryConfig): Registry {
+    const registry = new GitHubRegistry({
+      url: config.url,
+      ref: config.ref,
+      basePath: config.basePath,
+    });
+    return config.domain ? withDomainValidation(registry, config.domain) : registry;
+  }
+
   readonly url: string; // Public for debugging/logging
   private readonly owner: string;
   private readonly repo: string;

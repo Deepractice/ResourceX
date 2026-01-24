@@ -1,5 +1,5 @@
-import type { Registry, RegistryConfig } from "./types.js";
-import { isRemoteConfig, isGitConfig, isGitHubConfig } from "./types.js";
+import type { Registry, RegistryConfig, UrlRegistryConfig } from "./types.js";
+import { isRemoteConfig, isGitConfig, isGitHubConfig, isUrlConfig } from "./types.js";
 import { LocalRegistry } from "./LocalRegistry.js";
 import { RemoteRegistry } from "./RemoteRegistry.js";
 import { GitRegistry } from "./GitRegistry.js";
@@ -8,76 +8,108 @@ import { withDomainValidation } from "./middleware/DomainValidation.js";
 import { RegistryError } from "./errors.js";
 
 /**
- * Check if URL is a remote git URL (not local path).
+ * URL handlers in priority order.
+ * Each handler checks if it can handle the URL and creates the appropriate registry.
+ * Order matters: more specific handlers (GitHub) come before generic ones (Remote).
  */
-function isRemoteGitUrl(url: string): boolean {
+const URL_HANDLERS = [
+  GitHubRegistry, // https://github.com/... → tarball download (fastest)
+  GitRegistry, // git@... or *.git → git clone
+  RemoteRegistry, // https://... → HTTP API (fallback)
+] as const;
+
+/**
+ * Check if URL is a remote URL (not local path).
+ */
+function isRemoteUrl(url: string): boolean {
   return url.startsWith("git@") || url.startsWith("https://") || url.startsWith("http://");
 }
 
 /**
  * Create a registry instance.
  *
- * When a `domain` is provided in GitRegistryConfig, the registry is automatically
- * wrapped with DomainValidation middleware for security.
- *
- * @param config - Registry configuration
- *   - No config or LocalRegistryConfig: Creates LocalRegistry (filesystem-based)
- *   - RemoteRegistryConfig: Creates RemoteRegistry (HTTP-based)
- *   - GitRegistryConfig: Creates GitRegistry (git clone-based)
- *   - GitHubRegistryConfig: Creates GitHubRegistry (tarball download-based, faster)
+ * Supports multiple configuration styles:
+ * - No config: LocalRegistry (filesystem-based)
+ * - `{ url, domain }`: Auto-detects type based on URL format
+ * - `{ endpoint }`: RemoteRegistry (HTTP API)
+ * - `{ type: "git", url }`: GitRegistry (git clone)
+ * - `{ type: "github", url }`: GitHubRegistry (tarball download)
  *
  * @example
  * // Local registry (default)
  * const registry = createRegistry();
- * const registry2 = createRegistry({ path: "./custom-path" });
  *
- * // Remote registry
- * const registry3 = createRegistry({ endpoint: "https://registry.deepractice.ai/v1" });
+ * // URL-based (auto-detect type)
+ * const registry2 = createRegistry({
+ *   url: "https://github.com/Deepractice/Registry",
+ *   domain: "deepractice.dev",
+ * });
  *
- * // Git registry (requires domain for remote URLs)
- * const registry4 = createRegistry({
- *   type: "git",
- *   url: "git@github.com:Deepractice/Registry.git",
- *   domain: "deepractice.ai",  // Auto-wrapped with DomainValidation
+ * // With discovery
+ * const discovery = await discoverRegistry("deepractice.dev");
+ * const registry3 = createRegistry({
+ *   url: discovery.registries[0],
+ *   domain: discovery.domain,
  * });
  */
 export function createRegistry(config?: RegistryConfig): Registry {
+  // Explicit RemoteRegistryConfig (has endpoint)
   if (isRemoteConfig(config)) {
     return new RemoteRegistry(config);
   }
 
+  // Explicit GitHubRegistryConfig (type: "github")
   if (isGitHubConfig(config)) {
-    const githubRegistry = new GitHubRegistry(config);
-
-    // Auto-wrap with DomainValidation middleware if domain is provided
-    if (config.domain) {
-      return withDomainValidation(githubRegistry, config.domain);
-    }
-
-    return githubRegistry;
+    const registry = new GitHubRegistry(config);
+    return config.domain ? withDomainValidation(registry, config.domain) : registry;
   }
 
+  // Explicit GitRegistryConfig (type: "git")
   if (isGitConfig(config)) {
     // Security check: remote URL requires domain binding
-    if (isRemoteGitUrl(config.url) && !config.domain) {
+    if (isRemoteUrl(config.url) && !config.domain) {
       throw new RegistryError(
         `Remote git registry requires a trusted domain.\n\n` +
-          `Either:\n` +
-          `1. Use discoverRegistry("your-domain.com") to auto-bind domain\n` +
-          `2. Explicitly set domain: createRegistry({ type: "git", url: "...", domain: "your-domain.com" })\n\n` +
-          `This ensures resources from untrusted sources cannot impersonate your domain.`
+          `Use discoverRegistry() or explicitly set domain:\n` +
+          `createRegistry({ type: "git", url: "...", domain: "your-domain.com" })`
       );
     }
 
-    const gitRegistry = new GitRegistry(config);
-
-    // Auto-wrap with DomainValidation middleware if domain is provided
-    if (config.domain) {
-      return withDomainValidation(gitRegistry, config.domain);
-    }
-
-    return gitRegistry;
+    const registry = new GitRegistry(config);
+    return config.domain ? withDomainValidation(registry, config.domain) : registry;
   }
 
+  // URL-based config (auto-detect type)
+  if (isUrlConfig(config)) {
+    return createFromUrl(config);
+  }
+
+  // Default: LocalRegistry
   return new LocalRegistry(config);
+}
+
+/**
+ * Create registry from URL config using handler chain.
+ */
+function createFromUrl(config: UrlRegistryConfig): Registry {
+  const { url, domain } = config;
+
+  // Security check: remote URL requires domain binding
+  if (isRemoteUrl(url) && !domain) {
+    throw new RegistryError(
+      `Remote registry URL requires a trusted domain.\n\n` +
+        `Use discoverRegistry() or explicitly set domain:\n` +
+        `createRegistry({ url: "...", domain: "your-domain.com" })`
+    );
+  }
+
+  // Find handler that can handle this URL
+  for (const Handler of URL_HANDLERS) {
+    if (Handler.canHandle(url)) {
+      return Handler.create(config);
+    }
+  }
+
+  // Should not reach here if handlers are configured correctly
+  throw new RegistryError(`No handler found for URL: ${url}`);
 }

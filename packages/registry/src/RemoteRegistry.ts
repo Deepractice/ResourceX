@@ -1,6 +1,7 @@
 import type {
   Registry,
   RemoteRegistryConfig,
+  UrlRegistryConfig,
   SearchOptions,
   PullOptions,
   PublishOptions,
@@ -16,6 +17,22 @@ import { RegistryError } from "./errors.js";
  * Uses HTTP API for resource access.
  */
 export class RemoteRegistry implements Registry {
+  /**
+   * Check if this handler can handle the given URL.
+   * Matches: https:// or http:// URLs (fallback handler).
+   * Note: This should be checked LAST in the chain, after more specific handlers.
+   */
+  static canHandle(url: string): boolean {
+    return url.startsWith("https://") || url.startsWith("http://");
+  }
+
+  /**
+   * Create a RemoteRegistry for the given URL config.
+   */
+  static create(config: UrlRegistryConfig): Registry {
+    return new RemoteRegistry({ endpoint: config.url });
+  }
+
   private readonly endpoint: string;
   private readonly typeHandler: TypeHandlerChain;
 

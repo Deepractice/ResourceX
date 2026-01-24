@@ -51,7 +51,7 @@ export interface GitRegistryConfig {
 }
 
 /**
- * GitHub registry configuration.
+ * GitHub registry configuration (internal).
  * Uses GitHub's archive API to download tarball (faster than git clone).
  */
 export interface GitHubRegistryConfig {
@@ -67,6 +67,38 @@ export interface GitHubRegistryConfig {
    * If set, only resources with this domain in manifest are allowed.
    */
   domain?: string;
+}
+
+/**
+ * URL-based registry configuration.
+ * Auto-detects registry type based on URL format:
+ * - https://github.com/... → GitHubRegistry (tarball download)
+ * - git@... or *.git → GitRegistry (git clone)
+ * - https://... (other) → RemoteRegistry (HTTP API)
+ */
+export interface UrlRegistryConfig {
+  /** Registry URL - type is auto-detected */
+  url: string;
+  /** Git ref (branch, tag, or commit). Default: "main" */
+  ref?: string;
+  /** Base path in repo for resources. Default: ".resourcex" */
+  basePath?: string;
+  /**
+   * Trusted domain for this registry.
+   * Required for remote URLs (security).
+   */
+  domain?: string;
+}
+
+/**
+ * Registry handler interface for URL-based auto-detection.
+ * Each Registry class implements this to participate in the chain.
+ */
+export interface RegistryHandler {
+  /** Check if this handler can handle the given URL */
+  canHandle(url: string): boolean;
+  /** Create a registry instance for the URL */
+  create(config: UrlRegistryConfig): Registry;
 }
 
 /**
@@ -94,13 +126,21 @@ export interface DiscoveryResult {
 }
 
 /**
- * Registry configuration - local, remote, git, or github.
+ * Registry configuration - local, remote, git, github, or URL-based.
  */
 export type RegistryConfig =
   | LocalRegistryConfig
   | RemoteRegistryConfig
   | GitRegistryConfig
-  | GitHubRegistryConfig;
+  | GitHubRegistryConfig
+  | UrlRegistryConfig;
+
+/**
+ * Type guard to check if config is URL-based (auto-detect type).
+ */
+export function isUrlConfig(config?: RegistryConfig): config is UrlRegistryConfig {
+  return config !== undefined && "url" in config && !("type" in config) && !("endpoint" in config);
+}
 
 /**
  * Type guard to check if config is for remote registry.

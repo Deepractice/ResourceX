@@ -421,6 +421,25 @@ Follow `issues/000-unified-development-mode.md`:
 - **TDD approach**: Write tests first, then implement
 - **Tags**: @arp, @resourcex, @locator, @manifest, @resource-type, @registry
 
+### BDD Testing Rules
+
+**IMPORTANT**: BDD tests are end-to-end tests from user perspective:
+
+1. **Only import from `resourcexjs`** - Never use internal packages like `@resourcexjs/registry`, `@resourcexjs/core`, etc.
+2. **Only test public API** - Never test internal implementation classes directly
+3. **User perspective** - Test what users would actually do, not internal mechanics
+
+```typescript
+// ✅ Good - using public API
+const { createRegistry, discoverRegistry } = await import("resourcexjs");
+const discovery = await discoverRegistry("deepractice.dev");
+const registry = createRegistry({ url: discovery.registries[0], domain: discovery.domain });
+
+// ❌ Bad - using internal implementation
+const { GitHubRegistry } = await import("@resourcexjs/registry");
+const registry = new GitHubRegistry({ url: "..." });
+```
+
 ## Key Implementation Details
 
 ### TypeHandlerChain Pattern
