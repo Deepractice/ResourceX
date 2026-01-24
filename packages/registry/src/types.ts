@@ -51,6 +51,25 @@ export interface GitRegistryConfig {
 }
 
 /**
+ * GitHub registry configuration.
+ * Uses GitHub's archive API to download tarball (faster than git clone).
+ */
+export interface GitHubRegistryConfig {
+  type: "github";
+  /** GitHub repository URL (format: https://github.com/owner/repo) */
+  url: string;
+  /** Git ref (branch, tag, or commit). Default: "main" */
+  ref?: string;
+  /** Base path in repo for resources. Default: ".resourcex" */
+  basePath?: string;
+  /**
+   * Trusted domain for this registry.
+   * If set, only resources with this domain in manifest are allowed.
+   */
+  domain?: string;
+}
+
+/**
  * Well-known discovery response format.
  * Used by discoverRegistry() to find registry for a domain.
  */
@@ -75,9 +94,13 @@ export interface DiscoveryResult {
 }
 
 /**
- * Registry configuration - local, remote, or git.
+ * Registry configuration - local, remote, git, or github.
  */
-export type RegistryConfig = LocalRegistryConfig | RemoteRegistryConfig | GitRegistryConfig;
+export type RegistryConfig =
+  | LocalRegistryConfig
+  | RemoteRegistryConfig
+  | GitRegistryConfig
+  | GitHubRegistryConfig;
 
 /**
  * Type guard to check if config is for remote registry.
@@ -91,6 +114,13 @@ export function isRemoteConfig(config?: RegistryConfig): config is RemoteRegistr
  */
 export function isGitConfig(config?: RegistryConfig): config is GitRegistryConfig {
   return config !== undefined && "type" in config && config.type === "git";
+}
+
+/**
+ * Type guard to check if config is for GitHub registry.
+ */
+export function isGitHubConfig(config?: RegistryConfig): config is GitHubRegistryConfig {
+  return config !== undefined && "type" in config && config.type === "github";
 }
 
 /**

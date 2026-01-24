@@ -1,8 +1,9 @@
 import type { Registry, RegistryConfig } from "./types.js";
-import { isRemoteConfig, isGitConfig } from "./types.js";
+import { isRemoteConfig, isGitConfig, isGitHubConfig } from "./types.js";
 import { LocalRegistry } from "./LocalRegistry.js";
 import { RemoteRegistry } from "./RemoteRegistry.js";
 import { GitRegistry } from "./GitRegistry.js";
+import { GitHubRegistry } from "./GitHubRegistry.js";
 import { withDomainValidation } from "./middleware/DomainValidation.js";
 import { RegistryError } from "./errors.js";
 
@@ -23,6 +24,7 @@ function isRemoteGitUrl(url: string): boolean {
  *   - No config or LocalRegistryConfig: Creates LocalRegistry (filesystem-based)
  *   - RemoteRegistryConfig: Creates RemoteRegistry (HTTP-based)
  *   - GitRegistryConfig: Creates GitRegistry (git clone-based)
+ *   - GitHubRegistryConfig: Creates GitHubRegistry (tarball download-based, faster)
  *
  * @example
  * // Local registry (default)
@@ -42,6 +44,17 @@ function isRemoteGitUrl(url: string): boolean {
 export function createRegistry(config?: RegistryConfig): Registry {
   if (isRemoteConfig(config)) {
     return new RemoteRegistry(config);
+  }
+
+  if (isGitHubConfig(config)) {
+    const githubRegistry = new GitHubRegistry(config);
+
+    // Auto-wrap with DomainValidation middleware if domain is provided
+    if (config.domain) {
+      return withDomainValidation(githubRegistry, config.domain);
+    }
+
+    return githubRegistry;
   }
 
   if (isGitConfig(config)) {

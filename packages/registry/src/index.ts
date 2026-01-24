@@ -10,6 +10,7 @@ export type {
   LocalRegistryConfig,
   RemoteRegistryConfig,
   GitRegistryConfig,
+  GitHubRegistryConfig,
   SearchOptions,
   PullOptions,
   PublishOptions,
@@ -17,11 +18,12 @@ export type {
   WellKnownResponse,
   DiscoveryResult,
 } from "./types.js";
-export { isRemoteConfig, isGitConfig } from "./types.js";
+export { isRemoteConfig, isGitConfig, isGitHubConfig } from "./types.js";
 export { RegistryError } from "./errors.js";
 export { LocalRegistry } from "./LocalRegistry.js";
 export { RemoteRegistry, discoverRegistry } from "./RemoteRegistry.js";
 export { GitRegistry } from "./GitRegistry.js";
+export { GitHubRegistry, parseGitHubUrl, isGitHubUrl } from "./GitHubRegistry.js";
 export { createRegistry } from "./createRegistry.js";
 
 // Middleware
