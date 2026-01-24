@@ -14,7 +14,7 @@ bun add resourcexjs @resourcexjs/registry
 
 ```typescript
 import { createRegistry } from "@resourcexjs/registry";
-import { createRXM, createRXC, parseRXL } from "resourcexjs";
+import { createRXM, createRXA, parseRXL } from "resourcexjs";
 
 // Create registry
 const registry = createRegistry();
@@ -30,7 +30,7 @@ const manifest = createRXM({
 const rxr = {
   locator: parseRXL(manifest.toLocator()),
   manifest,
-  content: createRXC("You are a helpful assistant."),
+  archive: createRXA("You are a helpful assistant."),
 };
 
 // Link to local registry
@@ -79,31 +79,34 @@ manifest.toLocator(); // → "deepractice.ai/sean/assistant.prompt@1.0.0"
 manifest.toJSON(); // → plain object
 ```
 
-### RXC - Resource Content
+### RXA - Resource Archive
 
-Archive-based content (internally tar.gz), supports single or multi-file resources:
+Archive container (tar.gz) for storage/transfer, extract to RXP for file access:
 
 ```typescript
-import { createRXC } from "resourcexjs";
+import { createRXA } from "resourcexjs";
 
 // Single file
-const content = await createRXC({ content: "Hello, World!" });
+const content = await createRXA({ content: "Hello, World!" });
 
 // Multiple files
-const content = await createRXC({
+const content = await createRXA({
   "index.ts": "export default 1",
   "styles.css": "body {}",
 });
 
 // Nested directories
-const content = await createRXC({
+const content = await createRXA({
   "src/index.ts": "main code",
   "src/utils/helper.ts": "helper code",
 });
 
-// Read files
-const buffer = await content.file("content"); // single file → Buffer
-const files = await content.files(); // all files → Map<string, Buffer>
+// Extract to package for file access
+const pkg = await content.extract();
+const buffer = await pkg.file("content"); // single file → Buffer
+const files = await pkg.files(); // all files → Map<string, Buffer>
+
+// Archive methods
 const archiveBuffer = await content.buffer(); // raw tar.gz
 const stream = content.stream; // tar.gz ReadableStream
 ```
@@ -116,7 +119,7 @@ Complete resource object (pure interface):
 interface RXR {
   locator: RXL;
   manifest: RXM;
-  content: RXC;
+  archive: RXA;
 }
 
 // Create from literals
@@ -175,7 +178,7 @@ defineResourceType({
     deserialize: async (data, manifest) => ({
       locator: parseRXL(manifest.toLocator()),
       manifest,
-      content: createRXC(data.toString()),
+      archive: createRXA(data.toString()),
     }),
   },
   resolver: {
@@ -245,9 +248,9 @@ export type { RXL };
 export { createRXM };
 export type { RXM, ManifestData };
 
-// RXC (Content)
-export { createRXC, loadRXC };
-export type { RXC };
+// RXA (Archive) and RXP (Package)
+export { createRXA };
+export type { RXA, RXP, PathNode };
 
 // RXR (Resource)
 export type { RXR, ResourceType, ResourceSerializer, ResourceResolver };
@@ -283,7 +286,7 @@ Error
 └── ResourceXError
     ├── LocatorError (RXL parsing)
     ├── ManifestError (RXM validation)
-    ├── ContentError (RXC consumption)
+    ├── ContentError (RXA/RXP operations)
     └── ResourceTypeError (Type registration)
 
 └── RegistryError (Registry operations)

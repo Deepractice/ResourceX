@@ -18,7 +18,8 @@ Core building blocks - pure data structures:
 
 - **RXL** (Locator) - Resource locator string parser
 - **RXM** (Manifest) - Resource metadata
-- **RXC** (Content) - Stream-based content
+- **RXA** (Archive) - Archive container for storage/transfer
+- **RXP** (Package) - Extracted files for runtime access
 - **RXR** (Resource) - Complete resource type
 - **Errors** - Error hierarchy
 
@@ -73,35 +74,40 @@ manifest.toJSON(); // → plain object
 
 **Optional fields**: `domain` (default: "localhost"), `path`, `description`, `tags`
 
-### RXC - Resource Content
+### RXA - Resource Archive
 
-Archive-based content (internally tar.gz), supports single or multi-file resources:
+Archive container (tar.gz) for storage/transfer. Extract to RXP for file access:
 
 ```typescript
-import { createRXC } from "@resourcexjs/core";
+import { createRXA } from "@resourcexjs/core";
 
 // Single file
-const content = await createRXC({ content: "Hello, World!" });
+const content = await createRXA({ content: "Hello, World!" });
 
 // Multiple files
-const content = await createRXC({
+const content = await createRXA({
   "index.ts": "export default 1",
   "styles.css": "body {}",
 });
 
 // Nested directories
-const content = await createRXC({
+const content = await createRXA({
   "src/index.ts": "main code",
   "src/utils/helper.ts": "helper code",
 });
 
-// From existing tar.gz archive (for deserialization)
-const content = await createRXC({ archive: tarGzBuffer });
+// From existing tar.gz buffer (for deserialization)
+const content = await createRXA({ buffer: tarGzBuffer });
 
-// Read files
-const buffer = await content.file("content"); // → Buffer
-const buffer = await content.file("src/index.ts"); // → Buffer
-const files = await content.files(); // → Map<string, Buffer>
+// Extract to package for file access
+const pkg = await content.extract();
+const buffer = await pkg.file("content"); // → Buffer
+const buffer = await pkg.file("src/index.ts"); // → Buffer
+const files = await pkg.files(); // → Map<string, Buffer>
+const paths = pkg.paths(); // → string[]
+const tree = pkg.tree(); // → PathNode[]
+
+// Archive methods
 const archiveBuffer = await content.buffer(); // → raw tar.gz Buffer
 const stream = content.stream; // → ReadableStream (tar.gz)
 ```
@@ -116,7 +122,7 @@ import type { RXR } from "@resourcexjs/core";
 interface RXR {
   locator: RXL;
   manifest: RXM;
-  content: RXC;
+  archive: RXA;
 }
 
 // Create from literals
@@ -170,7 +176,7 @@ ResourceXError (base)
 ### Complete Resource Creation
 
 ```typescript
-import { parseRXL, createRXM, createRXC } from "@resourcexjs/core";
+import { parseRXL, createRXM, createRXA } from "@resourcexjs/core";
 import type { RXR } from "@resourcexjs/core";
 
 // Create manifest
@@ -185,7 +191,7 @@ const manifest = createRXM({
 const locator = parseRXL(manifest.toLocator());
 
 // Create content (single file)
-const content = await createRXC({ content: "You are a helpful assistant." });
+const content = await createRXA({ content: "You are a helpful assistant." });
 
 // Assemble RXR
 const rxr: RXR = {
@@ -198,10 +204,10 @@ const rxr: RXR = {
 ### Multi-file Resource
 
 ```typescript
-import { createRXC } from "@resourcexjs/core";
+import { createRXA } from "@resourcexjs/core";
 
 // Create multi-file content
-const content = await createRXC({
+const content = await createRXA({
   "prompt.md": "# System Prompt\nYou are...",
   "config.json": '{"temperature": 0.7}',
 });
@@ -257,11 +263,11 @@ This package provides only data structures. For full functionality:
 All types are fully typed with TypeScript:
 
 ```typescript
-import type { RXL, RXM, RXC, RXR } from "@resourcexjs/core";
+import type { RXL, RXM, RXA, RXP, RXR } from "@resourcexjs/core";
 
 const locator: RXL = parseRXL("...");
 const manifest: RXM = createRXM({ ... });
-const content: RXC = createRXC("...");
+const archive: RXA = createRXA("...");
 const resource: RXR = { locator, manifest, content };
 ```
 

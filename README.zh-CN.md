@@ -49,7 +49,7 @@ AI Agent 需要管理各种资源：**prompts**、**tools**、**agents**、**ski
 │                                                             │
 │  RXL (定位符)    →  deepractice.ai/assistant.prompt@1.0.0  │
 │  RXM (清单)      →  资源元数据                              │
-│  RXC (内容)      →  归档存储 (tar.gz)                       │
+│  RXA (归档)      →  归档（存储/传输） (tar.gz)                       │
 │  类型系统        →  text / json / binary / custom           │
 ├─────────────────────────────────────────────────────────────┤
 │                       ARP 层                                │
@@ -66,7 +66,7 @@ npm install resourcexjs
 ```
 
 ```typescript
-import { createRegistry, parseRXL, createRXM, createRXC } from "resourcexjs";
+import { createRegistry, parseRXL, createRXM, createRXA } from "resourcexjs";
 
 // 1. 创建资源
 const manifest = createRXM({
@@ -79,7 +79,7 @@ const manifest = createRXM({
 const rxr = {
   locator: parseRXL(manifest.toLocator()),
   manifest,
-  content: await createRXC({ content: "You are a helpful assistant." }),
+  archive: await createRXA({ content: "You are a helpful assistant." }),
 };
 
 // 2. 链接到本地 registry (~/.resourcex)
@@ -105,7 +105,7 @@ const text = await resource.execute(); // "You are a helpful assistant."
 - **[ResourceX 层](./docs/concepts/resourcex/rxl-locator.md)**
   - [RXL - 定位符](./docs/concepts/resourcex/rxl-locator.md) - `domain/path/name.type@version`
   - [RXM - 清单](./docs/concepts/resourcex/rxm-manifest.md) - 资源元数据
-  - [RXC - 内容](./docs/concepts/resourcex/rxc-content.md) - 归档存储
+  - [RXA - 归档](./docs/concepts/resourcex/rxa-archive.md) - 归档（存储/传输）
   - [RXR - 资源](./docs/concepts/resourcex/rxr-resource.md) - 完整资源对象
   - [类型系统](./docs/concepts/resourcex/type-system.md) - 内置与自定义类型
   - [Registry](./docs/concepts/resourcex/registry.md) - 存储与检索
@@ -125,7 +125,7 @@ const text = await resource.execute(); // "You are a helpful assistant."
 
 ### [API 参考](./docs/api/core.md)
 
-- [Core API](./docs/api/core.md) - RXL, RXM, RXC, RXR
+- [Core API](./docs/api/core.md) - RXL, RXM, RXA, RXP, RXR
 - [Registry API](./docs/api/registry.md) - Registry 操作
 - [ARP API](./docs/api/arp.md) - Transport & Semantic
 - [错误处理](./docs/api/errors.md) - 错误类型
@@ -139,12 +139,12 @@ const text = await resource.execute(); // "You are a helpful assistant."
 
 ## 包结构
 
-| 包                                             | 描述                          |
-| ---------------------------------------------- | ----------------------------- |
-| [`resourcexjs`](./packages/resourcex)          | 主包 - 你需要的一切           |
-| [`@resourcexjs/core`](./packages/core)         | 核心类型 (RXL, RXM, RXC, RXR) |
-| [`@resourcexjs/registry`](./packages/registry) | Registry 实现                 |
-| [`@resourcexjs/arp`](./packages/arp)           | ARP 协议                      |
+| 包                                             | 描述                               |
+| ---------------------------------------------- | ---------------------------------- |
+| [`resourcexjs`](./packages/resourcex)          | 主包 - 你需要的一切                |
+| [`@resourcexjs/core`](./packages/core)         | 核心类型 (RXL, RXM, RXA, RXP, RXR) |
+| [`@resourcexjs/registry`](./packages/registry) | Registry 实现                      |
+| [`@resourcexjs/arp`](./packages/arp)           | ARP 协议                           |
 
 ## 生态系统
 

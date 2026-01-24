@@ -89,7 +89,7 @@ console.log(handler?.name); // "text"
 
 ```typescript
 import { globalTypeHandlerChain } from "@resourcexjs/type";
-import { createRXM, createRXC, parseRXL } from "@resourcexjs/core";
+import { createRXM, createRXA, parseRXL } from "@resourcexjs/core";
 
 // Serialize RXR to Buffer
 const manifest = createRXM({
@@ -102,15 +102,16 @@ const manifest = createRXM({
 const rxr = {
   locator: parseRXL(manifest.toLocator()),
   manifest,
-  content: createRXC("Hello, World!"),
+  archive: await createRXA({ content: "Hello, World!" }),
 };
 
 const buffer = await globalTypeHandlerChain.serialize(rxr);
-// Buffer containing "Hello, World!"
+// Buffer containing tar.gz archive
 
 // Deserialize Buffer to RXR
 const restored = await globalTypeHandlerChain.deserialize(buffer, manifest);
-console.log(await restored.content.text()); // "Hello, World!"
+const pkg = await restored.archive.extract();
+console.log((await pkg.file("content")).toString()); // "Hello, World!"
 ```
 
 ### Resolve Content
@@ -256,7 +257,7 @@ All builtin types return structured results with `schema: undefined` (no args):
 
 ```typescript
 import type { ResourceType } from "@resourcexjs/type";
-import { createRXC, parseRXL } from "@resourcexjs/core";
+import { createRXA, parseRXL } from "@resourcexjs/core";
 
 export const promptType: ResourceType<void, string> = {
   name: "prompt",
@@ -272,7 +273,7 @@ export const promptType: ResourceType<void, string> = {
       return {
         locator: parseRXL(manifest.toLocator()),
         manifest,
-        content: await createRXC({ archive: data }),
+        archive: await createRXA({ buffer: data }),
       };
     },
   },

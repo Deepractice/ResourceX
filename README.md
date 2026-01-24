@@ -49,7 +49,7 @@ AI Agents need to manage various resources: **prompts**, **tools**, **agents**, 
 │                                                             │
 │  RXL (Locator)   →  deepractice.ai/assistant.prompt@1.0.0  │
 │  RXM (Manifest)  →  Resource metadata                       │
-│  RXC (Content)   →  Archive-based storage (tar.gz)          │
+│  RXA (Archive)   →  Archive for storage/transfer (tar.gz)          │
 │  Type System     →  text / json / binary / custom           │
 ├─────────────────────────────────────────────────────────────┤
 │                       ARP Layer                             │
@@ -66,7 +66,7 @@ npm install resourcexjs
 ```
 
 ```typescript
-import { createRegistry, parseRXL, createRXM, createRXC } from "resourcexjs";
+import { createRegistry, parseRXL, createRXM, createRXA } from "resourcexjs";
 
 // 1. Create a resource
 const manifest = createRXM({
@@ -79,7 +79,7 @@ const manifest = createRXM({
 const rxr = {
   locator: parseRXL(manifest.toLocator()),
   manifest,
-  content: await createRXC({ content: "You are a helpful assistant." }),
+  archive: await createRXA({ content: "You are a helpful assistant." }),
 };
 
 // 2. Link to local registry (~/.resourcex)
@@ -105,7 +105,7 @@ const text = await resource.execute(); // "You are a helpful assistant."
 - **[ResourceX Layer](./docs/concepts/resourcex/rxl-locator.md)**
   - [RXL - Locator](./docs/concepts/resourcex/rxl-locator.md) - `domain/path/name.type@version`
   - [RXM - Manifest](./docs/concepts/resourcex/rxm-manifest.md) - Resource metadata
-  - [RXC - Content](./docs/concepts/resourcex/rxc-content.md) - Archive-based storage
+  - [RXA - Archive](./docs/concepts/resourcex/rxa-archive.md) - Archive for storage/transfer
   - [RXR - Resource](./docs/concepts/resourcex/rxr-resource.md) - Complete resource object
   - [Type System](./docs/concepts/resourcex/type-system.md) - Built-in & custom types
   - [Registry](./docs/concepts/resourcex/registry.md) - Storage & retrieval
@@ -125,7 +125,7 @@ const text = await resource.execute(); // "You are a helpful assistant."
 
 ### [API Reference](./docs/api/core.md)
 
-- [Core API](./docs/api/core.md) - RXL, RXM, RXC, RXR
+- [Core API](./docs/api/core.md) - RXL, RXM, RXA, RXP, RXR
 - [Registry API](./docs/api/registry.md) - Registry operations
 - [ARP API](./docs/api/arp.md) - Transport & Semantic
 - [Errors](./docs/api/errors.md) - Error handling
@@ -139,12 +139,12 @@ const text = await resource.execute(); // "You are a helpful assistant."
 
 ## Packages
 
-| Package                                        | Description                        |
-| ---------------------------------------------- | ---------------------------------- |
-| [`resourcexjs`](./packages/resourcex)          | Main package - everything you need |
-| [`@resourcexjs/core`](./packages/core)         | Core types (RXL, RXM, RXC, RXR)    |
-| [`@resourcexjs/registry`](./packages/registry) | Registry implementations           |
-| [`@resourcexjs/arp`](./packages/arp)           | ARP protocol                       |
+| Package                                        | Description                          |
+| ---------------------------------------------- | ------------------------------------ |
+| [`resourcexjs`](./packages/resourcex)          | Main package - everything you need   |
+| [`@resourcexjs/core`](./packages/core)         | Core types (RXL, RXM, RXA, RXP, RXR) |
+| [`@resourcexjs/registry`](./packages/registry) | Registry implementations             |
+| [`@resourcexjs/arp`](./packages/arp)           | ARP protocol                         |
 
 ## Ecosystem
 

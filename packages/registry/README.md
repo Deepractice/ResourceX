@@ -223,7 +223,7 @@ Resources are stored in two separate areas:
 │   └── {name}.{type}/
 │       └── {version}/
 │           ├── manifest.json
-│           └── content.tar.gz
+│           └── archive.tar.gz
 │
 └── cache/                              # Remote cache area
     └── {domain}/
@@ -231,7 +231,7 @@ Resources are stored in two separate areas:
             └── {name}.{type}/
                 └── {version}/
                     ├── manifest.json
-                    └── content.tar.gz
+                    └── archive.tar.gz
 ```
 
 ### Example
@@ -244,7 +244,7 @@ For a local development resource `my-prompt.text@1.0.0`:
     └── my-prompt.text/
         └── 1.0.0/
             ├── manifest.json    # domain can be "deepractice.ai" or "localhost"
-            └── content.tar.gz
+            └── archive.tar.gz
 ```
 
 For a cached remote resource `deepractice.ai/prompts/assistant.text@1.0.0`:
@@ -257,7 +257,7 @@ For a cached remote resource `deepractice.ai/prompts/assistant.text@1.0.0`:
             └── assistant.text/
                 └── 1.0.0/
                     ├── manifest.json
-                    └── content.tar.gz
+                    └── archive.tar.gz
 ```
 
 ### Resolution Order
@@ -277,7 +277,7 @@ For a cached remote resource `deepractice.ai/prompts/assistant.text@1.0.0`:
 }
 ```
 
-**content.tar.gz:** Archive containing resource files (managed by TypeHandlerChain)
+**archive.tar.gz:** Archive containing resource files (managed by TypeHandlerChain)
 
 ## Extension Types
 

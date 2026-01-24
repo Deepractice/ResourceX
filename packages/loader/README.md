@@ -358,7 +358,7 @@ const rxr: RXR = await loadResource("./my-resource");
 // TypeScript knows the structure
 rxr.locator; // RXL
 rxr.manifest; // RXM
-rxr.content; // RXC
+rxr.archive; // RXA
 ```
 
 ## License
