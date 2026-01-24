@@ -1,5 +1,30 @@
 # @resourcexjs/registry
 
+## 2.3.0
+
+### Minor Changes
+
+- 724d783: feat(registry): add GitHubRegistry using tarball download
+  - Add `GitHubRegistry` class that downloads GitHub repository tarball instead of git clone
+  - Faster than `GitRegistry` (isomorphic-git) for read-only access
+  - Support `https://github.com/owner/repo` URL format in well-known discovery
+  - Add `parseGitHubUrl()` and `isGitHubUrl()` utilities
+  - Update well-known worker to return GitHub URL as primary registry
+
+### Patch Changes
+
+- 9138ad5: refactor(core): replace RXC with RXA/RXP architecture
+  - Add RXA (Archive) interface for tar.gz storage/transfer
+  - Add RXP (Package) interface for runtime file access
+  - Update RXR interface: content → archive
+  - Rename storage file: content.tar.gz → archive.tar.gz
+
+- Updated dependencies [9138ad5]
+  - @resourcexjs/core@2.3.0
+  - @resourcexjs/type@2.3.0
+  - @resourcexjs/loader@2.3.0
+  - @resourcexjs/arp@2.3.0
+
 ## 2.2.0
 
 ### Minor Changes
