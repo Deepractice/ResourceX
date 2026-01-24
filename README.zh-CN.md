@@ -1,7 +1,7 @@
 <div align="center">
   <h1>ResourceX</h1>
-  <p><strong>The resource solution for AI Agents</strong></p>
-  <p>AI Agent 的资源解决方案</p>
+  <p><strong>The resource infrastructure and solution for AI Agents</strong></p>
+  <p>AI 智能体的资源基础设施和解决方案</p>
 
   <p>Manage, version, and share prompts, tools, skills, and everything</p>
   <p>管理、版本化、共享 prompts、tools、skills 以及一切</p>
