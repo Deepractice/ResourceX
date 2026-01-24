@@ -18,12 +18,12 @@ A resource in ResourceX consists of three parts:
 
 - **Locator (RXL)** - The address: `domain/path/name.type@version`
 - **Manifest (RXM)** - Metadata about the resource
-- **Content (RXC)** - The actual content
+- **Archive (RXA)** - The actual content
 
 Let's create a simple text resource:
 
 ```typescript
-import { parseRXL, createRXM, createRXC } from "resourcexjs";
+import { parseRXL, createRXM, createRXA } from "resourcexjs";
 
 // Create the manifest (metadata)
 const manifest = createRXM({
@@ -34,7 +34,7 @@ const manifest = createRXM({
 });
 
 // Create the content
-const content = await createRXC({
+const content = await createRXA({
   content: "Hello! I am a helpful AI assistant.",
 });
 
@@ -70,7 +70,7 @@ The resource is now stored at:
 ```
 ~/.resourcex/localhost/greeting.text/1.0.0/
 ├── manifest.json
-└── content.tar.gz
+└── archive.tar.gz
 ```
 
 ## Step 3: Resolve the Resource
@@ -108,7 +108,7 @@ console.log("Still exists:", stillExists); // false
 Here's the full code combining all steps:
 
 ```typescript
-import { createRegistry, parseRXL, createRXM, createRXC } from "resourcexjs";
+import { createRegistry, parseRXL, createRXM, createRXA } from "resourcexjs";
 
 async function main() {
   // 1. Create the resource
@@ -119,7 +119,7 @@ async function main() {
     version: "1.0.0",
   });
 
-  const content = await createRXC({
+  const content = await createRXA({
     content: "Hello! I am a helpful AI assistant.",
   });
 
@@ -156,7 +156,7 @@ main().catch(console.error);
 Resources can contain multiple files:
 
 ```typescript
-const content = await createRXC({
+const content = await createRXA({
   "main.txt": "Main content here",
   "examples/example1.txt": "First example",
   "examples/example2.txt": "Second example",
@@ -209,6 +209,6 @@ await registry.add(resource);
 Now that you understand the basics, explore:
 
 - [Introduction](./introduction.md) - Deep dive into core concepts
-- **Core Concepts** - RXL, RXM, RXC, RXR in detail
+- **Core Concepts** - RXL, RXM, RXA, RXP, RXR in detail
 - **Registry** - Local, Remote, and Git registries
 - **Type System** - Custom resource types

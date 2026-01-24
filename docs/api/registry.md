@@ -143,7 +143,7 @@ add(source: string | RXR): Promise<void>
 
 ```typescript
 import { createRegistry } from "@resourcexjs/registry";
-import { createRXM, createRXC, parseRXL } from "@resourcexjs/core";
+import { createRXM, createRXA, parseRXL } from "@resourcexjs/core";
 
 const registry = createRegistry();
 
@@ -157,7 +157,7 @@ const manifest = createRXM({
   type: "text",
   version: "1.0.0",
 });
-const content = await createRXC({ content: "Hello, World!" });
+const content = await createRXA({ content: "Hello, World!" });
 
 await registry.add({
   locator: parseRXL(manifest.toLocator()),
@@ -191,7 +191,7 @@ const rxr = await registry.get("localhost/hello.text@1.0.0");
 console.log(rxr.manifest.domain); // "localhost"
 
 // Access raw content
-const files = await rxr.content.files();
+const files = await rxr.archive.extract().then(pkg => pkg.files();
 ```
 
 ### resolve
@@ -519,7 +519,7 @@ class LocalRegistry implements Registry {
 │   └── {name}.{type}/
 │       └── {version}/
 │           ├── manifest.json
-│           └── content.tar.gz
+│           └── archive.tar.gz
 │
 └── cache/                              # Remote cached resources
     └── {domain}/
@@ -527,7 +527,7 @@ class LocalRegistry implements Registry {
             └── {name}.{type}/
                 └── {version}/
                     ├── manifest.json
-                    └── content.tar.gz
+                    └── archive.tar.gz
 ```
 
 **Features:**
@@ -709,7 +709,7 @@ import {
   LocalRegistry,
   RegistryError,
 } from "@resourcexjs/registry";
-import { parseRXL, createRXM, createRXC } from "@resourcexjs/core";
+import { parseRXL, createRXM, createRXA } from "@resourcexjs/core";
 
 async function main() {
   // Create local registry
@@ -728,7 +728,7 @@ async function main() {
     type: "text",
     version: "1.0.0",
   });
-  const content = await createRXC({ content: "Hello, ResourceX!" });
+  const content = await createRXA({ content: "Hello, ResourceX!" });
   await registry.add({
     locator: parseRXL(manifest.toLocator()),
     manifest,

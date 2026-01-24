@@ -25,7 +25,7 @@ ResourceX adopts a **two-layer architecture**:
 |                                           |
 |  - RXL (Locator): Resource addressing     |
 |  - RXM (Manifest): Resource metadata      |
-|  - RXC (Content): Resource content        |
+|  - RXA (Archive): Resource content        |
 |  - RXR (Resource): Complete resource      |
 |  - Registry: Storage and retrieval        |
 |  - TypeSystem: Type handlers              |
@@ -87,12 +87,13 @@ ResourceX provides resource management abstractions:
 
 **Core Objects**:
 
-| Object | Full Name          | Responsibility             |
-| ------ | ------------------ | -------------------------- |
-| RXL    | ResourceX Locator  | Parse and locate resources |
-| RXM    | ResourceX Manifest | Resource metadata          |
-| RXC    | ResourceX Content  | Resource content (tar.gz)  |
-| RXR    | ResourceX Resource | RXL + RXM + RXC            |
+| Object | Full Name          | Responsibility              |
+| ------ | ------------------ | --------------------------- |
+| RXL    | ResourceX Locator  | Parse and locate resources  |
+| RXM    | ResourceX Manifest | Resource metadata           |
+| RXA    | ResourceX Archive  | Resource archive (tar.gz)   |
+| RXP    | ResourceX Package  | Extracted files for runtime |
+| RXR    | ResourceX Resource | RXL + RXM + RXA             |
 
 **Registry**: Maven-style resource storage with `link`, `get`, `resolve`, `exists`, `delete`, `search` operations.
 

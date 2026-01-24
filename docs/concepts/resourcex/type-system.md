@@ -71,7 +71,7 @@ const textType: ResourceType<void, string> = {
 
 ```typescript
 // Create
-const content = await createRXC({ content: "Hello World" });
+const content = await createRXA({ content: "Hello World" });
 
 // Resolve
 const resolved = await registry.resolve("greeting.text@1.0.0");
@@ -95,7 +95,7 @@ const jsonType: ResourceType<void, unknown> = {
 
 ```typescript
 // Create
-const content = await createRXC({ content: '{"key": "value"}' });
+const content = await createRXA({ content: '{"key": "value"}' });
 
 // Resolve
 const resolved = await registry.resolve("config.json@1.0.0");
@@ -119,7 +119,7 @@ const binaryType: ResourceType<void, Buffer> = {
 
 ```typescript
 // Create
-const content = await createRXC({ content: Buffer.from([0x00, 0x01, 0x02]) });
+const content = await createRXA({ content: Buffer.from([0x00, 0x01, 0x02]) });
 
 // Resolve
 const resolved = await registry.resolve("data.binary@1.0.0");
@@ -194,13 +194,13 @@ const greetingType: ResourceType<void, string> = {
   description: "A greeting message",
   serializer: {
     async serialize(rxr) {
-      return rxr.content.buffer();
+      return rxr.archive.buffer();
     },
     async deserialize(data, manifest) {
       return {
         locator: parseRXL(manifest.toLocator()),
         manifest,
-        content: await createRXC({ archive: data }),
+        archive: await createRXA({ buffer: data }),
       };
     },
   },
@@ -211,7 +211,7 @@ const greetingType: ResourceType<void, string> = {
         resource: rxr,
         schema: undefined,
         execute: async () => {
-          const buffer = await rxr.content.file("content");
+          const buffer = await rxr.archive.extract().then(pkg => pkg.file("content");
           return `Greeting: ${buffer.toString()}`;
         },
       };
@@ -235,13 +235,13 @@ const calculatorType: ResourceType<CalculatorArgs, number> = {
   description: "A simple calculator",
   serializer: {
     async serialize(rxr) {
-      return rxr.content.buffer();
+      return rxr.archive.buffer();
     },
     async deserialize(data, manifest) {
       return {
         locator: parseRXL(manifest.toLocator()),
         manifest,
-        content: await createRXC({ archive: data }),
+        archive: await createRXA({ buffer: data }),
       };
     },
   },
@@ -441,4 +441,5 @@ chain.clearExtensions(): void  // For testing
 
 - [RXR - Complete Resource](./rxr-resource.md) - The input to serialization/resolution
 - [Registry](./registry.md) - Where type handling is applied
-- [RXC - Resource Content](./rxc-content.md) - The content format types work with
+- [RXA - Resource Archive](./rxa-archive.md) - The archive format types work with
+- [RXP - Resource Package](./rxp-package.md) - Extracted files for runtime access

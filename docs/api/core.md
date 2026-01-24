@@ -1,6 +1,6 @@
 # @resourcexjs/core API Reference
 
-The core package provides the fundamental building blocks for ResourceX: locators (RXL), manifests (RXM), content (RXC), and resources (RXR).
+The core package provides the fundamental building blocks for ResourceX: locators (RXL), manifests (RXM), archives (RXA), packages (RXP), and resources (RXR).
 
 ## Installation
 
@@ -170,68 +170,67 @@ interface RXM {
 
 ---
 
-## RXC (Resource Content)
+## RXA (Resource Archive)
 
-RXC represents archive-based content stored internally as tar.gz format.
+RXA represents a tar.gz archive container for storage and transfer.
 
-### createRXC
+### createRXA
 
-Creates content from files or an existing archive.
+Creates an archive from files or an existing buffer.
 
 ```typescript
-function createRXC(input: RXCInput): Promise<RXC>;
+function createRXA(input: RXAInput): Promise<RXA>;
 ```
 
 **Parameters:**
 
 | Name    | Type       | Description                    |
 | ------- | ---------- | ------------------------------ |
-| `input` | `RXCInput` | Files record or archive buffer |
+| `input` | `RXAInput` | Files record or archive buffer |
 
-**Returns:** `Promise<RXC>` - Created content object
+**Returns:** `Promise<RXA>` - Created archive object
 
 **Example:**
 
 ```typescript
-import { createRXC } from "@resourcexjs/core";
+import { createRXA } from "@resourcexjs/core";
 
 // Single file (stored as "content" internally)
-const singleFile = await createRXC({ content: "Hello, World!" });
+const singleFile = await createRXA({ content: "Hello, World!" });
 
 // Multiple files
-const multiFile = await createRXC({
+const multiFile = await createRXA({
   "index.ts": "export default 42;",
   "styles.css": "body { margin: 0; }",
   "config.json": JSON.stringify({ enabled: true }),
 });
 
 // Nested directory structure
-const nested = await createRXC({
+const nested = await createRXA({
   "src/index.ts": "// main entry",
   "src/utils/helper.ts": "// helper functions",
   "README.md": "# Documentation",
 });
 
-// From existing tar.gz archive
-const fromArchive = await createRXC({ archive: tarGzBuffer });
+// From existing tar.gz buffer
+const fromBuffer = await createRXA({ buffer: tarGzBuffer });
 ```
 
-### RXCInput Type
+### RXAInput Type
 
 ```typescript
-type RXCInput =
+type RXAInput =
   | Record<string, Buffer | Uint8Array | string> // Files
-  | { archive: Buffer }; // Existing archive
+  | { buffer: Buffer }; // Existing archive
 ```
 
-### RXC Interface
+### RXA Interface
 
 ```typescript
-interface RXC {
+interface RXA {
   readonly stream: ReadableStream<Uint8Array>;
   buffer(): Promise<Buffer>;
-  file(path: string): Promise<Buffer>;
-  files(): Promise<Map<string, Buffer>>;
+  extract(): Promise<RXP>;
 }
 ```
 
@@ -243,38 +242,91 @@ interface RXC {
 
 **Methods:**
 
-| Method       | Returns                        | Description                       |
-| ------------ | ------------------------------ | --------------------------------- |
-| `buffer()`   | `Promise<Buffer>`              | Get raw tar.gz archive buffer     |
-| `file(path)` | `Promise<Buffer>`              | Read a specific file from archive |
-| `files()`    | `Promise<Map<string, Buffer>>` | Read all files from archive       |
+| Method      | Returns           | Description                        |
+| ----------- | ----------------- | ---------------------------------- |
+| `buffer()`  | `Promise<Buffer>` | Get raw tar.gz archive buffer      |
+| `extract()` | `Promise<RXP>`    | Extract to package for file access |
 
 **Example:**
 
 ```typescript
+// Create archive
+const archive = await createRXA({ content: "Hello" });
+
+// Get raw buffer for storage
+const buffer = await archive.buffer();
+
+// Extract to package for reading files
+const pkg = await archive.extract();
+const content = await pkg.file("content");
+console.log(content.toString()); // "Hello"
+```
+
+---
+
+## RXP (Resource Package)
+
+RXP represents an extracted package for runtime file access.
+
+### RXP Interface
+
+```typescript
+interface RXP {
+  paths(): string[];
+  tree(): PathNode[];
+  file(path: string): Promise<Buffer>;
+  files(): Promise<Map<string, Buffer>>;
+  pack(): Promise<RXA>;
+}
+
+interface PathNode {
+  name: string;
+  type: "file" | "directory";
+  children?: PathNode[];
+}
+```
+
+**Methods:**
+
+| Method       | Returns                        | Description                     |
+| ------------ | ------------------------------ | ------------------------------- |
+| `paths()`    | `string[]`                     | Get flat list of all file paths |
+| `tree()`     | `PathNode[]`                   | Get hierarchical tree structure |
+| `file(path)` | `Promise<Buffer>`              | Read a specific file            |
+| `files()`    | `Promise<Map<string, Buffer>>` | Read all files as a map         |
+| `pack()`     | `Promise<RXA>`                 | Pack back into an archive       |
+
+**Example:**
+
+```typescript
+const archive = await createRXA({
+  "src/index.ts": "main code",
+  "src/utils.ts": "utils",
+  "README.md": "docs",
+});
+
+const pkg = await archive.extract();
+
+// Get file paths
+console.log(pkg.paths());
+// ["src/index.ts", "src/utils.ts", "README.md"]
+
+// Get tree structure
+console.log(pkg.tree());
+// [{ name: "src", type: "directory", children: [...] }, { name: "README.md", type: "file" }]
+
 // Read single file
-const content = await createRXC({ content: "Hello" });
-const buffer = await content.file("content");
-console.log(buffer.toString()); // "Hello"
+const indexContent = await pkg.file("src/index.ts");
 
 // Read all files
-const multi = await createRXC({
-  "a.txt": "File A",
-  "b.txt": "File B",
-});
-const files = await multi.files();
-console.log(files.get("a.txt")?.toString()); // "File A"
-console.log(files.get("b.txt")?.toString()); // "File B"
-
-// Get raw archive for storage
-const archive = await content.buffer();
+const allFiles = await pkg.files();
 ```
 
 ---
 
 ## RXR (Resource)
 
-RXR is a complete resource combining locator, manifest, and content. It is a pure data transfer object (DTO).
+RXR is a complete resource combining locator, manifest, and archive. It is a pure data transfer object (DTO).
 
 ### RXR Interface
 
@@ -282,7 +334,7 @@ RXR is a complete resource combining locator, manifest, and content. It is a pur
 interface RXR {
   locator: RXL;
   manifest: RXM;
-  content: RXC;
+  archive: RXA;
 }
 ```
 
@@ -292,12 +344,12 @@ interface RXR {
 | ---------- | ----- | ------------------------ |
 | `locator`  | `RXL` | Resource locator         |
 | `manifest` | `RXM` | Resource metadata        |
-| `content`  | `RXC` | Resource content archive |
+| `archive`  | `RXA` | Resource content archive |
 
 **Example:**
 
 ```typescript
-import { parseRXL, createRXM, createRXC, type RXR } from "@resourcexjs/core";
+import { parseRXL, createRXM, createRXA, type RXR } from "@resourcexjs/core";
 
 // Create a complete resource
 const locator = parseRXL("localhost/hello.text@1.0.0");
@@ -307,17 +359,20 @@ const manifest = createRXM({
   type: "text",
   version: "1.0.0",
 });
-const content = await createRXC({ content: "Hello, World!" });
+const archive = await createRXA({ content: "Hello, World!" });
 
 const resource: RXR = {
   locator,
   manifest,
-  content,
+  archive,
 };
 
 // Access components
 console.log(resource.manifest.toLocator()); // "localhost/hello.text@1.0.0"
-const text = await resource.content.file("content");
+
+// Read content
+const pkg = await resource.archive.extract();
+const text = await pkg.file("content");
 console.log(text.toString()); // "Hello, World!"
 ```
 
@@ -358,7 +413,7 @@ class ManifestError extends ResourceXError {
 
 ### ContentError
 
-Thrown when content operations fail.
+Thrown when archive/package operations fail.
 
 ```typescript
 class ContentError extends ResourceXError {
@@ -388,11 +443,12 @@ try {
 import {
   parseRXL,
   createRXM,
-  createRXC,
+  createRXA,
   type RXR,
   type RXL,
   type RXM,
-  type RXC,
+  type RXA,
+  type RXP,
 } from "@resourcexjs/core";
 
 // Parse a locator
@@ -407,8 +463,8 @@ const manifest: RXM = createRXM({
   version: locator.version!,
 });
 
-// Create multi-file content
-const content: RXC = await createRXC({
+// Create multi-file archive
+const archive: RXA = await createRXA({
   content: JSON.stringify({
     name: "Calculator",
     operations: ["add", "subtract", "multiply", "divide"],
@@ -423,10 +479,11 @@ const content: RXC = await createRXC({
 });
 
 // Assemble resource
-const resource: RXR = { locator, manifest, content };
+const resource: RXR = { locator, manifest, archive };
 
 // Use the resource
-const files = await resource.content.files();
+const pkg: RXP = await resource.archive.extract();
+const files = await pkg.files();
 const config = JSON.parse(files.get("content")!.toString());
 console.log(config.name); // "Calculator"
 ```

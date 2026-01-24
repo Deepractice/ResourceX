@@ -808,7 +808,7 @@ const arp = createARP(); // file, http, https, rxr
 // Access files inside resources
 const arl = arp.parse("arp:text:rxr://localhost/hello.text@1.0.0/content");
 const resource = await arl.resolve();
-console.log(resource.content); // Content from RXC archive
+console.log(resource.content); // Content from RXA archive
 
 // Manual registry injection (for testing)
 import { createRegistry } from "@resourcexjs/registry";

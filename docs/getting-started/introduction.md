@@ -34,10 +34,10 @@ Resources can contain single or multiple files, stored as tar.gz internally:
 
 ```typescript
 // Single file resource
-await createRXC({ content: "You are a helpful assistant." });
+await createRXA({ content: "You are a helpful assistant." });
 
 // Multi-file resource
-await createRXC({
+await createRXA({
   "prompt.txt": "Main prompt content",
   "examples/greeting.txt": "Hello example",
   "examples/farewell.txt": "Goodbye example",
@@ -106,7 +106,7 @@ The main API for working with resources:
 
 - **RXL (Locator)** - Parse and create resource addresses
 - **RXM (Manifest)** - Resource metadata (domain, name, type, version)
-- **RXC (Content)** - Archive-based content with file access
+- **RXA (Archive)** - Archive-based content with file access
 - **RXR (Resource)** - Complete resource combining locator, manifest, and content
 - **Registry** - Store, retrieve, and search resources
 - **TypeSystem** - Define how resource types are handled

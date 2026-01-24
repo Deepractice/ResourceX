@@ -49,7 +49,7 @@ LocalRegistry organizes resources into two areas:
 │   └── {name}.{type}/
 │       └── {version}/
 │           ├── manifest.json
-│           └── content.tar.gz
+│           └── archive.tar.gz
 │
 └── cache/                              # Remote cached resources (with domain)
     └── {domain}/
@@ -57,7 +57,7 @@ LocalRegistry organizes resources into two areas:
             └── {name}.{type}/
                 └── {version}/
                     ├── manifest.json
-                    └── content.tar.gz
+                    └── archive.tar.gz
 ```
 
 - **local/**: Resources without a domain (or with `localhost` domain) are stored here. Used primarily for local development.
@@ -71,7 +71,7 @@ Use `link()` to add resources to the local registry. This is the primary way to 
 
 ```typescript
 import { createRegistry } from "@resourcexjs/registry";
-import { createRXM, createRXC, parseRXL } from "@resourcexjs/core";
+import { createRXM, createRXA, parseRXL } from "@resourcexjs/core";
 
 const registry = createRegistry();
 
@@ -84,7 +84,7 @@ const manifest = createRXM({
 });
 
 // Create content
-const content = await createRXC({ content: "Hello, {{name}}!" });
+const content = await createRXA({ content: "Hello, {{name}}!" });
 
 // Create resource object (RXR)
 const resource = {
@@ -102,7 +102,7 @@ await registry.add(resource);
 Resources can contain multiple files:
 
 ```typescript
-const content = await createRXC({
+const content = await createRXA({
   "src/index.ts": 'console.log("Hello");',
   "src/utils.ts": "export const helper = () => {};",
   "README.md": "# My Project",
@@ -135,7 +135,7 @@ const manifest = createRXM({
   version: "2.0.0",
 });
 
-const content = await createRXC({ content: "You are an assistant" });
+const content = await createRXA({ content: "You are an assistant" });
 
 await registry.add({
   locator: parseRXL(manifest.toLocator()),
@@ -173,12 +173,12 @@ Use `get()` when you need access to the raw RXR object without resolving:
 const rxr = await registry.get("localhost/project.text@1.0.0");
 
 // Access raw content
-const files = await rxr.content.files();
+const files = await rxr.archive.extract().then(pkg => pkg.files();
 const indexFile = files.get("src/index.ts");
 console.log(indexFile.toString()); // Raw file content
 
 // Or read a single file
-const readme = await rxr.content.file("README.md");
+const readme = await rxr.archive.extract().then(pkg => pkg.file("README.md");
 ```
 
 ### Locator Formats
@@ -345,7 +345,7 @@ const registry = createRegistry({ path: "./local-resources" });
 
 ```typescript
 import { createRegistry } from "@resourcexjs/registry";
-import { createRXM, createRXC, parseRXL } from "@resourcexjs/core";
+import { createRXM, createRXA, parseRXL } from "@resourcexjs/core";
 
 async function main() {
   // Create registry
@@ -359,7 +359,7 @@ async function main() {
     version: "1.0.0",
   });
 
-  const content = await createRXC({ content: "Hello, ResourceX!" });
+  const content = await createRXA({ content: "Hello, ResourceX!" });
 
   await registry.add({
     locator: parseRXL(manifest.toLocator()),

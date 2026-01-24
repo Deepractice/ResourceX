@@ -36,7 +36,7 @@ pnpm add resourcexjs
 
 This gives you access to:
 
-- All core types (RXL, RXM, RXC, RXR)
+- All core types (RXL, RXM, RXA, RXP, RXR)
 - Registry (Local, Remote, Git)
 - Type system (text, json, binary, custom)
 - ARP with ResourceX integration
@@ -46,7 +46,7 @@ This gives you access to:
 If you only need specific functionality:
 
 ```bash
-# Core types only (RXL, RXM, RXC, RXR, TypeSystem)
+# Core types only (RXL, RXM, RXA, RXP, RXR, TypeSystem)
 npm install @resourcexjs/core
 
 # Registry only (requires @resourcexjs/core)
@@ -77,7 +77,7 @@ Create a test file to verify the installation:
 
 ```typescript
 // test.ts
-import { createRegistry, parseRXL, createRXM, createRXC } from "resourcexjs";
+import { createRegistry, parseRXL, createRXM, createRXA } from "resourcexjs";
 
 async function main() {
   // Parse a locator
@@ -94,7 +94,7 @@ async function main() {
   console.log("Created manifest:", manifest.toLocator());
 
   // Create content
-  const content = await createRXC({ content: "Hello, ResourceX!" });
+  const content = await createRXA({ content: "Hello, ResourceX!" });
   console.log("Created content");
 
   // Create registry
@@ -127,7 +127,7 @@ ResourceX stores resources in `~/.resourcex` by default:
 │   └── test.text/
 │       └── 1.0.0/
 │           ├── manifest.json
-│           └── content.tar.gz
+│           └── archive.tar.gz
 └── deepractice.ai/      # Cached remote resources
     └── ...
 ```

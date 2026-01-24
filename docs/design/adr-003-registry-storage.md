@@ -46,7 +46,7 @@ Storage is separated into two distinct areas:
 │   └── {name}.{type}/
 │       └── {version}/
 │           ├── manifest.json
-│           └── content.tar.gz
+│           └── archive.tar.gz
 │
 └── cache/                              # Remote cached resources
     └── {domain}/
@@ -54,7 +54,7 @@ Storage is separated into two distinct areas:
             └── {name}.{type}/
                 └── {version}/
                     ├── manifest.json
-                    └── content.tar.gz
+                    └── archive.tar.gz
 ```
 
 **Local Area** (`local/`):

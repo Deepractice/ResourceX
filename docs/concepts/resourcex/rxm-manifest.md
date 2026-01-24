@@ -263,5 +263,6 @@ interface ManifestData {
 ## See Also
 
 - [RXL - Resource Locator](./rxl-locator.md) - The addressing format
-- [RXC - Resource Content](./rxc-content.md) - The content paired with manifests
+- [RXA - Resource Archive](./rxa-archive.md) - The archive paired with manifests
+- [RXP - Resource Package](./rxp-package.md) - Extracted files for runtime access
 - [RXR - Complete Resource](./rxr-resource.md) - How manifest combines with content

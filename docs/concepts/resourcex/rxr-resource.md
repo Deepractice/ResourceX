@@ -1,6 +1,6 @@
 # RXR - Complete Resource
 
-RXR (ResourceX Resource) is the complete resource object that combines a locator, manifest, and content. It's designed as a pure DTO (Data Transfer Object) - a simple data structure with no behavior.
+RXR (ResourceX Resource) is the complete resource object that combines a locator, manifest, and archive. It's designed as a pure DTO (Data Transfer Object) - a simple data structure with no behavior.
 
 ## Interface
 
@@ -8,7 +8,7 @@ RXR (ResourceX Resource) is the complete resource object that combines a locator
 interface RXR {
   locator: RXL; // Where to find it
   manifest: RXM; // What it is
-  content: RXC; // What it contains
+  archive: RXA; // What it contains
 }
 ```
 
@@ -17,7 +17,7 @@ interface RXR {
 RXR is a plain interface, not a class. Create it by assembling the three components:
 
 ```typescript
-import { parseRXL, createRXM, createRXC } from "resourcexjs";
+import { parseRXL, createRXM, createRXA } from "resourcexjs";
 
 // 1. Create manifest (the source of truth)
 const manifest = createRXM({
@@ -27,14 +27,14 @@ const manifest = createRXM({
   version: "1.0.0",
 });
 
-// 2. Create content
-const content = await createRXC({ content: "Hello, World!" });
+// 2. Create archive
+const archive = await createRXA({ content: "Hello, World!" });
 
 // 3. Parse locator from manifest
 const locator = parseRXL(manifest.toLocator());
 
 // 4. Assemble RXR
-const rxr: RXR = { locator, manifest, content };
+const rxr: RXR = { locator, manifest, archive };
 ```
 
 ### Helper Pattern
@@ -53,10 +53,10 @@ async function createResource(
   files: Record<string, string | Buffer>
 ): Promise<RXR> {
   const manifest = createRXM(data);
-  const content = await createRXC(files);
+  const archive = await createRXA(files);
   const locator = parseRXL(manifest.toLocator());
 
-  return { locator, manifest, content };
+  return { locator, manifest, archive };
 }
 
 // Usage
@@ -95,7 +95,8 @@ console.log(rxr.manifest.name); // "my-tool"
 console.log(rxr.manifest.version); // "1.0.0"
 
 // Read content directly
-const files = await rxr.content.files();
+const pkg = await rxr.archive.extract();
+const files = await pkg.files();
 ```
 
 ### Resolving for Execution
@@ -115,7 +116,7 @@ const text = await resolved.execute();
 RXR is intentionally a simple interface, not a class:
 
 1. **No hidden state**: What you see is what you get
-2. **Easy to serialize**: Can be JSON.stringify'd (except content buffer)
+2. **Easy to serialize**: Can be JSON.stringify'd (except archive buffer)
 3. **Framework agnostic**: No dependencies on specific implementations
 4. **Easy to test**: Create test RXRs with object literals
 
@@ -129,7 +130,7 @@ const mockRXR: RXR = {
     type: "text",
     version: "1.0.0",
   }),
-  content: await createRXC({ content: "test content" }),
+  archive: await createRXA({ content: "test content" }),
 };
 ```
 
@@ -141,13 +142,28 @@ Each component serves a distinct purpose:
 | ------------ | ---------- | --------------------------------- |
 | **Locator**  | Addressing | Parse from string, use in queries |
 | **Manifest** | Identity   | Created once, stored as JSON      |
-| **Content**  | Data       | Created once, stored as tar.gz    |
+| **Archive**  | Data       | Created once, stored as tar.gz    |
 
 This separation allows:
 
 - Resolving resources without loading content
 - Caching manifests separately from content
 - Querying by locator without full data
+
+### Why Archive instead of direct file access?
+
+The archive (RXA) stores compressed content for efficient storage and transfer. For runtime file access, extract it to a package (RXP):
+
+```typescript
+// Archive is for storage
+const buffer = await rxr.archive.buffer();
+// → tar.gz for storing/sending
+
+// Package is for access
+const pkg = await rxr.archive.extract();
+const content = await pkg.file("content");
+// → file content for reading
+```
 
 ### Why Locator and Manifest Redundancy?
 
@@ -176,11 +192,15 @@ RXR
 │   ├── toLocator() → same as locator.toString()
 │   └── toJSON() → { domain, path, name, type, version }
 │
-└── content: RXC
-    ├── file(path) → Buffer
-    ├── files() → Map<string, Buffer>
+└── archive: RXA
     ├── buffer() → tar.gz Buffer
-    └── stream → ReadableStream
+    ├── stream → ReadableStream
+    └── extract() → RXP
+                    ├── paths() → string[]
+                    ├── tree() → PathNode[]
+                    ├── file(path) → Buffer
+                    ├── files() → Map<string, Buffer>
+                    └── pack() → RXA
 ```
 
 ## Common Patterns
@@ -196,7 +216,7 @@ const devResource = {
     type: "text",
     version: "0.1.0",
   }),
-  content: await createRXC({ content: "Development prompt" }),
+  archive: await createRXA({ content: "Development prompt" }),
 };
 
 await registry.add(devResource);
@@ -213,7 +233,7 @@ const multiFileResource = {
     type: "binary",
     version: "1.0.0",
   }),
-  content: await createRXC({
+  archive: await createRXA({
     "main.js": "console.log('Hello');",
     "config.json": '{"debug": true}',
     "assets/logo.png": logoPngBuffer,
@@ -233,7 +253,7 @@ const v2: RXR = {
     ...v1.manifest.toJSON(),
     version: "2.0.0",
   }),
-  content: v1.content, // Reuse content
+  archive: v1.archive, // Reuse archive
 };
 
 await registry.add(v2);
@@ -254,7 +274,8 @@ Don't confuse RXR with ResolvedResource:
 // RXR: Data container
 const rxr = await registry.get("my-tool.text@1.0.0");
 // Access raw content
-const buffer = await rxr.content.file("content");
+const pkg = await rxr.archive.extract();
+const buffer = await pkg.file("content");
 
 // ResolvedResource: Executable wrapper
 const resolved = await registry.resolve("my-tool.text@1.0.0");
@@ -273,7 +294,7 @@ import type { RXR } from "resourcexjs";
 const rxr: RXR = {
   locator: RXL,
   manifest: RXM,
-  content: RXC,
+  archive: RXA,
 };
 ```
 
@@ -281,6 +302,7 @@ const rxr: RXR = {
 
 - [RXL - Resource Locator](./rxl-locator.md) - The addressing component
 - [RXM - Resource Manifest](./rxm-manifest.md) - The metadata component
-- [RXC - Resource Content](./rxc-content.md) - The content component
+- [RXA - Resource Archive](./rxa-archive.md) - The archive component
+- [RXP - Resource Package](./rxp-package.md) - The extracted package
 - [Registry](./registry.md) - Where resources are stored and retrieved
 - [Type System](./type-system.md) - How RXR is resolved to executable form
