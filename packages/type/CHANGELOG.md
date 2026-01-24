@@ -1,5 +1,18 @@
 # @resourcexjs/type
 
+## 2.3.0
+
+### Patch Changes
+
+- 9138ad5: refactor(core): replace RXC with RXA/RXP architecture
+  - Add RXA (Archive) interface for tar.gz storage/transfer
+  - Add RXP (Package) interface for runtime file access
+  - Update RXR interface: content → archive
+  - Rename storage file: content.tar.gz → archive.tar.gz
+
+- Updated dependencies [9138ad5]
+  - @resourcexjs/core@2.3.0
+
 ## 2.2.0
 
 ### Patch Changes
