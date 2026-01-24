@@ -32,7 +32,7 @@ Given("I have access to resourcexjs type system", async function (this: Resolver
 Given(
   "a text resource with content {string}",
   async function (this: ResolverWorld, content: string) {
-    const { createRXM, createRXC, parseRXL } = await import("resourcexjs");
+    const { createRXM, createRXA, parseRXL } = await import("resourcexjs");
 
     const manifest = createRXM({
       domain: "localhost",
@@ -44,7 +44,7 @@ Given(
     this.rxr = {
       locator: parseRXL(manifest.toLocator()),
       manifest,
-      content: await createRXC({ content }),
+      archive: await createRXA({ content }),
     };
   }
 );
@@ -52,7 +52,7 @@ Given(
 Given(
   "a json resource with content {string}",
   async function (this: ResolverWorld, content: string) {
-    const { createRXM, createRXC, parseRXL } = await import("resourcexjs");
+    const { createRXM, createRXA, parseRXL } = await import("resourcexjs");
 
     const manifest = createRXM({
       domain: "localhost",
@@ -64,7 +64,7 @@ Given(
     this.rxr = {
       locator: parseRXL(manifest.toLocator()),
       manifest,
-      content: await createRXC({ content }),
+      archive: await createRXA({ content }),
     };
   }
 );
@@ -72,7 +72,7 @@ Given(
 Given(
   "a binary resource with bytes {string}",
   async function (this: ResolverWorld, bytesStr: string) {
-    const { createRXM, createRXC, parseRXL } = await import("resourcexjs");
+    const { createRXM, createRXA, parseRXL } = await import("resourcexjs");
 
     // Parse "1,2,3,4" to actual array
     const bytes = bytesStr.split(",").map((s) => parseInt(s.trim(), 10));
@@ -88,7 +88,7 @@ Given(
     this.rxr = {
       locator: parseRXL(manifest.toLocator()),
       manifest,
-      content: await createRXC({ content: buffer }),
+      archive: await createRXA({ content: buffer }),
     };
   }
 );
@@ -96,7 +96,7 @@ Given(
 Given(
   "a text resource {string} with content {string}",
   async function (this: ResolverWorld, locator: string, content: string) {
-    const { createRXM, createRXC, parseRXL } = await import("resourcexjs");
+    const { createRXM, createRXA, parseRXL } = await import("resourcexjs");
 
     const rxl = parseRXL(locator);
     const manifest = createRXM({
@@ -110,7 +110,7 @@ Given(
     this.rxr = {
       locator: rxl,
       manifest,
-      content: await createRXC({ content }),
+      archive: await createRXA({ content }),
     };
   }
 );
@@ -139,9 +139,13 @@ Given(
             resource: rxr,
             schema: this.schema,
             execute: async (args?: { a: number; b: number }) => {
-              const content = await (
-                rxr as { content: { file: (name: string) => Promise<Buffer> } }
-              ).content.file("content");
+              const rxa = (
+                rxr as unknown as {
+                  archive: { extract: () => Promise<{ file: (name: string) => Promise<Buffer> }> };
+                }
+              ).archive;
+              const pkg = await rxa.extract();
+              const content = await pkg.file("content");
               const code = content.toString("utf-8");
               // Simple eval for "return args.a + args.b"
               if (code === "return args.a + args.b" && args) {
@@ -179,9 +183,13 @@ Given(
             resource: rxr,
             schema: undefined,
             execute: async () => {
-              const content = await (
-                rxr as { content: { file: (name: string) => Promise<Buffer> } }
-              ).content.file("content");
+              const rxa = (
+                rxr as unknown as {
+                  archive: { extract: () => Promise<{ file: (name: string) => Promise<Buffer> }> };
+                }
+              ).archive;
+              const pkg = await rxa.extract();
+              const content = await pkg.file("content");
               return content.toString("utf-8");
             },
           };
@@ -199,7 +207,7 @@ Given(
 );
 
 Given("a tool resource with code {string}", async function (this: ResolverWorld, code: string) {
-  const { createRXM, createRXC, parseRXL } = await import("resourcexjs");
+  const { createRXM, createRXA, parseRXL } = await import("resourcexjs");
 
   const manifest = createRXM({
     domain: "localhost",
@@ -211,14 +219,14 @@ Given("a tool resource with code {string}", async function (this: ResolverWorld,
   this.rxr = {
     locator: parseRXL(manifest.toLocator()),
     manifest,
-    content: await createRXC({ content: code }),
+    archive: await createRXA({ content: code }),
   };
 });
 
 Given(
   "a prompt resource with template {string}",
   async function (this: ResolverWorld, template: string) {
-    const { createRXM, createRXC, parseRXL } = await import("resourcexjs");
+    const { createRXM, createRXA, parseRXL } = await import("resourcexjs");
 
     const manifest = createRXM({
       domain: "localhost",
@@ -230,7 +238,7 @@ Given(
     this.rxr = {
       locator: parseRXL(manifest.toLocator()),
       manifest,
-      content: await createRXC({ content: template }),
+      archive: await createRXA({ content: template }),
     };
   }
 );
@@ -251,9 +259,13 @@ Given(
             resource: rxr,
             schema: undefined,
             execute: async () => {
-              const content = await (
-                rxr as { content: { file: (name: string) => Promise<Buffer> } }
-              ).content.file("content");
+              const rxa = (
+                rxr as unknown as {
+                  archive: { extract: () => Promise<{ file: (name: string) => Promise<Buffer> }> };
+                }
+              ).archive;
+              const pkg = await rxa.extract();
+              const content = await pkg.file("content");
               return content.toString("utf-8");
             },
           };
@@ -273,7 +285,7 @@ Given(
 Given(
   "an async-text resource with content {string}",
   async function (this: ResolverWorld, content: string) {
-    const { createRXM, createRXC, parseRXL } = await import("resourcexjs");
+    const { createRXM, createRXA, parseRXL } = await import("resourcexjs");
 
     const manifest = createRXM({
       domain: "localhost",
@@ -285,7 +297,7 @@ Given(
     this.rxr = {
       locator: parseRXL(manifest.toLocator()),
       manifest,
-      content: await createRXC({ content }),
+      archive: await createRXA({ content }),
     };
   }
 );
@@ -303,9 +315,13 @@ Given(
         schema: undefined,
         async resolve(rxr: unknown) {
           // Pre-load content during resolve
-          const content = await (
-            rxr as { content: { file: (name: string) => Promise<Buffer> } }
-          ).content.file("content");
+          const rxa = (
+            rxr as unknown as {
+              archive: { extract: () => Promise<{ file: (name: string) => Promise<Buffer> }> };
+            }
+          ).archive;
+          const pkg = await rxa.extract();
+          const content = await pkg.file("content");
           const text = content.toString("utf-8");
           // Return sync execute function
           return {
@@ -329,7 +345,7 @@ Given(
 Given(
   "a sync-text resource with content {string}",
   async function (this: ResolverWorld, content: string) {
-    const { createRXM, createRXC, parseRXL } = await import("resourcexjs");
+    const { createRXM, createRXA, parseRXL } = await import("resourcexjs");
 
     const manifest = createRXM({
       domain: "localhost",
@@ -341,7 +357,7 @@ Given(
     this.rxr = {
       locator: parseRXL(manifest.toLocator()),
       manifest,
-      content: await createRXC({ content }),
+      archive: await createRXA({ content }),
     };
   }
 );

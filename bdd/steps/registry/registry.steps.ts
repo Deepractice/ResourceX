@@ -48,7 +48,7 @@ Given(
       hashes: () => Array<{ domain: string; name: string; type: string; version: string }>;
     }
   ) {
-    const { createRXM, createRXC, parseRXL } = await import("resourcexjs");
+    const { createRXM, createRXA, parseRXL } = await import("resourcexjs");
     const rows = dataTable.hashes();
     const row = rows[0];
 
@@ -62,22 +62,22 @@ Given(
     this.resource = {
       locator: parseRXL(manifest.toLocator()),
       manifest,
-      content: await createRXC({ content: "default content" }),
+      archive: await createRXA({ content: "default content" }),
     };
   }
 );
 
 Given("resource content {string}", async function (this: RegistryWorld, content: string) {
-  const { createRXC } = await import("resourcexjs");
+  const { createRXA } = await import("resourcexjs");
   if (this.resource) {
-    this.resource.content = await createRXC({ content });
+    this.resource.archive = await createRXA({ content });
   }
 });
 
 Given(
   "a linked resource {string} with content {string}",
   async function (this: RegistryWorld, locator: string, content: string) {
-    const { createRXM, createRXC, parseRXL } = await import("resourcexjs");
+    const { createRXM, createRXA, parseRXL } = await import("resourcexjs");
 
     const rxl = parseRXL(locator);
     const manifest = createRXM({
@@ -90,7 +90,7 @@ Given(
     const rxr: RXR = {
       locator: rxl,
       manifest,
-      content: await createRXC({ content }),
+      archive: await createRXA({ content }),
     };
 
     await this.registry!.add(rxr);
@@ -98,7 +98,7 @@ Given(
 );
 
 Given("a linked resource {string}", async function (this: RegistryWorld, locator: string) {
-  const { createRXM, createRXC, parseRXL } = await import("resourcexjs");
+  const { createRXM, createRXA, parseRXL } = await import("resourcexjs");
 
   const rxl = parseRXL(locator);
   const manifest = createRXM({
@@ -111,7 +111,7 @@ Given("a linked resource {string}", async function (this: RegistryWorld, locator
   const rxr: RXR = {
     locator: rxl,
     manifest,
-    content: await createRXC({ content: "test content" }),
+    archive: await createRXA({ content: "test content" }),
   };
 
   await this.registry!.add(rxr);
@@ -120,7 +120,7 @@ Given("a linked resource {string}", async function (this: RegistryWorld, locator
 Given(
   "linked resources:",
   async function (this: RegistryWorld, dataTable: { hashes: () => Array<{ locator: string }> }) {
-    const { createRXM, createRXC, parseRXL } = await import("resourcexjs");
+    const { createRXM, createRXA, parseRXL } = await import("resourcexjs");
     const rows = dataTable.hashes();
 
     for (const row of rows) {
@@ -135,7 +135,7 @@ Given(
       const rxr: RXR = {
         locator: rxl,
         manifest,
-        content: await createRXC({ content: "test content" }),
+        archive: await createRXA({ content: "test content" }),
       };
 
       await this.registry!.add(rxr);
@@ -153,7 +153,7 @@ When("I link the resource", async function (this: RegistryWorld) {
 });
 
 When("I link a resource {string}", async function (this: RegistryWorld, locator: string) {
-  const { createRXM, createRXC, parseRXL } = await import("resourcexjs");
+  const { createRXM, createRXA, parseRXL } = await import("resourcexjs");
 
   const rxl = parseRXL(locator);
   const manifest = createRXM({
@@ -166,7 +166,7 @@ When("I link a resource {string}", async function (this: RegistryWorld, locator:
   this.resource = {
     locator: rxl,
     manifest,
-    content: await createRXC({ content: "test content" }),
+    archive: await createRXA({ content: "test content" }),
   };
 
   try {
@@ -285,7 +285,7 @@ Then("I should receive an RXR object", async function (this: RegistryWorld) {
   assert.ok(this.resolvedResource?.resource, "ResolvedResource should have resource");
   assert.ok(this.resolvedResource?.resource.locator, "RXR should have locator");
   assert.ok(this.resolvedResource?.resource.manifest, "RXR should have manifest");
-  assert.ok(this.resolvedResource?.resource.content, "RXR should have content");
+  assert.ok(this.resolvedResource?.resource.archive, "RXR should have content");
 });
 
 Then("the content should be {string}", async function (this: RegistryWorld, expected: string) {

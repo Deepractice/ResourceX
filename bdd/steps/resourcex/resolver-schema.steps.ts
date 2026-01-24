@@ -140,7 +140,7 @@ Given(
 );
 
 Given("a search-tool resource", async function (this: SchemaWorld) {
-  const { createRXM, createRXC, parseRXL } = await import("resourcexjs");
+  const { createRXM, createRXA, parseRXL } = await import("resourcexjs");
 
   const manifest = createRXM({
     domain: "localhost",
@@ -152,12 +152,12 @@ Given("a search-tool resource", async function (this: SchemaWorld) {
   this.rxr = {
     locator: parseRXL(manifest.toLocator()),
     manifest,
-    content: await createRXC({ content: "search tool content" }),
+    archive: await createRXA({ content: "search tool content" }),
   };
 });
 
 Given("a calculator resource that adds two numbers", async function (this: SchemaWorld) {
-  const { createRXM, createRXC, parseRXL } = await import("resourcexjs");
+  const { createRXM, createRXA, parseRXL } = await import("resourcexjs");
 
   const manifest = createRXM({
     domain: "localhost",
@@ -169,7 +169,7 @@ Given("a calculator resource that adds two numbers", async function (this: Schem
   this.rxr = {
     locator: parseRXL(manifest.toLocator()),
     manifest,
-    content: await createRXC({ content: "calculator" }),
+    archive: await createRXA({ content: "calculator" }),
   };
 });
 
@@ -240,9 +240,13 @@ Given(
             resource: rxr,
             schema: undefined,
             execute: async () => {
-              const content = await (
-                rxr as { content: { file: (name: string) => Promise<Buffer> } }
-              ).content.file("content");
+              const rxa = (
+                rxr as unknown as {
+                  archive: { extract: () => Promise<{ file: (name: string) => Promise<Buffer> }> };
+                }
+              ).archive;
+              const pkg = await rxa.extract();
+              const content = await pkg.file("content");
               return content.toString("utf-8");
             },
           };
@@ -263,7 +267,7 @@ Given(
 Given(
   "a greeting resource with message {string}",
   async function (this: SchemaWorld, message: string) {
-    const { createRXM, createRXC, parseRXL } = await import("resourcexjs");
+    const { createRXM, createRXA, parseRXL } = await import("resourcexjs");
 
     const manifest = createRXM({
       domain: "localhost",
@@ -275,7 +279,7 @@ Given(
     this.rxr = {
       locator: parseRXL(manifest.toLocator()),
       manifest,
-      content: await createRXC({ content: message }),
+      archive: await createRXA({ content: message }),
     };
   }
 );
@@ -366,7 +370,7 @@ Given(
 );
 
 Given("an api-tool resource", async function (this: SchemaWorld) {
-  const { createRXM, createRXC, parseRXL } = await import("resourcexjs");
+  const { createRXM, createRXA, parseRXL } = await import("resourcexjs");
 
   const manifest = createRXM({
     domain: "localhost",
@@ -378,7 +382,7 @@ Given("an api-tool resource", async function (this: SchemaWorld) {
   this.rxr = {
     locator: parseRXL(manifest.toLocator()),
     manifest,
-    content: await createRXC({ content: "api tool content" }),
+    archive: await createRXA({ content: "api tool content" }),
   };
 });
 

@@ -41,7 +41,7 @@ describe("loadResource", () => {
       expect(rxr.manifest.type).toBe("text");
       expect(rxr.manifest.version).toBe("1.0.0");
       expect(rxr.locator.toString()).toBe("localhost/test-resource.text@1.0.0");
-      const contentBuffer = await rxr.content.file("content");
+      const contentBuffer = await rxr.archive.extract().then((pkg) => pkg.file("content"));
       expect(contentBuffer.toString()).toBe("Hello, World!");
     });
 
@@ -204,7 +204,7 @@ describe("loadResource", () => {
 
       const rxr = await loadResource(resourceDir);
 
-      const files = await rxr.content.files();
+      const files = await rxr.archive.extract().then((pkg) => pkg.files());
       expect(files.size).toBe(2);
       expect(files.get("index.ts")?.toString()).toBe("export default 1");
       expect(files.get("styles.css")?.toString()).toBe("body {}");
@@ -228,7 +228,7 @@ describe("loadResource", () => {
 
       const rxr = await loadResource(resourceDir);
 
-      const files = await rxr.content.files();
+      const files = await rxr.archive.extract().then((pkg) => pkg.files());
       expect(files.size).toBe(2);
       expect(files.get("src/index.ts")?.toString()).toBe("main");
       expect(files.get("src/utils/helper.ts")?.toString()).toBe("helper");
@@ -243,7 +243,7 @@ describe("loadResource", () => {
         }
 
         async load(source: string): Promise<RXR> {
-          const { createRXM, createRXC, parseRXL } = await import("@resourcexjs/core");
+          const { createRXM, createRXA, parseRXL } = await import("@resourcexjs/core");
           const manifest = createRXM({
             domain: "mock.com",
             name: source,
@@ -254,7 +254,7 @@ describe("loadResource", () => {
           return {
             locator: parseRXL(manifest.toLocator()),
             manifest,
-            content: await createRXC({ content: "mocked content" }),
+            archive: await createRXA({ content: "mocked content" }),
           };
         }
       }
@@ -263,7 +263,7 @@ describe("loadResource", () => {
 
       expect(rxr.manifest.domain).toBe("mock.com");
       expect(rxr.manifest.name).toBe("any-source");
-      const contentBuffer = await rxr.content.file("content");
+      const contentBuffer = await rxr.archive.extract().then((pkg) => pkg.file("content"));
       expect(contentBuffer.toString()).toBe("mocked content");
     });
 
@@ -361,7 +361,7 @@ describe("FolderLoader", () => {
       const loader = new FolderLoader();
       const rxr = await loader.load(resourceDir);
 
-      const contentBuffer = await rxr.content.file("content");
+      const contentBuffer = await rxr.archive.extract().then((pkg) => pkg.file("content"));
       expect(contentBuffer).toEqual(binaryData);
     });
   });

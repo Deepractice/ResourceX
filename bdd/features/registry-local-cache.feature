@@ -174,7 +174,7 @@ Feature: Registry Local/Cache Separation
     Then the filesystem should have:
       | path                                       | exists |
       | local/my-prompt.text/1.0.0/manifest.json   | true   |
-      | local/my-prompt.text/1.0.0/content.tar.gz  | true   |
+      | local/my-prompt.text/1.0.0/archive.tar.gz  | true   |
 
   @structure
   Scenario: Verify cache storage structure
@@ -184,4 +184,4 @@ Feature: Registry Local/Cache Separation
     Then the filesystem should have:
       | path                                                        | exists |
       | cache/deepractice.ai/prompts/nuwa.text/1.0.0/manifest.json  | true   |
-      | cache/deepractice.ai/prompts/nuwa.text/1.0.0/content.tar.gz | true   |
+      | cache/deepractice.ai/prompts/nuwa.text/1.0.0/archive.tar.gz | true   |

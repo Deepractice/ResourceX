@@ -37,7 +37,7 @@ Then("resolved.resource should be the RXR object", function (this: ResolveWorld)
   assert.ok(this.resolvedResource?.resource, "Should have resource field");
   assert.ok(this.resolvedResource?.resource.locator, "RXR should have locator");
   assert.ok(this.resolvedResource?.resource.manifest, "RXR should have manifest");
-  assert.ok(this.resolvedResource?.resource.content, "RXR should have content");
+  assert.ok(this.resolvedResource?.resource.archive, "RXR should have content");
 });
 
 Then(
@@ -85,7 +85,7 @@ Given(
 Given(
   "a linked {string} resource {string}",
   async function (this: ResolveWorld, typeName: string, locator: string) {
-    const { createRXM, createRXC, parseRXL } = await import("resourcexjs");
+    const { createRXM, createRXA, parseRXL } = await import("resourcexjs");
 
     const rxl = parseRXL(locator);
     const manifest = createRXM({
@@ -99,7 +99,7 @@ Given(
     const rxr: RXR = {
       locator: rxl,
       manifest,
-      content: await createRXC({ content: `${typeName} content` }),
+      archive: await createRXA({ content: `${typeName} content` }),
     };
 
     await this.registry!.add(rxr);
@@ -125,7 +125,7 @@ When(
 When(
   "I link a {string} resource {string}",
   async function (this: ResolveWorld, typeName: string, locator: string) {
-    const { createRXM, createRXC, parseRXL } = await import("resourcexjs");
+    const { createRXM, createRXA, parseRXL } = await import("resourcexjs");
 
     const rxl = parseRXL(locator);
     const manifest = createRXM({
@@ -139,7 +139,7 @@ When(
     const rxr: RXR = {
       locator: rxl,
       manifest,
-      content: await createRXC({ content: `${typeName} content` }),
+      archive: await createRXA({ content: `${typeName} content` }),
     };
 
     await this.registry!.add(rxr);
@@ -150,7 +150,7 @@ When(
 When(
   "I try to link a resource with unsupported type {string}",
   async function (this: ResolveWorld, typeName: string) {
-    const { createRXM, createRXC, parseRXL } = await import("resourcexjs");
+    const { createRXM, createRXA, parseRXL } = await import("resourcexjs");
 
     const manifest = createRXM({
       domain: "localhost",
@@ -162,7 +162,7 @@ When(
     const rxr: RXR = {
       locator: parseRXL(manifest.toLocator()),
       manifest,
-      content: await createRXC({ content: "test content" }),
+      archive: await createRXA({ content: "test content" }),
     };
 
     try {
@@ -228,7 +228,7 @@ Given(
 Given(
   "a linked tool resource {string} that adds two numbers",
   async function (this: ResolveWorld, locator: string) {
-    const { createRXM, createRXC, parseRXL } = await import("resourcexjs");
+    const { createRXM, createRXA, parseRXL } = await import("resourcexjs");
 
     const rxl = parseRXL(locator);
     const manifest = createRXM({
@@ -242,7 +242,7 @@ Given(
     const rxr: RXR = {
       locator: rxl,
       manifest,
-      content: await createRXC({ content: "add function" }),
+      archive: await createRXA({ content: "add function" }),
     };
 
     await this.registry!.add(rxr);
@@ -298,7 +298,7 @@ Given(
 );
 
 Given("a linked tool resource {string}", async function (this: ResolveWorld, locator: string) {
-  const { createRXM, createRXC, parseRXL } = await import("resourcexjs");
+  const { createRXM, createRXA, parseRXL } = await import("resourcexjs");
 
   const rxl = parseRXL(locator);
   const manifest = createRXM({
@@ -312,7 +312,7 @@ Given("a linked tool resource {string}", async function (this: ResolveWorld, loc
   const rxr: RXR = {
     locator: rxl,
     manifest,
-    content: await createRXC({ content: "tool content" }),
+    archive: await createRXA({ content: "tool content" }),
   };
 
   await this.registry!.add(rxr);

@@ -21,8 +21,10 @@ import type { Registry } from "@resourcexjs/registry";
  */
 export interface RxrTransportRegistry {
   get(locator: string): Promise<{
-    content: {
-      files(): Promise<Map<string, Buffer>>;
+    archive: {
+      extract(): Promise<{
+        files(): Promise<Map<string, Buffer>>;
+      }>;
     };
   }>;
 }
@@ -55,7 +57,8 @@ export class RxrTransport implements TransportHandler {
 
     const registry = await this.getRegistry(domain);
     const rxr = await registry.get(rxl);
-    const files = await rxr.content.files();
+    const pkg = await rxr.archive.extract();
+    const files = await pkg.files();
     const file = files.get(internalPath);
 
     if (!file) {
@@ -83,7 +86,8 @@ export class RxrTransport implements TransportHandler {
       const { domain, rxl, internalPath } = this.parseLocation(location);
       const registry = await this.getRegistry(domain);
       const rxr = await registry.get(rxl);
-      const files = await rxr.content.files();
+      const pkg = await rxr.archive.extract();
+      const files = await pkg.files();
       return files.has(internalPath);
     } catch {
       return false;

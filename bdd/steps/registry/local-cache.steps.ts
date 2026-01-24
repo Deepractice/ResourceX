@@ -24,7 +24,7 @@ async function createResourceAt(
   manifest: { domain: string; path?: string; name: string; type?: string; version: string },
   content: string
 ) {
-  const { createRXC, createRXM, TypeHandlerChain } = await import("resourcexjs");
+  const { createRXA, createRXM, TypeHandlerChain } = await import("resourcexjs");
 
   let resourcePath: string;
   const resourceName = manifest.type ? `${manifest.name}.${manifest.type}` : manifest.name;
@@ -50,15 +50,15 @@ async function createResourceAt(
   await writeFile(manifestPath, JSON.stringify(rxm.toJSON(), null, 2), "utf-8");
 
   // Write content
-  const rxc = await createRXC({ content });
+  const rxa = await createRXA({ content });
   const typeHandler = TypeHandlerChain.create();
   const rxr: RXR = {
     locator: rxm.toLocator() as unknown as RXL,
     manifest: rxm,
-    content: rxc,
+    archive: rxa,
   };
   const serialized = await typeHandler.serialize(rxr);
-  const contentPath = join(resourcePath, "content.tar.gz");
+  const contentPath = join(resourcePath, "archive.tar.gz");
   await writeFile(contentPath, serialized);
 }
 
@@ -164,7 +164,7 @@ Given(
       }>;
     }
   ) {
-    const { createRXM, createRXC, parseRXL } = await import("resourcexjs");
+    const { createRXM, createRXA, parseRXL } = await import("resourcexjs");
     const rows = dataTable.hashes();
     const row = rows[0];
 
@@ -179,7 +179,7 @@ Given(
     const rxr: RXR = {
       locator: parseRXL(manifest.toLocator()),
       manifest,
-      content: await createRXC({ content: "test content" }),
+      archive: await createRXA({ content: "test content" }),
     };
 
     await this.registry!.add(rxr);

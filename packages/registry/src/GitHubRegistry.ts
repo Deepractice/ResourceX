@@ -302,7 +302,7 @@ export class GitHubRegistry implements Registry {
     const manifest = createRXM(manifestData);
 
     // Read content using ARP
-    const contentPath = join(resourcePath, "content.tar.gz");
+    const contentPath = join(resourcePath, "archive.tar.gz");
     const contentArl = this.arp.parse(this.toArpUrl(contentPath));
     const contentResource = await contentArl.resolve();
     const data = contentResource.content as Buffer;

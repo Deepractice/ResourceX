@@ -37,7 +37,7 @@ Given("a test registry directory", async function (this: MiddlewareWorld) {
 Given(
   "a local registry with a resource {string} and content {string}",
   async function (this: MiddlewareWorld, locator: string, content: string) {
-    const { createRegistry, createRXM, createRXC, parseRXL } = await import("resourcexjs");
+    const { createRegistry, createRXM, createRXA, parseRXL } = await import("resourcexjs");
 
     this.registry = createRegistry({ path: this.testDir });
 
@@ -50,12 +50,12 @@ Given(
       version: rxl.version ?? "1.0.0",
     });
 
-    const rxc = await createRXC({ content });
+    const rxa = await createRXA({ content });
 
     const rxr: RXR = {
       locator: rxl,
       manifest,
-      content: rxc,
+      archive: rxa,
     };
 
     await this.registry.add(rxr);
@@ -133,7 +133,8 @@ Then(
     assert.ok(!this.error, `Should not throw error: ${this.error?.message}`);
     assert.ok(this.rxr, "Should receive an RXR");
 
-    const content = await this.rxr.content.file("content");
+    const pkg = await this.rxr.archive.extract();
+    const content = await pkg.file("content");
     assert.equal(content.toString(), expectedContent);
   }
 );
