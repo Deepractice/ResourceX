@@ -6,10 +6,12 @@ import http from "isomorphic-git/http/node";
 import type {
   Registry,
   GitRegistryConfig,
+  UrlRegistryConfig,
   SearchOptions,
   PullOptions,
   PublishOptions,
 } from "./types.js";
+import { withDomainValidation } from "./middleware/DomainValidation.js";
 import type { RXR, RXL } from "@resourcexjs/core";
 import { parseRXL, createRXM } from "@resourcexjs/core";
 import { TypeHandlerChain } from "@resourcexjs/type";
@@ -38,6 +40,28 @@ function isLocalPath(url: string): boolean {
 }
 
 export class GitRegistry implements Registry {
+  /**
+   * Check if this handler can handle the given URL.
+   * Matches: git@... or *.git (SSH or git protocol)
+   */
+  static canHandle(url: string): boolean {
+    return url.startsWith("git@") || url.endsWith(".git");
+  }
+
+  /**
+   * Create a GitRegistry for the given URL config.
+   */
+  static create(config: UrlRegistryConfig): Registry {
+    const registry = new GitRegistry({
+      type: "git",
+      url: config.url,
+      ref: config.ref,
+      basePath: config.basePath,
+      domain: config.domain,
+    });
+    return config.domain ? withDomainValidation(registry, config.domain) : registry;
+  }
+
   private readonly url: string;
   private readonly ref: string;
   private readonly basePath: string;

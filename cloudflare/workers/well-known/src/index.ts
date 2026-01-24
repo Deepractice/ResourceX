@@ -4,7 +4,10 @@
 
 const WELL_KNOWN_RESOURCEX = {
   version: "1.0",
-  registries: ["git@github.com:Deepractice/Registry.git"],
+  registries: [
+    "https://github.com/Deepractice/Registry", // Primary: GitHub tarball (fast)
+    "git@github.com:Deepractice/Registry.git", // Fallback: git clone
+  ],
 };
 
 export default {

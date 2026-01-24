@@ -75,7 +75,12 @@ export type { LoadResourceConfig } from "@resourcexjs/loader";
 // ============================================
 // Registry
 // ============================================
-export type { Registry, RegistryConfig, DiscoveryResult } from "@resourcexjs/registry";
+export type {
+  Registry,
+  RegistryConfig,
+  UrlRegistryConfig,
+  DiscoveryResult,
+} from "@resourcexjs/registry";
 export { createRegistry, LocalRegistry, discoverRegistry } from "@resourcexjs/registry";
 
 // ============================================
