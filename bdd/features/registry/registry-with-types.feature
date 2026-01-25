@@ -43,17 +43,19 @@ Feature: Registry with Bundled Types
 
   @resolve
   Scenario: Resolve text resource with bundled type
-    Given a registry with builtin types
-    And a text resource "hello.text@1.0.0" with content "Hello World"
-    When I resolve "hello.text@1.0.0"
+    Given a clean test registry directory
+    And a registry with builtin types
+    And a resource "localhost/hello.text@1.0.0" with content "Hello World"
+    When I resolve "localhost/hello.text@1.0.0"
     Then the resolved resource should have execute function
     And executing should return "Hello World"
 
   @resolve
   Scenario: Resolve json resource with bundled type
-    Given a registry with builtin types
-    And a json resource "config.json@1.0.0" with content '{"key": "value"}'
-    When I resolve "config.json@1.0.0"
+    Given a clean test registry directory
+    And a registry with builtin types
+    And a resource "localhost/config.json@1.0.0" with content '{"key": "value"}'
+    When I resolve "localhost/config.json@1.0.0"
     Then the resolved resource should have execute function
     And executing should return object with key "key" and value "value"
 
@@ -66,24 +68,25 @@ Feature: Registry with Bundled Types
     Then executing should return "HELLO"
 
   @resolve
-  Scenario: Resolve unsupported type throws error
-    Given a registry with builtin types
-    And a resource "test.unknown@1.0.0" with content "test"
-    When I try to resolve "test.unknown@1.0.0"
-    Then it should throw an error containing "Unsupported type"
+  Scenario: Add unsupported type throws error
+    Given a clean test registry directory
+    And a registry with builtin types
+    When I try to add a resource "localhost/test.unknown@1.0.0" with content "test"
+    Then it should throw an error containing "Unsupported"
 
   # ============================================
   # type aliases (pending - need step implementation)
   # ============================================
 
-  @aliases @pending
+  @aliases
   Scenario: Resolve with type alias
-    Given a registry with builtin types
-    And a text resource "readme.txt@1.0.0" with content "README content"
-    When I resolve "readme.txt@1.0.0"
+    Given a clean test registry directory
+    And a registry with builtin types
+    And a resource "localhost/readme.txt@1.0.0" with content "README content"
+    When I resolve "localhost/readme.txt@1.0.0"
     Then executing should return "README content"
 
-  @aliases @pending
+  @aliases
   Scenario: Custom type with aliases
     Given a bundled type "prompt" with aliases "dp-prompt, deepractice-prompt"
     And a registry with the "prompt" type
@@ -95,7 +98,7 @@ Feature: Registry with Bundled Types
   # schema support (pending - issue 020)
   # ============================================
 
-  @schema @pending
+  @schema
   Scenario: Resolved resource includes schema
     Given a bundled type "tool" with schema:
       """
@@ -112,7 +115,7 @@ Feature: Registry with Bundled Types
     Then the resolved resource should have schema
     And the schema should have property "input"
 
-  @schema @pending
+  @schema
   Scenario: Execute with arguments
     Given a bundled type "tool" that echoes input argument
     And a registry with the "tool" type

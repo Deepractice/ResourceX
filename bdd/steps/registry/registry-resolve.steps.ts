@@ -375,3 +375,186 @@ Then(
     // The actual type support is verified by attempting to resolve resources
   }
 );
+
+// ============================================
+// Aliases and Schema steps
+// ============================================
+
+interface AliasSchemaWorld extends ResolveWorld {
+  customType: BundledType | null;
+}
+
+Given("a clean test registry directory", async function (this: AliasSchemaWorld) {
+  await mkdir(TEST_DIR, { recursive: true });
+});
+
+Given("a registry with builtin types", async function (this: AliasSchemaWorld) {
+  const { createRegistry } = await import("resourcexjs");
+  await mkdir(TEST_DIR, { recursive: true });
+  // TypeHandlerChain already includes builtin types by default
+  this.registry = createRegistry({ path: TEST_DIR });
+});
+
+Then("executing should return {string}", async function (this: AliasSchemaWorld, expected: string) {
+  const result = await this.resolvedResource!.execute();
+  assert.strictEqual(result, expected);
+});
+
+Then("the resolved resource should have execute function", function (this: AliasSchemaWorld) {
+  assert.ok(this.resolvedResource, "Should have resolved resource");
+  assert.ok(typeof this.resolvedResource?.execute === "function", "Should have execute function");
+});
+
+Given(
+  "a bundled type {string} with aliases {string}",
+  async function (this: AliasSchemaWorld, typeName: string, aliasesStr: string) {
+    const aliases = aliasesStr.split(",").map((s) => s.trim());
+    this.customType = {
+      name: typeName,
+      aliases,
+      description: `Custom ${typeName} type with aliases`,
+      code: `
+        ({
+          async resolve(rxr) {
+            const pkg = await rxr.archive.extract();
+            const buffer = await pkg.file("content");
+            return buffer.toString("utf-8");
+          }
+        })
+      `,
+      sandbox: "none" as const,
+    };
+  }
+);
+
+Given(
+  "a registry with the {string} type",
+  async function (this: AliasSchemaWorld, _typeName: string) {
+    const { createRegistry } = await import("resourcexjs");
+    await mkdir(TEST_DIR, { recursive: true });
+    this.registry = createRegistry({
+      path: TEST_DIR,
+      types: this.customType ? [this.customType] : [],
+    });
+  }
+);
+
+Given(
+  "a resource {string} with content {string}",
+  async function (this: AliasSchemaWorld, locator: string, content: string) {
+    const { createRXM, createRXA, parseRXL } = await import("resourcexjs");
+
+    const rxl = parseRXL(locator);
+    const manifest = createRXM({
+      domain: rxl.domain || "localhost",
+      path: rxl.path,
+      name: rxl.name,
+      type: rxl.type || "text",
+      version: rxl.version || "1.0.0",
+    });
+
+    const rxr: RXR = {
+      locator: rxl,
+      manifest,
+      archive: await createRXA({ content }),
+    };
+
+    await this.registry!.add(rxr);
+  }
+);
+
+Given(
+  "a bundled type {string} with schema:",
+  async function (this: AliasSchemaWorld, typeName: string, schemaJson: string) {
+    const schema = JSON.parse(schemaJson);
+    this.customType = {
+      name: typeName,
+      description: `Custom ${typeName} type with schema`,
+      schema,
+      code: `
+        ({
+          async resolve(rxr, args) {
+            const pkg = await rxr.archive.extract();
+            const buffer = await pkg.file("content");
+            return buffer.toString("utf-8");
+          }
+        })
+      `,
+      sandbox: "none" as const,
+    };
+  }
+);
+
+Given(
+  "a bundled type {string} that echoes input argument",
+  async function (this: AliasSchemaWorld, typeName: string) {
+    this.customType = {
+      name: typeName,
+      description: `Custom ${typeName} type that echoes input`,
+      schema: {
+        type: "object",
+        properties: {
+          input: { type: "string" },
+        },
+      },
+      code: `
+        ({
+          async resolve(rxr, args) {
+            return args?.input ?? "";
+          }
+        })
+      `,
+      sandbox: "none" as const,
+    };
+  }
+);
+
+Then("the resolved resource should have schema", function (this: AliasSchemaWorld) {
+  assert.ok(this.resolvedResource?.schema, "Resolved resource should have schema");
+});
+
+Then(
+  "the schema should have property {string}",
+  function (this: AliasSchemaWorld, propName: string) {
+    const schema = this.resolvedResource?.schema;
+    assert.ok(schema, "Schema should exist");
+    assert.ok(
+      (schema as { properties?: Record<string, unknown> }).properties?.[propName],
+      `Schema should have property "${propName}"`
+    );
+  }
+);
+
+When("I execute with argument {string}", async function (this: AliasSchemaWorld, argsJson: string) {
+  const args = JSON.parse(argsJson);
+  this.executeResult = await this.resolvedResource!.execute(args);
+});
+
+When(
+  "I try to add a resource {string} with content {string}",
+  async function (this: AliasSchemaWorld, locator: string, content: string) {
+    const { createRXM, createRXA, parseRXL } = await import("resourcexjs");
+
+    const rxl = parseRXL(locator);
+    const manifest = createRXM({
+      domain: rxl.domain || "localhost",
+      path: rxl.path,
+      name: rxl.name,
+      type: rxl.type || "text",
+      version: rxl.version || "1.0.0",
+    });
+
+    const rxr: RXR = {
+      locator: rxl,
+      manifest,
+      archive: await createRXA({ content }),
+    };
+
+    try {
+      await this.registry!.add(rxr);
+      this.error = null;
+    } catch (e) {
+      this.error = e as Error;
+    }
+  }
+);
