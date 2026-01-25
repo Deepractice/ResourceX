@@ -9,7 +9,7 @@ import type {
 import type { RXR, RXL, ManifestData } from "@resourcexjs/core";
 import { parseRXL, createRXM, createRXA } from "@resourcexjs/core";
 import { TypeHandlerChain } from "@resourcexjs/type";
-import type { ResourceType, ResolvedResource } from "@resourcexjs/type";
+import type { BundledType, ResolvedResource } from "@resourcexjs/type";
 import { RegistryError } from "./errors.js";
 
 /**
@@ -42,7 +42,7 @@ export class RemoteRegistry implements Registry {
     this.typeHandler = TypeHandlerChain.create();
   }
 
-  supportType(type: ResourceType): void {
+  supportType(type: BundledType): void {
     this.typeHandler.register(type);
   }
 

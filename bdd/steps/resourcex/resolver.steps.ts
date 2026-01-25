@@ -118,44 +118,33 @@ Given(
 Given(
   "a custom {string} type that accepts arguments",
   async function (this: ResolverWorld, typeName: string) {
-    const { textType } = await import("resourcexjs");
-
     // Register a custom type that accepts arguments
     const customType = {
       name: typeName,
       description: `Custom ${typeName} type`,
-      serializer: textType.serializer,
-      resolver: {
-        schema: {
-          type: "object" as const,
-          properties: {
-            a: { type: "number" as const },
-            b: { type: "number" as const },
-          },
-          required: ["a", "b"],
+      schema: {
+        type: "object",
+        properties: {
+          a: { type: "number" },
+          b: { type: "number" },
         },
-        async resolve(rxr: unknown) {
-          return {
-            resource: rxr,
-            schema: this.schema,
-            execute: async (args?: { a: number; b: number }) => {
-              const rxa = (
-                rxr as unknown as {
-                  archive: { extract: () => Promise<{ file: (name: string) => Promise<Buffer> }> };
-                }
-              ).archive;
-              const pkg = await rxa.extract();
-              const content = await pkg.file("content");
-              const code = content.toString("utf-8");
-              // Simple eval for "return args.a + args.b"
-              if (code === "return args.a + args.b" && args) {
-                return args.a + args.b;
-              }
-              return code;
-            },
-          };
-        },
+        required: ["a", "b"],
       },
+      code: `
+        ({
+          async resolve(rxr, args) {
+            const pkg = await rxr.archive.extract();
+            const content = await pkg.file("content");
+            const code = content.toString("utf-8");
+            // Simple eval for "return args.a + args.b"
+            if (code === "return args.a + args.b" && args) {
+              return args.a + args.b;
+            }
+            return code;
+          },
+        })
+      `,
+      sandbox: "none" as const,
     };
 
     try {
@@ -170,31 +159,19 @@ Given(
 Given(
   "a custom {string} type that accepts no arguments",
   async function (this: ResolverWorld, typeName: string) {
-    const { textType } = await import("resourcexjs");
-
     const customType = {
       name: typeName,
       description: `Custom ${typeName} type`,
-      serializer: textType.serializer,
-      resolver: {
-        schema: undefined,
-        async resolve(rxr: unknown) {
-          return {
-            resource: rxr,
-            schema: undefined,
-            execute: async () => {
-              const rxa = (
-                rxr as unknown as {
-                  archive: { extract: () => Promise<{ file: (name: string) => Promise<Buffer> }> };
-                }
-              ).archive;
-              const pkg = await rxa.extract();
-              const content = await pkg.file("content");
-              return content.toString("utf-8");
-            },
-          };
-        },
-      },
+      code: `
+        ({
+          async resolve(rxr) {
+            const pkg = await rxr.archive.extract();
+            const buffer = await pkg.file("content");
+            return buffer.toString("utf-8");
+          }
+        })
+      `,
+      sandbox: "none" as const,
     };
 
     try {
@@ -246,31 +223,19 @@ Given(
 Given(
   "a custom {string} type with async resolver",
   async function (this: ResolverWorld, typeName: string) {
-    const { textType } = await import("resourcexjs");
-
     const customType = {
       name: typeName,
       description: `Custom ${typeName} type with async resolver`,
-      serializer: textType.serializer,
-      resolver: {
-        schema: undefined,
-        async resolve(rxr: unknown) {
-          return {
-            resource: rxr,
-            schema: undefined,
-            execute: async () => {
-              const rxa = (
-                rxr as unknown as {
-                  archive: { extract: () => Promise<{ file: (name: string) => Promise<Buffer> }> };
-                }
-              ).archive;
-              const pkg = await rxa.extract();
-              const content = await pkg.file("content");
-              return content.toString("utf-8");
-            },
-          };
-        },
-      },
+      code: `
+        ({
+          async resolve(rxr) {
+            const pkg = await rxr.archive.extract();
+            const buffer = await pkg.file("content");
+            return buffer.toString("utf-8");
+          }
+        })
+      `,
+      sandbox: "none" as const,
     };
 
     try {
@@ -305,32 +270,22 @@ Given(
 Given(
   "a custom {string} type with sync resolver",
   async function (this: ResolverWorld, typeName: string) {
-    const { textType } = await import("resourcexjs");
-
     const customType = {
       name: typeName,
       description: `Custom ${typeName} type with sync resolver`,
-      serializer: textType.serializer,
-      resolver: {
-        schema: undefined,
-        async resolve(rxr: unknown) {
-          // Pre-load content during resolve
-          const rxa = (
-            rxr as unknown as {
-              archive: { extract: () => Promise<{ file: (name: string) => Promise<Buffer> }> };
-            }
-          ).archive;
-          const pkg = await rxa.extract();
-          const content = await pkg.file("content");
-          const text = content.toString("utf-8");
-          // Return sync execute function
-          return {
-            resource: rxr,
-            schema: undefined,
-            execute: () => text,
-          };
-        },
-      },
+      code: `
+        ({
+          async resolve(rxr) {
+            // Pre-load content during resolve
+            const pkg = await rxr.archive.extract();
+            const content = await pkg.file("content");
+            const text = content.toString("utf-8");
+            // Return the text directly (sync result)
+            return text;
+          }
+        })
+      `,
+      sandbox: "none" as const,
     };
 
     try {
@@ -457,9 +412,9 @@ Then(
 
 Then(
   "calling the function should return {string} directly",
-  function (this: ResolverWorld, expected: string) {
-    const result = this.resolved!.execute();
-    // Sync function returns value directly (not a Promise)
+  async function (this: ResolverWorld, expected: string) {
+    // Note: In BundledType architecture, execute always returns Promise
+    const result = await this.resolved!.execute();
     assert.strictEqual(result, expected);
   }
 );

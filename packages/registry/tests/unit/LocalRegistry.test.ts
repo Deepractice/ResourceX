@@ -175,13 +175,20 @@ describe("LocalRegistry", () => {
     it("supports dynamically registered type", async () => {
       const registry = createRegistry({ path: TEST_DIR });
 
-      // Define a custom type using text serializer
-      const { textType } = await import("@resourcexjs/type");
+      // Define a custom bundled type
       const customType = {
         name: "prompt",
         description: "AI prompt type",
-        serializer: textType.serializer,
-        resolver: textType.resolver,
+        code: `
+          ({
+            async resolve(rxr) {
+              const pkg = await rxr.archive.extract();
+              const buffer = await pkg.file("content");
+              return buffer.toString("utf-8");
+            }
+          })
+        `,
+        sandbox: "none" as const,
       };
 
       registry.supportType(customType);

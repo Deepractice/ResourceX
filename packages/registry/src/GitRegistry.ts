@@ -15,7 +15,7 @@ import { withDomainValidation } from "./middleware/DomainValidation.js";
 import type { RXR, RXL } from "@resourcexjs/core";
 import { parseRXL, createRXM, createRXA } from "@resourcexjs/core";
 import { TypeHandlerChain } from "@resourcexjs/type";
-import type { ResourceType, ResolvedResource } from "@resourcexjs/type";
+import type { BundledType, ResolvedResource } from "@resourcexjs/type";
 import { createARP, type ARP } from "@resourcexjs/arp";
 import { RegistryError } from "./errors.js";
 
@@ -99,7 +99,7 @@ export class GitRegistry implements Registry {
     return join(DEFAULT_GIT_CACHE, dirName);
   }
 
-  supportType(type: ResourceType): void {
+  supportType(type: BundledType): void {
     this.typeHandler.register(type);
   }
 

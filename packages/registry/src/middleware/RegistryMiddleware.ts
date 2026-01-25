@@ -7,7 +7,7 @@
  */
 
 import type { RXR, RXL } from "@resourcexjs/core";
-import type { ResourceType, ResolvedResource } from "@resourcexjs/type";
+import type { BundledType, ResolvedResource } from "@resourcexjs/type";
 import type { Registry, SearchOptions, PullOptions, PublishOptions } from "../types.js";
 
 /**
@@ -18,7 +18,7 @@ import type { Registry, SearchOptions, PullOptions, PublishOptions } from "../ty
 export abstract class RegistryMiddleware implements Registry {
   constructor(protected readonly inner: Registry) {}
 
-  supportType(type: ResourceType): void {
+  supportType(type: BundledType): void {
     this.inner.supportType(type);
   }
 

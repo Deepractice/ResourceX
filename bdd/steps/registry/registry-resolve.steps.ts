@@ -2,7 +2,7 @@ import { Given, When, Then } from "@cucumber/cucumber";
 import { strict as assert } from "node:assert";
 import { join } from "node:path";
 import { mkdir } from "node:fs/promises";
-import type { Registry, RXR, ResolvedResource, ResourceType } from "resourcexjs";
+import type { Registry, RXR, ResolvedResource, BundledType } from "resourcexjs";
 
 const TEST_DIR = join(process.cwd(), ".test-bdd-registry");
 
@@ -68,14 +68,22 @@ Given(
     this: ResolveWorld,
     dataTable: { hashes: () => Array<{ name: string; description: string }> }
   ) {
-    const { createRegistry, textType } = await import("resourcexjs");
+    const { createRegistry } = await import("resourcexjs");
     await mkdir(TEST_DIR, { recursive: true });
 
-    const types: ResourceType[] = dataTable.hashes().map((row) => ({
+    const types: BundledType[] = dataTable.hashes().map((row) => ({
       name: row.name,
       description: row.description,
-      serializer: textType.serializer,
-      resolver: textType.resolver,
+      code: `
+        ({
+          async resolve(rxr) {
+            const pkg = await rxr.archive.extract();
+            const buffer = await pkg.file("content");
+            return buffer.toString("utf-8");
+          }
+        })
+      `,
+      sandbox: "none" as const,
     }));
 
     this.registry = createRegistry({ path: TEST_DIR, types });
@@ -109,13 +117,19 @@ Given(
 When(
   "I call supportType with a {string} type",
   async function (this: ResolveWorld, typeName: string) {
-    const { textType } = await import("resourcexjs");
-
-    const customType: ResourceType = {
+    const customType: BundledType = {
       name: typeName,
       description: `Custom ${typeName} type`,
-      serializer: textType.serializer,
-      resolver: textType.resolver,
+      code: `
+        ({
+          async resolve(rxr) {
+            const pkg = await rxr.archive.extract();
+            const buffer = await pkg.file("content");
+            return buffer.toString("utf-8");
+          }
+        })
+      `,
+      sandbox: "none" as const,
     };
 
     this.registry!.supportType(customType);
@@ -190,35 +204,31 @@ Then("it should throw a ResourceTypeError", async function (this: ResolveWorld) 
 Given(
   "a registry with a {string} type that accepts arguments",
   async function (this: ResolveWorld, typeName: string) {
-    const { createRegistry, textType } = await import("resourcexjs");
+    const { createRegistry } = await import("resourcexjs");
     await mkdir(TEST_DIR, { recursive: true });
 
-    const toolType: ResourceType = {
+    const toolType: BundledType = {
       name: typeName,
       description: `Custom ${typeName} type with args`,
-      serializer: textType.serializer,
-      resolver: {
-        schema: {
-          type: "object",
-          properties: {
-            a: { type: "number" },
-            b: { type: "number" },
-          },
-          required: ["a", "b"],
+      schema: {
+        type: "object",
+        properties: {
+          a: { type: "number" },
+          b: { type: "number" },
         },
-        async resolve(rxr: RXR) {
-          return {
-            resource: rxr,
-            schema: this.schema,
-            execute: async (args?: { a: number; b: number }) => {
-              if (args) {
-                return args.a + args.b;
-              }
-              return 0;
-            },
-          };
-        },
+        required: ["a", "b"],
       },
+      code: `
+        ({
+          async resolve(rxr, args) {
+            if (args) {
+              return args.a + args.b;
+            }
+            return 0;
+          }
+        })
+      `,
+      sandbox: "none" as const,
     };
 
     this.registry = createRegistry({ path: TEST_DIR, types: [toolType] });
@@ -269,28 +279,26 @@ Then("the result should be {string}", function (this: ResolveWorld, expected: st
 Given(
   "a registry with a {string} type that has schema",
   async function (this: ResolveWorld, typeName: string) {
-    const { createRegistry, textType } = await import("resourcexjs");
+    const { createRegistry } = await import("resourcexjs");
     await mkdir(TEST_DIR, { recursive: true });
 
-    const toolType: ResourceType = {
+    const toolType: BundledType = {
       name: typeName,
       description: `Custom ${typeName} type with schema`,
-      serializer: textType.serializer,
-      resolver: {
-        schema: {
-          type: "object",
-          properties: {
-            input: { type: "string" },
-          },
-        },
-        async resolve(rxr: RXR) {
-          return {
-            resource: rxr,
-            schema: this.schema,
-            execute: async () => "result",
-          };
+      schema: {
+        type: "object",
+        properties: {
+          input: { type: "string" },
         },
       },
+      code: `
+        ({
+          async resolve(rxr) {
+            return () => "result";
+          }
+        })
+      `,
+      sandbox: "none" as const,
     };
 
     this.registry = createRegistry({ path: TEST_DIR, types: [toolType] });
@@ -322,18 +330,26 @@ Given("a linked tool resource {string}", async function (this: ResolveWorld, loc
 Given(
   "a registry {string} with custom type {string}",
   async function (this: ResolveWorld, registryName: string, typeName: string) {
-    const { createRegistry, textType } = await import("resourcexjs");
+    const { createRegistry } = await import("resourcexjs");
     await mkdir(TEST_DIR, { recursive: true });
 
     if (!this.registries) {
       this.registries = new Map();
     }
 
-    const customType: ResourceType = {
+    const customType: BundledType = {
       name: typeName,
       description: `Custom ${typeName} type`,
-      serializer: textType.serializer,
-      resolver: textType.resolver,
+      code: `
+        ({
+          async resolve(rxr) {
+            const pkg = await rxr.archive.extract();
+            const buffer = await pkg.file("content");
+            return buffer.toString("utf-8");
+          }
+        })
+      `,
+      sandbox: "none" as const,
     };
 
     const registry = createRegistry({

@@ -1,6 +1,47 @@
 import type { RXR } from "@resourcexjs/core";
 
 /**
+ * Sandbox isolation level for resolver execution.
+ */
+export type SandboxType = "none" | "isolated" | "container";
+
+/**
+ * BundledType - Pre-bundled resource type ready for execution.
+ * Contains bundled code string instead of closure.
+ */
+export interface BundledType {
+  /**
+   * Type name (e.g., "text", "json", "prompt").
+   */
+  name: string;
+
+  /**
+   * Alternative names for this type.
+   */
+  aliases?: string[];
+
+  /**
+   * Human-readable description.
+   */
+  description: string;
+
+  /**
+   * JSON Schema for resolver arguments.
+   */
+  schema?: JSONSchema;
+
+  /**
+   * Bundled resolver code (executable in sandbox).
+   */
+  code: string;
+
+  /**
+   * Sandbox isolation level. Defaults to "none".
+   */
+  sandbox?: SandboxType;
+}
+
+/**
  * JSON Schema property definition.
  */
 export interface JSONSchemaProperty {

@@ -77,7 +77,7 @@ Then("calling execute should return a Buffer", async function (this: SchemaWorld
 Given(
   "a custom {string} type with schema:",
   async function (this: SchemaWorld, typeName: string, dataTable: DataTable) {
-    const { TypeHandlerChain, textType } = await import("resourcexjs");
+    const { TypeHandlerChain } = await import("resourcexjs");
 
     if (!this.typeChain) {
       this.typeChain = TypeHandlerChain.create() as TypeHandlerChainType;
@@ -110,23 +110,19 @@ Given(
     const customType = {
       name: typeName,
       description: `Custom ${typeName} type with schema`,
-      serializer: textType.serializer,
-      resolver: {
-        schema,
-        async resolve(rxr: unknown) {
-          return {
-            resource: rxr,
-            schema,
-            execute: async (args?: Record<string, unknown>) => {
-              // For calculator type, return sum
-              if (args && "a" in args && "b" in args) {
-                return (args.a as number) + (args.b as number);
-              }
-              return args;
-            },
-          };
-        },
-      },
+      schema,
+      code: `
+        ({
+          async resolve(rxr, args) {
+            // For calculator type, return sum
+            if (args && "a" in args && "b" in args) {
+              return args.a + args.b;
+            }
+            return args;
+          }
+        })
+      `,
+      sandbox: "none" as const,
     };
 
     try {
@@ -223,7 +219,7 @@ Then("the result should be {int}", function (this: SchemaWorld, expected: number
 Given(
   "a custom {string} type without schema",
   async function (this: SchemaWorld, typeName: string) {
-    const { TypeHandlerChain, textType } = await import("resourcexjs");
+    const { TypeHandlerChain } = await import("resourcexjs");
 
     if (!this.typeChain) {
       this.typeChain = TypeHandlerChain.create() as TypeHandlerChainType;
@@ -232,26 +228,17 @@ Given(
     const customType = {
       name: typeName,
       description: `Custom ${typeName} type without schema`,
-      serializer: textType.serializer,
-      resolver: {
-        schema: undefined,
-        async resolve(rxr: unknown) {
-          return {
-            resource: rxr,
-            schema: undefined,
-            execute: async () => {
-              const rxa = (
-                rxr as unknown as {
-                  archive: { extract: () => Promise<{ file: (name: string) => Promise<Buffer> }> };
-                }
-              ).archive;
-              const pkg = await rxa.extract();
-              const content = await pkg.file("content");
-              return content.toString("utf-8");
-            },
-          };
-        },
-      },
+      schema: undefined,
+      code: `
+        ({
+          async resolve(rxr) {
+            const pkg = await rxr.archive.extract();
+            const buffer = await pkg.file("content");
+            return buffer.toString("utf-8");
+          }
+        })
+      `,
+      sandbox: "none" as const,
     };
 
     try {
@@ -310,7 +297,7 @@ Then("registering this type should fail with type error", async function (this: 
 Given(
   "a custom {string} type with detailed schema:",
   async function (this: SchemaWorld, typeName: string, dataTable: DataTable) {
-    const { TypeHandlerChain, textType } = await import("resourcexjs");
+    const { TypeHandlerChain } = await import("resourcexjs");
 
     if (!this.typeChain) {
       this.typeChain = TypeHandlerChain.create() as TypeHandlerChainType;
@@ -346,17 +333,15 @@ Given(
     const customType = {
       name: typeName,
       description: `Custom ${typeName} type with detailed schema`,
-      serializer: textType.serializer,
-      resolver: {
-        schema,
-        async resolve(rxr: unknown) {
-          return {
-            resource: rxr,
-            schema,
-            execute: async (args?: Record<string, unknown>) => args,
-          };
-        },
-      },
+      schema,
+      code: `
+        ({
+          async resolve(rxr, args) {
+            return args;
+          }
+        })
+      `,
+      sandbox: "none" as const,
     };
 
     try {

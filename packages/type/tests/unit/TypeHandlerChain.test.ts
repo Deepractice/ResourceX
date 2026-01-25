@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from "bun:test";
-import { TypeHandlerChain, ResourceTypeError, textType } from "../../src/index.js";
-import type { ResourceType } from "../../src/types.js";
+import { TypeHandlerChain, ResourceTypeError } from "../../src/index.js";
+import type { BundledType } from "../../src/types.js";
 import { createRXM, createRXA, parseRXL, type RXR } from "@resourcexjs/core";
 
 describe("TypeHandlerChain", () => {
@@ -22,10 +22,19 @@ describe("TypeHandlerChain", () => {
       const instance1 = TypeHandlerChain.create();
       const instance2 = TypeHandlerChain.create();
 
-      const customType: ResourceType = {
+      const customType: BundledType = {
         name: "custom",
         description: "Custom type",
-        resolver: textType.resolver,
+        code: `
+          ({
+            async resolve(rxr) {
+              const pkg = await rxr.archive.extract();
+              const buffer = await pkg.file("content");
+              return buffer.toString("utf-8");
+            }
+          })
+        `,
+        sandbox: "none",
       };
 
       instance1.register(customType);
@@ -53,10 +62,19 @@ describe("TypeHandlerChain", () => {
 
   describe("register", () => {
     it("registers an extension type", () => {
-      const customType: ResourceType = {
+      const customType: BundledType = {
         name: "custom",
         description: "Custom type",
-        resolver: textType.resolver,
+        code: `
+          ({
+            async resolve(rxr) {
+              const pkg = await rxr.archive.extract();
+              const buffer = await pkg.file("content");
+              return buffer.toString("utf-8");
+            }
+          })
+        `,
+        sandbox: "none",
       };
 
       chain.register(customType);
@@ -65,11 +83,20 @@ describe("TypeHandlerChain", () => {
     });
 
     it("registers extension type aliases", () => {
-      const customType: ResourceType = {
+      const customType: BundledType = {
         name: "prompt",
         aliases: ["deepractice-prompt"],
         description: "Prompt type",
-        resolver: textType.resolver,
+        code: `
+          ({
+            async resolve(rxr) {
+              const pkg = await rxr.archive.extract();
+              const buffer = await pkg.file("content");
+              return buffer.toString("utf-8");
+            }
+          })
+        `,
+        sandbox: "none",
       };
 
       chain.register(customType);
@@ -79,10 +106,19 @@ describe("TypeHandlerChain", () => {
     });
 
     it("throws error when registering duplicate type name", () => {
-      const customType: ResourceType = {
+      const customType: BundledType = {
         name: "text", // conflicts with builtin
         description: "Duplicate",
-        resolver: textType.resolver,
+        code: `
+          ({
+            async resolve(rxr) {
+              const pkg = await rxr.archive.extract();
+              const buffer = await pkg.file("content");
+              return buffer.toString("utf-8");
+            }
+          })
+        `,
+        sandbox: "none",
       };
 
       expect(() => chain.register(customType)).toThrow(ResourceTypeError);
@@ -184,10 +220,19 @@ describe("TypeHandlerChain", () => {
 
   describe("clearExtensions", () => {
     it("clears extension types but keeps builtins", () => {
-      const customType: ResourceType = {
+      const customType: BundledType = {
         name: "custom",
         description: "Custom type",
-        resolver: textType.resolver,
+        code: `
+          ({
+            async resolve(rxr) {
+              const pkg = await rxr.archive.extract();
+              const buffer = await pkg.file("content");
+              return buffer.toString("utf-8");
+            }
+          })
+        `,
+        sandbox: "none",
       };
 
       chain.register(customType);

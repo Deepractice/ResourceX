@@ -9,7 +9,12 @@ export type {
   ResolvedResource,
   JSONSchema,
   JSONSchemaProperty,
+  BundledType,
+  SandboxType,
 } from "./types.js";
+
+// Bundler
+export { bundleResourceType } from "./bundler.js";
 
 // Errors
 export { ResourceTypeError } from "./errors.js";

@@ -1,19 +1,19 @@
-import type { ResourceType, ResolvedResource } from "./types.js";
+import type { BundledType, ResolvedResource } from "./types.js";
 import type { RXR } from "@resourcexjs/core";
 import { ResourceTypeError } from "./errors.js";
 import { builtinTypes } from "./builtinTypes.js";
 
 /**
  * TypeHandlerChain - Manages resource type registration and resolution.
- * Use TypeHandlerChain.create() to create a new instance.
+ * Uses BundledType for sandbox-compatible execution.
  */
 export class TypeHandlerChain {
-  private handlers: Map<string, ResourceType> = new Map();
+  private handlers: Map<string, BundledType> = new Map();
 
   private constructor() {
     // Auto-register builtin types
     for (const type of builtinTypes) {
-      this.registerBuiltin(type);
+      this.registerInternal(type);
     }
   }
 
@@ -26,9 +26,9 @@ export class TypeHandlerChain {
   }
 
   /**
-   * Register a builtin type (private, called during initialization).
+   * Internal registration (no duplicate check for builtins).
    */
-  private registerBuiltin(type: ResourceType): void {
+  private registerInternal(type: BundledType): void {
     this.handlers.set(type.name, type);
     if (type.aliases) {
       for (const alias of type.aliases) {
@@ -41,7 +41,7 @@ export class TypeHandlerChain {
    * Register an extension type (public, for user-defined types).
    * @throws ResourceTypeError if type is already registered
    */
-  register(type: ResourceType): void {
+  register(type: BundledType): void {
     if (this.handlers.has(type.name)) {
       throw new ResourceTypeError(`Type '${type.name}' is already registered`);
     }
@@ -66,7 +66,7 @@ export class TypeHandlerChain {
   /**
    * Get handler for a type.
    */
-  getHandler(typeName: string): ResourceType | undefined {
+  getHandler(typeName: string): BundledType | undefined {
     return this.handlers.get(typeName);
   }
 
@@ -78,8 +78,8 @@ export class TypeHandlerChain {
   }
 
   /**
-   * Resolve RXR content into structured result object using the appropriate type handler.
-   * Returns an object with execute function and optional schema.
+   * Resolve RXR content into structured result object.
+   * Returns execute function that runs bundled code when called.
    * @throws ResourceTypeError if type is not supported
    */
   async resolve<TArgs = void, TResult = unknown>(
@@ -92,7 +92,34 @@ export class TypeHandlerChain {
       throw new ResourceTypeError(`Unsupported resource type: ${typeName}`);
     }
 
-    return handler.resolver.resolve(rxr) as Promise<ResolvedResource<TArgs, TResult>>;
+    // Return execute function that runs bundled code on each call
+    // This allows passing arguments and supports both sync and async results
+    return {
+      resource: rxr,
+      schema: handler.schema,
+      execute: async (args?: TArgs) => {
+        return this.executeCode<TResult>(handler.code, rxr, args);
+      },
+    } as ResolvedResource<TArgs, TResult>;
+  }
+
+  /**
+   * Execute bundled code with RXR context.
+   * Currently uses eval for sandbox: "none".
+   * Code format: expression that returns { resolve(rxr, args?) } object.
+   */
+  private async executeCode<TResult>(code: string, rxr: RXR, args?: unknown): Promise<TResult> {
+    // Create async function from bundled code
+    // Code is an expression like: ({ async resolve(rxr, args) { ... } })
+    const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+
+    const wrappedCode = `
+      const resolver = ${code};
+      return resolver.resolve(rxr, args);
+    `;
+
+    const fn = new AsyncFunction("rxr", "args", wrappedCode);
+    return fn(rxr, args);
   }
 
   /**
@@ -102,7 +129,7 @@ export class TypeHandlerChain {
   clearExtensions(): void {
     this.handlers.clear();
     for (const type of builtinTypes) {
-      this.registerBuiltin(type);
+      this.registerInternal(type);
     }
   }
 }

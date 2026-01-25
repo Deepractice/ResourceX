@@ -11,7 +11,7 @@ import type {
 import type { RXR, RXL } from "@resourcexjs/core";
 import { parseRXL, createRXM, createRXA } from "@resourcexjs/core";
 import { TypeHandlerChain, ResourceTypeError } from "@resourcexjs/type";
-import type { ResourceType, ResolvedResource } from "@resourcexjs/type";
+import type { BundledType, ResolvedResource } from "@resourcexjs/type";
 import { createARP, type ARP } from "@resourcexjs/arp";
 import { loadResource } from "@resourcexjs/loader";
 import { RegistryError } from "./errors.js";
@@ -40,7 +40,7 @@ export class LocalRegistry implements Registry {
     }
   }
 
-  supportType(type: ResourceType): void {
+  supportType(type: BundledType): void {
     this.typeHandler.register(type);
   }
 

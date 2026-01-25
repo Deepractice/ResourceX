@@ -1,90 +1,78 @@
-import type { ResourceType, ResourceResolver, ResolvedResource } from "./types.js";
-import type { RXR } from "@resourcexjs/core";
+import type { BundledType } from "./types.js";
 
 /**
- * Text resolver - returns structured result with execute function (lazy)
+ * Text type - bundled code for sandbox execution.
+ * Code format: returns an object with resolve function.
  */
-const textResolver: ResourceResolver<void, string> = {
-  schema: undefined,
-  async resolve(rxr: RXR): Promise<ResolvedResource<void, string>> {
-    return {
-      resource: rxr,
-      schema: undefined,
-      execute: async () => {
-        const pkg = await rxr.archive.extract();
-        const buffer = await pkg.file("content");
-        return buffer.toString("utf-8");
-      },
-    };
-  },
-};
+const textCode = `
+({
+  async resolve(rxr) {
+    const pkg = await rxr.archive.extract();
+    const buffer = await pkg.file("content");
+    return buffer.toString("utf-8");
+  }
+})
+`;
 
 /**
- * Text resource type
+ * Text resource type (pre-bundled)
  */
-export const textType: ResourceType<void, string> = {
+export const textType: BundledType = {
   name: "text",
   aliases: ["txt", "plaintext"],
   description: "Plain text content",
-  resolver: textResolver,
+  code: textCode,
+  sandbox: "none",
 };
 
 /**
- * JSON resolver - returns structured result with execute function (lazy)
+ * JSON type - bundled code for sandbox execution.
  */
-const jsonResolver: ResourceResolver<void, unknown> = {
-  schema: undefined,
-  async resolve(rxr: RXR): Promise<ResolvedResource<void, unknown>> {
-    return {
-      resource: rxr,
-      schema: undefined,
-      execute: async () => {
-        const pkg = await rxr.archive.extract();
-        const buffer = await pkg.file("content");
-        return JSON.parse(buffer.toString("utf-8"));
-      },
-    };
-  },
-};
+const jsonCode = `
+({
+  async resolve(rxr) {
+    const pkg = await rxr.archive.extract();
+    const buffer = await pkg.file("content");
+    return JSON.parse(buffer.toString("utf-8"));
+  }
+})
+`;
 
 /**
- * JSON resource type
+ * JSON resource type (pre-bundled)
  */
-export const jsonType: ResourceType<void, unknown> = {
+export const jsonType: BundledType = {
   name: "json",
   aliases: ["config", "manifest"],
   description: "JSON content",
-  resolver: jsonResolver,
+  code: jsonCode,
+  sandbox: "none",
 };
 
 /**
- * Binary resolver - returns structured result with execute function (lazy)
+ * Binary type - bundled code for sandbox execution.
  */
-const binaryResolver: ResourceResolver<void, Buffer> = {
-  schema: undefined,
-  async resolve(rxr: RXR): Promise<ResolvedResource<void, Buffer>> {
-    return {
-      resource: rxr,
-      schema: undefined,
-      execute: async () => {
-        const pkg = await rxr.archive.extract();
-        return pkg.file("content");
-      },
-    };
-  },
-};
+const binaryCode = `
+({
+  async resolve(rxr) {
+    const pkg = await rxr.archive.extract();
+    return pkg.file("content");
+  }
+})
+`;
 
 /**
- * Binary resource type
+ * Binary resource type (pre-bundled)
  */
-export const binaryType: ResourceType<void, Buffer> = {
+export const binaryType: BundledType = {
   name: "binary",
   aliases: ["bin", "blob", "raw"],
   description: "Binary content",
-  resolver: binaryResolver,
+  code: binaryCode,
+  sandbox: "none",
 };
 
 /**
- * All built-in types
+ * All built-in types (pre-bundled)
  */
-export const builtinTypes: ResourceType<void, unknown>[] = [textType, jsonType, binaryType];
+export const builtinTypes: BundledType[] = [textType, jsonType, binaryType];

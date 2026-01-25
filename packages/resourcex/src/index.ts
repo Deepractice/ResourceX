@@ -56,14 +56,15 @@ export type { RXR } from "@resourcexjs/core";
 // ============================================
 export type {
   ResourceType,
-  ResourceSerializer,
   ResourceResolver,
   ResolvedResource,
   JSONSchema,
+  BundledType,
+  SandboxType,
 } from "@resourcexjs/type";
 
 export { textType, jsonType, binaryType, builtinTypes } from "@resourcexjs/type";
-export { TypeHandlerChain } from "@resourcexjs/type";
+export { TypeHandlerChain, bundleResourceType } from "@resourcexjs/type";
 
 // ============================================
 // Resource Loading

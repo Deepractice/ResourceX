@@ -1,5 +1,5 @@
 import type { RXR, RXL } from "@resourcexjs/core";
-import type { ResourceType, ResolvedResource } from "@resourcexjs/type";
+import type { BundledType, ResolvedResource } from "@resourcexjs/type";
 
 /**
  * Local registry configuration.
@@ -12,10 +12,10 @@ export interface LocalRegistryConfig {
   path?: string;
 
   /**
-   * Supported resource types.
+   * Supported resource types (bundled).
    * If not provided, defaults to built-in types (text, json, binary).
    */
-  types?: ResourceType[];
+  types?: BundledType[];
 }
 
 /**
@@ -222,9 +222,9 @@ export interface PublishOptions {
 export interface Registry {
   /**
    * Add support for a custom resource type.
-   * @param type - The resource type to support
+   * @param type - The bundled resource type to support
    */
-  supportType(type: ResourceType): void;
+  supportType(type: BundledType): void;
 
   /**
    * Link a development directory to local registry.
