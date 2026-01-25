@@ -7,7 +7,7 @@
 
 import type { RXR } from "@resourcexjs/core";
 import type { ResolvedResource } from "@resourcexjs/type";
-import type { Registry } from "../types.js";
+import type { Registry } from "../Registry.js";
 import { RegistryMiddleware } from "./RegistryMiddleware.js";
 import { RegistryError } from "../errors.js";
 

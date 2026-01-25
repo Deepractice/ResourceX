@@ -5,14 +5,14 @@
  *
  * This is a read-only transport - set and delete operations are not supported.
  *
- * Registry selection:
- * - localhost domain: Uses LocalRegistry (filesystem)
- * - Other domains: Uses RemoteRegistry with well-known discovery
+ * The transport uses a single Registry instance that handles:
+ * - localhost: Local storage only
+ * - Other domains: Local cache -> [Mirror] -> Source (well-known)
  */
 
 import { TransportError } from "@resourcexjs/arp";
 import type { TransportHandler, TransportResult, TransportParams } from "@resourcexjs/arp";
-import { createRegistry, discoverRegistry } from "@resourcexjs/registry";
+import { createRegistry } from "@resourcexjs/registry";
 import type { Registry } from "@resourcexjs/registry";
 
 /**
@@ -29,8 +29,8 @@ export interface RxrTransportRegistry {
   }>;
 }
 
-// Cache for discovered registry endpoints
-const registryCache = new Map<string, Registry>();
+// Singleton registry instance
+let defaultRegistry: Registry | null = null;
 
 /**
  * RXR Transport - Access files inside a resource.
@@ -39,10 +39,6 @@ const registryCache = new Map<string, Registry>();
  * Example: deepractice.ai/nuwa.role@1.0.0/thought/first-principles.md
  *
  * The RXL portion ends at @version, and the internal path follows.
- *
- * When no registry is provided, automatically creates one based on domain:
- * - localhost: LocalRegistry
- * - Other domains: RemoteRegistry with well-known discovery
  */
 export class RxrTransport implements TransportHandler {
   readonly name = "rxr";
@@ -53,9 +49,9 @@ export class RxrTransport implements TransportHandler {
    * Get file content from inside a resource.
    */
   async get(location: string, _params?: TransportParams): Promise<TransportResult> {
-    const { domain, rxl, internalPath } = this.parseLocation(location);
+    const { rxl, internalPath } = this.parseLocation(location);
 
-    const registry = await this.getRegistry(domain);
+    const registry = this.getRegistry();
     const rxr = await registry.get(rxl);
     const pkg = await rxr.archive.extract();
     const files = await pkg.files();
@@ -83,8 +79,8 @@ export class RxrTransport implements TransportHandler {
    */
   async exists(location: string): Promise<boolean> {
     try {
-      const { domain, rxl, internalPath } = this.parseLocation(location);
-      const registry = await this.getRegistry(domain);
+      const { rxl, internalPath } = this.parseLocation(location);
+      const registry = this.getRegistry();
       const rxr = await registry.get(rxl);
       const pkg = await rxr.archive.extract();
       const files = await pkg.files();
@@ -102,71 +98,26 @@ export class RxrTransport implements TransportHandler {
   }
 
   /**
-   * Get or create a registry for the given domain.
-   * - If a registry was provided in constructor, use it
-   * - localhost: create LocalRegistry
-   * - Other domains: discover endpoint via well-known and create appropriate registry
+   * Get the registry instance.
+   * Uses injected registry if provided, otherwise creates/returns singleton.
    */
-  private async getRegistry(domain: string): Promise<RxrTransportRegistry> {
-    // Use injected registry if provided
+  private getRegistry(): RxrTransportRegistry {
     if (this.registry) {
       return this.registry;
     }
 
-    // Check cache first
-    if (registryCache.has(domain)) {
-      return registryCache.get(domain)!;
+    if (!defaultRegistry) {
+      defaultRegistry = createRegistry();
     }
-
-    let registry: Registry;
-
-    if (domain === "localhost") {
-      // Use local filesystem registry
-      registry = createRegistry();
-    } else {
-      // Discover remote registry endpoint via well-known
-      try {
-        const discovery = await discoverRegistry(domain);
-        const registryUrl = discovery.registries[0];
-
-        // Determine registry type based on URL format
-        if (this.isGitUrl(registryUrl)) {
-          // Git registry (SSH or HTTPS git URL)
-          registry = createRegistry({
-            type: "git",
-            url: registryUrl,
-            domain: discovery.domain, // Bind domain for security
-          });
-        } else {
-          // HTTP registry
-          registry = createRegistry({ endpoint: registryUrl });
-        }
-      } catch (error) {
-        throw new TransportError(
-          `Failed to discover registry for domain ${domain}: ${(error as Error).message}`,
-          this.name
-        );
-      }
-    }
-
-    // Cache the registry
-    registryCache.set(domain, registry);
-    return registry;
+    return defaultRegistry;
   }
 
   /**
-   * Check if URL is a git repository URL.
-   */
-  private isGitUrl(url: string): boolean {
-    return url.startsWith("git@") || url.endsWith(".git");
-  }
-
-  /**
-   * Parse location into domain, RXL and internal path.
+   * Parse location into RXL and internal path.
    * Format: {domain}/{path}/{name}.{type}@{version}/{internal-path}
    * Example: deepractice.ai/nuwa.role@1.0.0/thought/first-principles.md
    */
-  private parseLocation(location: string): { domain: string; rxl: string; internalPath: string } {
+  private parseLocation(location: string): { rxl: string; internalPath: string } {
     // Find @version marker
     const atIndex = location.indexOf("@");
     if (atIndex === -1) {
@@ -182,12 +133,7 @@ export class RxrTransport implements TransportHandler {
       );
     }
 
-    // Extract domain (first segment before /)
-    const firstSlash = location.indexOf("/");
-    const domain = firstSlash > 0 ? location.slice(0, firstSlash) : "localhost";
-
     return {
-      domain,
       rxl: location.slice(0, slashAfterVersion),
       internalPath: location.slice(slashAfterVersion + 1),
     };
@@ -195,8 +141,8 @@ export class RxrTransport implements TransportHandler {
 }
 
 /**
- * Clear the registry cache. Useful for testing.
+ * Clear the default registry. Useful for testing.
  */
 export function clearRegistryCache(): void {
-  registryCache.clear();
+  defaultRegistry = null;
 }

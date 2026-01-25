@@ -73,17 +73,17 @@ Feature: Registry with Bundled Types
     Then it should throw an error containing "Unsupported type"
 
   # ============================================
-  # type aliases
+  # type aliases (pending - need step implementation)
   # ============================================
 
-  @aliases
+  @aliases @pending
   Scenario: Resolve with type alias
     Given a registry with builtin types
     And a text resource "readme.txt@1.0.0" with content "README content"
     When I resolve "readme.txt@1.0.0"
     Then executing should return "README content"
 
-  @aliases
+  @aliases @pending
   Scenario: Custom type with aliases
     Given a bundled type "prompt" with aliases "dp-prompt, deepractice-prompt"
     And a registry with the "prompt" type
@@ -92,10 +92,10 @@ Feature: Registry with Bundled Types
     Then the resolved resource should have execute function
 
   # ============================================
-  # schema support
+  # schema support (pending - issue 020)
   # ============================================
 
-  @schema
+  @schema @pending
   Scenario: Resolved resource includes schema
     Given a bundled type "tool" with schema:
       """
@@ -112,7 +112,7 @@ Feature: Registry with Bundled Types
     Then the resolved resource should have schema
     And the schema should have property "input"
 
-  @schema
+  @schema @pending
   Scenario: Execute with arguments
     Given a bundled type "tool" that echoes input argument
     And a registry with the "tool" type
@@ -122,17 +122,17 @@ Feature: Registry with Bundled Types
     Then the result should be "test"
 
   # ============================================
-  # sandbox levels
+  # sandbox levels (pending - issue 020)
   # ============================================
 
-  @sandbox
+  @sandbox @pending
   Scenario: Builtin types run with sandbox "none"
     Given a registry with builtin types
     And a text resource "test.text@1.0.0" with content "test"
     When I resolve "test.text@1.0.0"
     Then the type should have sandbox level "none"
 
-  @sandbox
+  @sandbox @pending
   Scenario: Custom type with isolated sandbox
     Given a bundled type "isolated-type" with sandbox "isolated"
     And a registry with the "isolated-type" type

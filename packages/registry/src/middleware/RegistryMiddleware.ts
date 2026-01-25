@@ -8,7 +8,8 @@
 
 import type { RXR, RXL } from "@resourcexjs/core";
 import type { BundledType, ResolvedResource } from "@resourcexjs/type";
-import type { Registry, SearchOptions, PullOptions, PublishOptions } from "../types.js";
+import type { Registry } from "../Registry.js";
+import type { SearchOptions } from "../storage/Storage.js";
 
 /**
  * Base class for Registry middleware.
@@ -28,14 +29,6 @@ export abstract class RegistryMiddleware implements Registry {
 
   add(source: string | RXR): Promise<void> {
     return this.inner.add(source);
-  }
-
-  pull(locator: string, options?: PullOptions): Promise<void> {
-    return this.inner.pull(locator, options);
-  }
-
-  publish(source: string | RXR, options: PublishOptions): Promise<void> {
-    return this.inner.publish(source, options);
   }
 
   get(locator: string): Promise<RXR> {

@@ -79,10 +79,22 @@ export type { LoadResourceConfig } from "@resourcexjs/loader";
 export type {
   Registry,
   RegistryConfig,
-  UrlRegistryConfig,
+  ClientRegistryConfig,
+  ServerRegistryConfig,
+  CreateRegistryConfig,
   DiscoveryResult,
+  WellKnownResponse,
+  Storage,
+  SearchOptions,
 } from "@resourcexjs/registry";
-export { createRegistry, LocalRegistry, discoverRegistry } from "@resourcexjs/registry";
+export {
+  DefaultRegistry,
+  createRegistry,
+  discoverRegistry,
+  LocalStorage,
+  GitStorage,
+  GitHubStorage,
+} from "@resourcexjs/registry";
 
 // ============================================
 // Registry Middleware
