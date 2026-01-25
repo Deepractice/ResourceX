@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from "bun:test";
 import { TypeHandlerChain, ResourceTypeError, textType } from "../../src/index.js";
-import type { RXR, ResourceType } from "../../src/types.js";
-import { createRXM, createRXA, parseRXL } from "@resourcexjs/core";
+import type { ResourceType } from "../../src/types.js";
+import { createRXM, createRXA, parseRXL, type RXR } from "@resourcexjs/core";
 
 describe("TypeHandlerChain", () => {
   let chain: TypeHandlerChain;
@@ -25,7 +25,6 @@ describe("TypeHandlerChain", () => {
       const customType: ResourceType = {
         name: "custom",
         description: "Custom type",
-        serializer: textType.serializer,
         resolver: textType.resolver,
       };
 
@@ -57,7 +56,6 @@ describe("TypeHandlerChain", () => {
       const customType: ResourceType = {
         name: "custom",
         description: "Custom type",
-        serializer: textType.serializer,
         resolver: textType.resolver,
       };
 
@@ -71,7 +69,6 @@ describe("TypeHandlerChain", () => {
         name: "prompt",
         aliases: ["deepractice-prompt"],
         description: "Prompt type",
-        serializer: textType.serializer,
         resolver: textType.resolver,
       };
 
@@ -85,7 +82,6 @@ describe("TypeHandlerChain", () => {
       const customType: ResourceType = {
         name: "text", // conflicts with builtin
         description: "Duplicate",
-        serializer: textType.serializer,
         resolver: textType.resolver,
       };
 
@@ -121,113 +117,6 @@ describe("TypeHandlerChain", () => {
     it("returns undefined for unregistered type", () => {
       const handler = chain.getHandler("unknown");
       expect(handler).toBeUndefined();
-    });
-  });
-
-  describe("serialize", () => {
-    it("serializes text resource", async () => {
-      const manifest = createRXM({
-        domain: "localhost",
-        name: "test",
-        type: "text",
-        version: "1.0.0",
-      });
-      const rxr: RXR = {
-        locator: parseRXL(manifest.toLocator()),
-        manifest,
-        archive: await createRXA({ content: "Hello, World!" }),
-      };
-
-      const buffer = await chain.serialize(rxr);
-
-      // Buffer is tar.gz format, check it's valid gzip
-      expect(buffer[0]).toBe(0x1f);
-      expect(buffer[1]).toBe(0x8b);
-    });
-
-    it("serializes json resource", async () => {
-      const manifest = createRXM({
-        domain: "localhost",
-        name: "test",
-        type: "json",
-        version: "1.0.0",
-      });
-      const rxr: RXR = {
-        locator: parseRXL(manifest.toLocator()),
-        manifest,
-        archive: await createRXA({ content: '{"key": "value"}' }),
-      };
-
-      const buffer = await chain.serialize(rxr);
-
-      // Buffer is tar.gz format
-      expect(buffer[0]).toBe(0x1f);
-      expect(buffer[1]).toBe(0x8b);
-    });
-
-    it("throws error for unsupported type", async () => {
-      const manifest = createRXM({
-        domain: "localhost",
-        name: "test",
-        type: "unknown",
-        version: "1.0.0",
-      });
-      const rxr: RXR = {
-        locator: parseRXL(manifest.toLocator()),
-        manifest,
-        archive: await createRXA({ content: "test" }),
-      };
-
-      await expect(chain.serialize(rxr)).rejects.toThrow(ResourceTypeError);
-      await expect(chain.serialize(rxr)).rejects.toThrow("Unsupported resource type");
-    });
-  });
-
-  describe("deserialize", () => {
-    it("deserializes text resource", async () => {
-      const manifest = createRXM({
-        domain: "localhost",
-        name: "test",
-        type: "text",
-        version: "1.0.0",
-      });
-      // Create a proper tar.gz buffer
-      const originalRxa = await createRXA({ content: "Hello, World!" });
-      const data = await originalRxa.buffer();
-
-      const rxr = await chain.deserialize(data, manifest);
-
-      const contentBuffer = await rxr.archive.extract().then((pkg) => pkg.file("content"));
-      expect(contentBuffer.toString()).toBe("Hello, World!");
-    });
-
-    it("deserializes using alias", async () => {
-      const manifest = createRXM({
-        domain: "localhost",
-        name: "test",
-        type: "txt", // Using alias
-        version: "1.0.0",
-      });
-      const originalRxa = await createRXA({ content: "Via alias" });
-      const data = await originalRxa.buffer();
-
-      const rxr = await chain.deserialize(data, manifest);
-
-      const contentBuffer = await rxr.archive.extract().then((pkg) => pkg.file("content"));
-      expect(contentBuffer.toString()).toBe("Via alias");
-    });
-
-    it("throws error for unsupported type", async () => {
-      const manifest = createRXM({
-        domain: "localhost",
-        name: "test",
-        type: "unknown",
-        version: "1.0.0",
-      });
-      const originalRxa = await createRXA({ content: "test" });
-      const data = await originalRxa.buffer();
-
-      await expect(chain.deserialize(data, manifest)).rejects.toThrow(ResourceTypeError);
     });
   });
 
@@ -298,7 +187,6 @@ describe("TypeHandlerChain", () => {
       const customType: ResourceType = {
         name: "custom",
         description: "Custom type",
-        serializer: textType.serializer,
         resolver: textType.resolver,
       };
 

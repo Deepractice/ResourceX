@@ -13,7 +13,7 @@ import type {
 } from "./types.js";
 import { withDomainValidation } from "./middleware/DomainValidation.js";
 import type { RXR, RXL } from "@resourcexjs/core";
-import { parseRXL, createRXM } from "@resourcexjs/core";
+import { parseRXL, createRXM, createRXA } from "@resourcexjs/core";
 import { TypeHandlerChain } from "@resourcexjs/type";
 import type { ResourceType, ResolvedResource } from "@resourcexjs/type";
 import { createARP, type ARP } from "@resourcexjs/arp";
@@ -256,8 +256,12 @@ export class GitRegistry implements Registry {
     const contentResource = await contentArl.resolve();
     const data = contentResource.content as Buffer;
 
-    // Deserialize to RXR
-    return this.typeHandler.deserialize(data, manifest);
+    // Build RXR directly (unified serialization format)
+    return {
+      locator: parseRXL(manifest.toLocator()),
+      manifest,
+      archive: await createRXA({ buffer: data }),
+    };
   }
 
   async resolve<TArgs = void, TResult = unknown>(

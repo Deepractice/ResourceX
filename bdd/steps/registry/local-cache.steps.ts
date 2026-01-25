@@ -3,7 +3,6 @@ import { strict as assert } from "node:assert";
 import { join } from "node:path";
 import { mkdir, writeFile, stat } from "node:fs/promises";
 import type { Registry, RXR, RXL, ResolvedResource } from "resourcexjs";
-import { TypeHandlerChain } from "resourcexjs";
 
 const TEST_DIR = join(process.cwd(), ".test-bdd-registry");
 
@@ -24,7 +23,7 @@ async function createResourceAt(
   manifest: { domain: string; path?: string; name: string; type?: string; version: string },
   content: string
 ) {
-  const { createRXA, createRXM, TypeHandlerChain } = await import("resourcexjs");
+  const { createRXA, createRXM } = await import("resourcexjs");
 
   let resourcePath: string;
   const resourceName = manifest.type ? `${manifest.name}.${manifest.type}` : manifest.name;
@@ -49,17 +48,11 @@ async function createResourceAt(
   const manifestPath = join(resourcePath, "manifest.json");
   await writeFile(manifestPath, JSON.stringify(rxm.toJSON(), null, 2), "utf-8");
 
-  // Write content
+  // Write content (unified serialization: directly store archive buffer)
   const rxa = await createRXA({ content });
-  const typeHandler = TypeHandlerChain.create();
-  const rxr: RXR = {
-    locator: rxm.toLocator() as unknown as RXL,
-    manifest: rxm,
-    archive: rxa,
-  };
-  const serialized = await typeHandler.serialize(rxr);
+  const archiveBuffer = await rxa.buffer();
   const contentPath = join(resourcePath, "archive.tar.gz");
-  await writeFile(contentPath, serialized);
+  await writeFile(contentPath, archiveBuffer);
 }
 
 // ============================================

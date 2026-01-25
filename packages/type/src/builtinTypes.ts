@@ -1,28 +1,5 @@
-import type {
-  ResourceType,
-  ResourceSerializer,
-  ResourceResolver,
-  ResolvedResource,
-} from "./types.js";
-import type { RXR, RXM } from "@resourcexjs/core";
-import { createRXA, parseRXL } from "@resourcexjs/core";
-
-/**
- * Text serializer - stores RXA archive as-is
- */
-const textSerializer: ResourceSerializer = {
-  async serialize(rxr: RXR): Promise<Buffer> {
-    return rxr.archive.buffer();
-  },
-
-  async deserialize(data: Buffer, manifest: RXM): Promise<RXR> {
-    return {
-      locator: parseRXL(manifest.toLocator()),
-      manifest,
-      archive: await createRXA({ buffer: data }),
-    };
-  },
-};
+import type { ResourceType, ResourceResolver, ResolvedResource } from "./types.js";
+import type { RXR } from "@resourcexjs/core";
 
 /**
  * Text resolver - returns structured result with execute function (lazy)
@@ -49,25 +26,7 @@ export const textType: ResourceType<void, string> = {
   name: "text",
   aliases: ["txt", "plaintext"],
   description: "Plain text content",
-  serializer: textSerializer,
   resolver: textResolver,
-};
-
-/**
- * JSON serializer - stores RXA archive as-is
- */
-const jsonSerializer: ResourceSerializer = {
-  async serialize(rxr: RXR): Promise<Buffer> {
-    return rxr.archive.buffer();
-  },
-
-  async deserialize(data: Buffer, manifest: RXM): Promise<RXR> {
-    return {
-      locator: parseRXL(manifest.toLocator()),
-      manifest,
-      archive: await createRXA({ buffer: data }),
-    };
-  },
 };
 
 /**
@@ -95,25 +54,7 @@ export const jsonType: ResourceType<void, unknown> = {
   name: "json",
   aliases: ["config", "manifest"],
   description: "JSON content",
-  serializer: jsonSerializer,
   resolver: jsonResolver,
-};
-
-/**
- * Binary serializer - stores RXA archive as-is
- */
-const binarySerializer: ResourceSerializer = {
-  async serialize(rxr: RXR): Promise<Buffer> {
-    return rxr.archive.buffer();
-  },
-
-  async deserialize(data: Buffer, manifest: RXM): Promise<RXR> {
-    return {
-      locator: parseRXL(manifest.toLocator()),
-      manifest,
-      archive: await createRXA({ buffer: data }),
-    };
-  },
 };
 
 /**
@@ -140,7 +81,6 @@ export const binaryType: ResourceType<void, Buffer> = {
   name: "binary",
   aliases: ["bin", "blob", "raw"],
   description: "Binary content",
-  serializer: binarySerializer,
   resolver: binaryResolver,
 };
 

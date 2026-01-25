@@ -25,7 +25,7 @@ interface GitRegistryWorld {
 
 // Helper to create resource in git repo
 async function createResourceInGitRepo(repoPath: string, locator: string, content: string) {
-  const { parseRXL, createRXM, createRXA, TypeHandlerChain } = await import("resourcexjs");
+  const { parseRXL, createRXM, createRXA } = await import("resourcexjs");
 
   const rxl = parseRXL(locator);
   const domain = rxl.domain ?? "localhost";
@@ -50,16 +50,10 @@ async function createResourceInGitRepo(repoPath: string, locator: string, conten
   });
   await writeFile(join(resourcePath, "manifest.json"), JSON.stringify(manifest.toJSON(), null, 2));
 
-  // Write content
+  // Write content (unified serialization: directly store archive buffer)
   const rxa = await createRXA({ content });
-  const typeHandler = TypeHandlerChain.create();
-  const rxr: RXR = {
-    locator: rxl,
-    manifest,
-    archive: rxa,
-  };
-  const serialized = await typeHandler.serialize(rxr);
-  await writeFile(join(resourcePath, "archive.tar.gz"), serialized);
+  const archiveBuffer = await rxa.buffer();
+  await writeFile(join(resourcePath, "archive.tar.gz"), archiveBuffer);
 
   // Git commit
   execSync(`git -C ${repoPath} add -A`, { stdio: "pipe" });

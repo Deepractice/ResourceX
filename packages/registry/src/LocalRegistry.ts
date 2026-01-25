@@ -9,8 +9,8 @@ import type {
   PublishOptions,
 } from "./types.js";
 import type { RXR, RXL } from "@resourcexjs/core";
-import { parseRXL, createRXM } from "@resourcexjs/core";
-import { TypeHandlerChain } from "@resourcexjs/type";
+import { parseRXL, createRXM, createRXA } from "@resourcexjs/core";
+import { TypeHandlerChain, ResourceTypeError } from "@resourcexjs/type";
 import type { ResourceType, ResolvedResource } from "@resourcexjs/type";
 import { createARP, type ARP } from "@resourcexjs/arp";
 import { loadResource } from "@resourcexjs/loader";
@@ -154,8 +154,12 @@ export class LocalRegistry implements Registry {
     const contentResource = await contentArl.resolve();
     const data = contentResource.content as Buffer;
 
-    // Deserialize to RXR
-    return this.typeHandler.deserialize(data, manifest);
+    // Build RXR directly (unified serialization format)
+    return {
+      locator: parseRXL(manifest.toLocator()),
+      manifest,
+      archive: await createRXA({ buffer: data }),
+    };
   }
 
   async link(path: string): Promise<void> {
@@ -188,6 +192,12 @@ export class LocalRegistry implements Registry {
     // Load resource if path is provided
     const resource = typeof source === "string" ? await loadResource(source) : source;
 
+    // Validate type is supported before storing
+    const typeName = resource.manifest.type;
+    if (!this.typeHandler.canHandle(typeName)) {
+      throw new ResourceTypeError(`Unsupported resource type: ${typeName}`);
+    }
+
     // Always add to local/ directory
     const locator = resource.manifest.toLocator();
     const resourcePath = this.buildPath(locator, "local");
@@ -211,11 +221,11 @@ export class LocalRegistry implements Registry {
     );
     await manifestArl.deposit(manifestContent);
 
-    // Serialize content using type handler chain
+    // Store archive directly (unified serialization format)
     const contentPath = join(resourcePath, "archive.tar.gz");
     const contentArl = this.arp.parse(this.toArpUrl(contentPath));
-    const serialized = await this.typeHandler.serialize(resource);
-    await contentArl.deposit(serialized);
+    const archiveBuffer = await resource.archive.buffer();
+    await contentArl.deposit(archiveBuffer);
   }
 
   async pull(_locator: string, _options?: PullOptions): Promise<void> {

@@ -5,7 +5,6 @@
 // Types
 export type {
   ResourceType,
-  ResourceSerializer,
   ResourceResolver,
   ResolvedResource,
   JSONSchema,

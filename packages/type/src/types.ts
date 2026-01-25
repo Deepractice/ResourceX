@@ -1,19 +1,4 @@
-import type { RXR, RXM } from "@resourcexjs/core";
-
-/**
- * ResourceSerializer - Handles RXR serialization/deserialization for storage.
- */
-export interface ResourceSerializer {
-  /**
-   * Serialize RXR to storage format.
-   */
-  serialize(rxr: RXR): Promise<Buffer>;
-
-  /**
-   * Deserialize storage data to RXR.
-   */
-  deserialize(data: Buffer, manifest: RXM): Promise<RXR>;
-}
+import type { RXR } from "@resourcexjs/core";
 
 /**
  * JSON Schema property definition.
@@ -96,11 +81,6 @@ export interface ResourceType<TArgs = void, TResult = unknown> {
    * Human-readable description.
    */
   description: string;
-
-  /**
-   * Serializer for storage operations.
-   */
-  serializer: ResourceSerializer;
 
   /**
    * Resolver to transform RXR into structured result object.

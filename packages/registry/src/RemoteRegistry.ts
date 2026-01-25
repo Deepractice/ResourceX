@@ -7,7 +7,7 @@ import type {
   PublishOptions,
 } from "./types.js";
 import type { RXR, RXL, ManifestData } from "@resourcexjs/core";
-import { parseRXL, createRXM } from "@resourcexjs/core";
+import { parseRXL, createRXM, createRXA } from "@resourcexjs/core";
 import { TypeHandlerChain } from "@resourcexjs/type";
 import type { ResourceType, ResolvedResource } from "@resourcexjs/type";
 import { RegistryError } from "./errors.js";
@@ -87,8 +87,12 @@ export class RemoteRegistry implements Registry {
 
     const contentBuffer = Buffer.from(await contentResponse.arrayBuffer());
 
-    // Deserialize to RXR
-    return this.typeHandler.deserialize(contentBuffer, manifest);
+    // Build RXR directly (unified serialization format)
+    return {
+      locator: parseRXL(manifest.toLocator()),
+      manifest,
+      archive: await createRXA({ buffer: contentBuffer }),
+    };
   }
 
   async resolve<TArgs = void, TResult = unknown>(

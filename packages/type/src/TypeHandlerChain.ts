@@ -1,10 +1,10 @@
 import type { ResourceType, ResolvedResource } from "./types.js";
-import type { RXR, RXM } from "@resourcexjs/core";
+import type { RXR } from "@resourcexjs/core";
 import { ResourceTypeError } from "./errors.js";
 import { builtinTypes } from "./builtinTypes.js";
 
 /**
- * TypeHandlerChain - Manages type registration and delegates serialization/deserialization.
+ * TypeHandlerChain - Manages resource type registration and resolution.
  * Use TypeHandlerChain.create() to create a new instance.
  */
 export class TypeHandlerChain {
@@ -75,36 +75,6 @@ export class TypeHandlerChain {
    */
   getSupportedTypes(): string[] {
     return Array.from(this.handlers.keys());
-  }
-
-  /**
-   * Serialize RXR content using the appropriate type handler.
-   * @throws ResourceTypeError if type is not supported
-   */
-  async serialize(rxr: RXR): Promise<Buffer> {
-    const typeName = rxr.manifest.type;
-    const handler = this.handlers.get(typeName);
-
-    if (!handler) {
-      throw new ResourceTypeError(`Unsupported resource type: ${typeName}`);
-    }
-
-    return handler.serializer.serialize(rxr);
-  }
-
-  /**
-   * Deserialize content into RXR using the appropriate type handler.
-   * @throws ResourceTypeError if type is not supported
-   */
-  async deserialize(data: Buffer, manifest: RXM): Promise<RXR> {
-    const typeName = manifest.type;
-    const handler = this.handlers.get(typeName);
-
-    if (!handler) {
-      throw new ResourceTypeError(`Unsupported resource type: ${typeName}`);
-    }
-
-    return handler.serializer.deserialize(data, manifest);
   }
 
   /**
