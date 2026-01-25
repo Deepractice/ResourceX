@@ -16,8 +16,8 @@ export type {
 
 // Storage
 export type { Storage, SearchOptions } from "./storage/index.js";
-export { LocalStorage, GitStorage, GitHubStorage, isGitHubUrl } from "./storage/index.js";
-export type { LocalStorageConfig, GitStorageConfig, GitHubStorageConfig } from "./storage/index.js";
+export { LocalStorage } from "./storage/index.js";
+export type { LocalStorageConfig } from "./storage/index.js";
 
 // Discovery
 export { discoverRegistry } from "./discovery.js";

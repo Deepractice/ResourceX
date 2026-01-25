@@ -92,8 +92,6 @@ export {
   createRegistry,
   discoverRegistry,
   LocalStorage,
-  GitStorage,
-  GitHubStorage,
 } from "@resourcexjs/registry";
 
 // ============================================
