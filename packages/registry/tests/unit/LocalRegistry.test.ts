@@ -165,9 +165,13 @@ describe("LocalRegistry", () => {
 
       await registry.add(rxr);
 
-      const resolved = await registry.resolve<void, Buffer>("localhost/binary-test.bin@1.0.0");
+      // Note: binary type returns Uint8Array (cross-platform), not Buffer
+      // JSON serialization converts Uint8Array to object, so we compare values
+      const resolved = await registry.resolve<void, Record<string, number>>(
+        "localhost/binary-test.bin@1.0.0"
+      );
       const content = await resolved.execute();
-      expect(content).toEqual(binaryData);
+      expect(Object.values(content)).toEqual([0x01, 0x02, 0x03, 0x04]);
     });
   });
 
@@ -175,20 +179,19 @@ describe("LocalRegistry", () => {
     it("supports dynamically registered type", async () => {
       const registry = createRegistry({ path: TEST_DIR });
 
-      // Define a custom bundled type
+      // Define a custom bundled type using ResolveContext (ctx)
+      // ctx has: { manifest, files: Record<string, Uint8Array> }
       const customType = {
         name: "prompt",
         description: "AI prompt type",
         code: `
           ({
-            async resolve(rxr) {
-              const pkg = await rxr.archive.extract();
-              const buffer = await pkg.file("content");
-              return buffer.toString("utf-8");
+            async resolve(ctx, args) {
+              const content = ctx.files["content"];
+              return new TextDecoder().decode(content);
             }
           })
         `,
-        sandbox: "none" as const,
       };
 
       registry.supportType(customType);
@@ -210,6 +213,86 @@ describe("LocalRegistry", () => {
       const resolved = await registry.resolve("localhost/greet.prompt@1.0.0");
       const content = await resolved.execute();
       expect(content).toBe("Hello, {{name}}!");
+    });
+  });
+
+  describe("isolator", () => {
+    it("executes with srt isolator", async () => {
+      const registry = createRegistry({ path: TEST_DIR, isolator: "srt" });
+      const rxr = await createTestRXR("srt-test", "SRT Sandbox Test");
+
+      await registry.add(rxr);
+
+      const resolved = await registry.resolve("localhost/srt-test.text@1.0.0");
+      const content = await resolved.execute();
+      expect(content).toBe("SRT Sandbox Test");
+    });
+
+    it("executes json type with srt isolator", async () => {
+      const registry = createRegistry({ path: TEST_DIR, isolator: "srt" });
+      const manifest = createRXM({
+        domain: "localhost",
+        name: "srt-json",
+        type: "json",
+        version: "1.0.0",
+      });
+      const rxr: RXR = {
+        locator: parseRXL(manifest.toLocator()),
+        manifest,
+        archive: await createRXA({ content: '{"message": "hello from srt"}' }),
+      };
+
+      await registry.add(rxr);
+
+      const resolved = await registry.resolve<void, { message: string }>(
+        "localhost/srt-json.json@1.0.0"
+      );
+      const json = await resolved.execute();
+      expect(json.message).toBe("hello from srt");
+    });
+
+    it("executes custom type with srt isolator", async () => {
+      const registry = createRegistry({ path: TEST_DIR, isolator: "srt" });
+
+      // Register custom type
+      registry.supportType({
+        name: "calculator",
+        description: "Calculator type",
+        schema: {
+          type: "object",
+          properties: {
+            a: { type: "number" },
+            b: { type: "number" },
+          },
+        },
+        code: `
+          ({
+            async resolve(ctx, args) {
+              return args.a + args.b;
+            }
+          })
+        `,
+      });
+
+      const manifest = createRXM({
+        domain: "localhost",
+        name: "add",
+        type: "calculator",
+        version: "1.0.0",
+      });
+      const rxr: RXR = {
+        locator: parseRXL(manifest.toLocator()),
+        manifest,
+        archive: await createRXA({ content: "calculator" }),
+      };
+
+      await registry.add(rxr);
+
+      const resolved = await registry.resolve<{ a: number; b: number }, number>(
+        "localhost/add.calculator@1.0.0"
+      );
+      const result = await resolved.execute({ a: 10, b: 20 });
+      expect(result).toBe(30);
     });
   });
 });

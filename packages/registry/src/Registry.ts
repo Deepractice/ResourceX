@@ -1,11 +1,13 @@
 import type { RXR, RXL, ManifestData } from "@resourcexjs/core";
 import { parseRXL, createRXM, createRXA } from "@resourcexjs/core";
 import { TypeHandlerChain, ResourceTypeError } from "@resourcexjs/type";
-import type { BundledType, ResolvedResource } from "@resourcexjs/type";
+import type { BundledType, ResolvedResource, IsolatorType } from "@resourcexjs/type";
 import { loadResource } from "@resourcexjs/loader";
 import type { Storage, SearchOptions } from "./storage/index.js";
 import { LocalStorage } from "./storage/index.js";
 import { RegistryError } from "./errors.js";
+import { createResolverExecutor } from "./executor/index.js";
+import type { ResolverExecutor } from "./executor/index.js";
 
 /**
  * Well-known response format.
@@ -31,10 +33,19 @@ export interface RegistryConfig {
   mirror?: string;
 
   /**
-   * Custom resource types to support.
-   * Built-in types (text, json, binary) are always included.
+   * Additional custom resource types to support.
+   * Built-in types (text, json, binary) are always included by default.
    */
   types?: BundledType[];
+
+  /**
+   * Isolator type for resolver execution (SandboX).
+   * - "none": No isolation, fastest (~10ms), for development
+   * - "srt": OS-level isolation (~50ms), secure local dev
+   * - "cloudflare": Container isolation (~100ms), local Docker or edge
+   * - "e2b": MicroVM isolation (~150ms), production (planned)
+   */
+  isolator?: IsolatorType;
 }
 
 /**
@@ -102,6 +113,7 @@ export class DefaultRegistry implements Registry {
   private readonly storage: Storage;
   private readonly mirror?: string;
   private readonly typeHandler: TypeHandlerChain;
+  private readonly executor: ResolverExecutor;
 
   // Cache for discovered endpoints
   private readonly discoveryCache = new Map<string, string>();
@@ -109,9 +121,12 @@ export class DefaultRegistry implements Registry {
   constructor(config?: RegistryConfig) {
     this.storage = config?.storage ?? new LocalStorage();
     this.mirror = config?.mirror;
+    // TypeHandlerChain includes builtin types by default
     this.typeHandler = TypeHandlerChain.create();
+    // Create executor with configured isolator
+    this.executor = createResolverExecutor(config?.isolator ?? "none");
 
-    // Register custom types
+    // Register additional custom types
     if (config?.types) {
       for (const type of config.types) {
         this.typeHandler.register(type);
@@ -171,7 +186,15 @@ export class DefaultRegistry implements Registry {
     locator: string
   ): Promise<ResolvedResource<TArgs, TResult>> {
     const rxr = await this.get(locator);
-    return this.typeHandler.resolve<TArgs, TResult>(rxr);
+    const handler = this.typeHandler.getHandler(rxr.manifest.type);
+
+    return {
+      resource: rxr,
+      schema: handler.schema,
+      execute: async (args?: TArgs) => {
+        return this.executor.execute<TResult>(handler.code, rxr, args);
+      },
+    } as ResolvedResource<TArgs, TResult>;
   }
 
   async exists(locator: string): Promise<boolean> {

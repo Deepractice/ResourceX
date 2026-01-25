@@ -41,7 +41,8 @@
     "@resourcexjs/core": "workspace:*",
     "@resourcexjs/loader": "workspace:*",
     "@resourcexjs/type": "workspace:*",
-    "isomorphic-git": "^1.36.1"
+    "isomorphic-git": "^1.36.1",
+    "sandboxxjs": "^0.5.1"
   },
   "devDependencies": {},
   "publishConfig": {

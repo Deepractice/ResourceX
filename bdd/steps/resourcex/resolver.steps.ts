@@ -1,5 +1,9 @@
 import { Given, When, Then } from "@cucumber/cucumber";
 import { strict as assert } from "node:assert";
+import { join } from "node:path";
+import { rm, mkdir } from "node:fs/promises";
+
+const TEST_DIR = join(process.cwd(), ".test-bdd-resolver");
 
 // Types for World context
 interface ResolvedResult {
@@ -8,24 +12,30 @@ interface ResolvedResult {
   schema?: unknown;
 }
 
-interface TypeHandlerChainType {
-  register(type: unknown): void;
-  resolve(rxr: unknown): Promise<ResolvedResult>;
+interface RegistryType {
+  add(rxr: unknown): Promise<void>;
+  resolve(locator: string): Promise<ResolvedResult>;
+  supportType(type: unknown): void;
 }
 
 interface ResolverWorld {
   rxr?: unknown;
+  rxrLocator?: string;
   resolved?: ResolvedResult;
   executeResult?: unknown;
   contentLoaded?: boolean;
   customTypes?: Map<string, unknown>;
-  typeChain?: TypeHandlerChainType;
+  registry?: RegistryType;
 }
 
 Given("I have access to resourcexjs type system", async function (this: ResolverWorld) {
-  const { TypeHandlerChain } = await import("resourcexjs");
-  this.typeChain = TypeHandlerChain.create() as TypeHandlerChainType;
-  assert.ok(this.typeChain, "TypeHandlerChain should exist");
+  // Clean up and create test directory
+  await rm(TEST_DIR, { recursive: true, force: true });
+  await mkdir(TEST_DIR, { recursive: true });
+
+  const { createRegistry } = await import("resourcexjs");
+  this.registry = createRegistry({ path: TEST_DIR }) as RegistryType;
+  assert.ok(this.registry, "Registry should exist");
   this.customTypes = new Map();
 });
 
@@ -46,6 +56,10 @@ Given(
       manifest,
       archive: await createRXA({ content }),
     };
+    this.rxrLocator = manifest.toLocator();
+
+    // Add to registry
+    await this.registry!.add(this.rxr);
   }
 );
 
@@ -66,6 +80,9 @@ Given(
       manifest,
       archive: await createRXA({ content }),
     };
+    this.rxrLocator = manifest.toLocator();
+
+    await this.registry!.add(this.rxr);
   }
 );
 
@@ -90,6 +107,9 @@ Given(
       manifest,
       archive: await createRXA({ content: buffer }),
     };
+    this.rxrLocator = manifest.toLocator();
+
+    await this.registry!.add(this.rxr);
   }
 );
 
@@ -112,13 +132,16 @@ Given(
       manifest,
       archive: await createRXA({ content }),
     };
+    this.rxrLocator = manifest.toLocator();
+
+    await this.registry!.add(this.rxr);
   }
 );
 
 Given(
   "a custom {string} type that accepts arguments",
   async function (this: ResolverWorld, typeName: string) {
-    // Register a custom type that accepts arguments
+    // Register a custom type that accepts arguments (using ctx instead of rxr)
     const customType = {
       name: typeName,
       description: `Custom ${typeName} type`,
@@ -132,10 +155,9 @@ Given(
       },
       code: `
         ({
-          async resolve(rxr, args) {
-            const pkg = await rxr.archive.extract();
-            const content = await pkg.file("content");
-            const code = content.toString("utf-8");
+          async resolve(ctx, args) {
+            const content = ctx.files["content"];
+            const code = new TextDecoder().decode(content);
             // Simple eval for "return args.a + args.b"
             if (code === "return args.a + args.b" && args) {
               return args.a + args.b;
@@ -144,14 +166,9 @@ Given(
           },
         })
       `,
-      sandbox: "none" as const,
     };
 
-    try {
-      this.typeChain!.register(customType as never);
-    } catch {
-      // Type may already be registered
-    }
+    this.registry!.supportType(customType);
     this.customTypes?.set(typeName, customType);
   }
 );
@@ -164,21 +181,15 @@ Given(
       description: `Custom ${typeName} type`,
       code: `
         ({
-          async resolve(rxr) {
-            const pkg = await rxr.archive.extract();
-            const buffer = await pkg.file("content");
-            return buffer.toString("utf-8");
+          async resolve(ctx, args) {
+            const content = ctx.files["content"];
+            return new TextDecoder().decode(content);
           }
         })
       `,
-      sandbox: "none" as const,
     };
 
-    try {
-      this.typeChain!.register(customType as never);
-    } catch {
-      // Type may already be registered
-    }
+    this.registry!.supportType(customType);
     this.customTypes?.set(typeName, customType);
   }
 );
@@ -198,6 +209,9 @@ Given("a tool resource with code {string}", async function (this: ResolverWorld,
     manifest,
     archive: await createRXA({ content: code }),
   };
+  this.rxrLocator = manifest.toLocator();
+
+  await this.registry!.add(this.rxr);
 });
 
 Given(
@@ -217,6 +231,9 @@ Given(
       manifest,
       archive: await createRXA({ content: template }),
     };
+    this.rxrLocator = manifest.toLocator();
+
+    await this.registry!.add(this.rxr);
   }
 );
 
@@ -228,21 +245,15 @@ Given(
       description: `Custom ${typeName} type with async resolver`,
       code: `
         ({
-          async resolve(rxr) {
-            const pkg = await rxr.archive.extract();
-            const buffer = await pkg.file("content");
-            return buffer.toString("utf-8");
+          async resolve(ctx, args) {
+            const content = ctx.files["content"];
+            return new TextDecoder().decode(content);
           }
         })
       `,
-      sandbox: "none" as const,
     };
 
-    try {
-      this.typeChain!.register(customType as never);
-    } catch {
-      // Type may already be registered
-    }
+    this.registry!.supportType(customType);
     this.customTypes?.set(typeName, customType);
   }
 );
@@ -264,6 +275,9 @@ Given(
       manifest,
       archive: await createRXA({ content }),
     };
+    this.rxrLocator = manifest.toLocator();
+
+    await this.registry!.add(this.rxr);
   }
 );
 
@@ -275,24 +289,15 @@ Given(
       description: `Custom ${typeName} type with sync resolver`,
       code: `
         ({
-          async resolve(rxr) {
-            // Pre-load content during resolve
-            const pkg = await rxr.archive.extract();
-            const content = await pkg.file("content");
-            const text = content.toString("utf-8");
-            // Return the text directly (sync result)
-            return text;
+          async resolve(ctx, args) {
+            const content = ctx.files["content"];
+            return new TextDecoder().decode(content);
           }
         })
       `,
-      sandbox: "none" as const,
     };
 
-    try {
-      this.typeChain!.register(customType as never);
-    } catch {
-      // Type may already be registered
-    }
+    this.registry!.supportType(customType);
     this.customTypes?.set(typeName, customType);
   }
 );
@@ -314,11 +319,14 @@ Given(
       manifest,
       archive: await createRXA({ content }),
     };
+    this.rxrLocator = manifest.toLocator();
+
+    await this.registry!.add(this.rxr);
   }
 );
 
 When("I resolve the resource", async function (this: ResolverWorld) {
-  this.resolved = (await this.typeChain!.resolve(this.rxr as never)) as ResolvedResult;
+  this.resolved = (await this.registry!.resolve(this.rxrLocator!)) as ResolvedResult;
 });
 
 When("I call the resolved function", async function (this: ResolverWorld) {
@@ -329,7 +337,8 @@ When("I call the resolved function", async function (this: ResolverWorld) {
 });
 
 When("I resolve through TypeHandlerChain", async function (this: ResolverWorld) {
-  this.resolved = (await this.typeChain!.resolve(this.rxr as never)) as ResolvedResult;
+  // Now uses Registry (TypeHandlerChain doesn't have resolve anymore)
+  this.resolved = (await this.registry!.resolve(this.rxrLocator!)) as ResolvedResult;
 });
 
 Then("I should get a callable function", function (this: ResolverWorld) {
@@ -358,9 +367,9 @@ Then(
   async function (this: ResolverWorld, bytesStr: string) {
     // Parse "1,2,3,4" to array
     const expected = bytesStr.split(",").map((s) => parseInt(s.trim(), 10));
-    const result = (await this.resolved!.execute()) as Buffer;
-    assert.ok(Buffer.isBuffer(result), "result should be a Buffer");
-    assert.deepStrictEqual(Array.from(result), expected);
+    // Note: binary type returns Uint8Array which becomes object after JSON serialization
+    const result = (await this.resolved!.execute()) as Record<string, number>;
+    assert.deepStrictEqual(Object.values(result), expected);
   }
 );
 

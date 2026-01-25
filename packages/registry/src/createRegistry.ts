@@ -2,7 +2,7 @@ import type { Registry } from "./Registry.js";
 import { DefaultRegistry } from "./Registry.js";
 import type { Storage } from "./storage/index.js";
 import { LocalStorage } from "./storage/index.js";
-import type { BundledType } from "@resourcexjs/type";
+import type { BundledType, IsolatorType } from "@resourcexjs/type";
 
 /**
  * Client registry configuration.
@@ -21,9 +21,16 @@ export interface ClientRegistryConfig {
   mirror?: string;
 
   /**
-   * Custom resource types to support.
+   * Additional custom resource types.
+   * Built-in types (text, json, binary) are always included.
    */
   types?: BundledType[];
+
+  /**
+   * Isolator type for resolver execution.
+   * Defaults to "none".
+   */
+  isolator?: IsolatorType;
 }
 
 /**
@@ -33,14 +40,21 @@ export interface ClientRegistryConfig {
 export interface ServerRegistryConfig {
   /**
    * Custom storage implementation.
-   * Example: new GitStorage({ url: "..." }), new LocalStorage({ path: "..." })
+   * Example: new LocalStorage({ path: "..." })
    */
   storage: Storage;
 
   /**
-   * Custom resource types to support.
+   * Additional custom resource types.
+   * Built-in types (text, json, binary) are always included.
    */
   types?: BundledType[];
+
+  /**
+   * Isolator type for resolver execution.
+   * Defaults to "none".
+   */
+  isolator?: IsolatorType;
 }
 
 /**
@@ -58,20 +72,30 @@ function isServerConfig(config?: CreateRegistryConfig): config is ServerRegistry
 /**
  * Create a registry instance.
  *
+ * Built-in types (text, json, binary) are always included by default.
+ *
  * Two modes:
  * 1. Client mode (default): Uses LocalStorage as cache, fetches from remote when cache miss
  * 2. Server mode: Uses custom Storage implementation
  *
  * @example
- * // Client mode - local cache + remote fetch
+ * // Simple usage - builtin types included
  * const registry = createRegistry();
- * const registry2 = createRegistry({ path: "./custom-cache" });
- * const registry3 = createRegistry({ mirror: "https://mirror.company.com" });
+ *
+ * @example
+ * // With custom types
+ * const registry = createRegistry({ types: [myPromptType] });
+ *
+ * @example
+ * // With isolator (SandboX)
+ * const registry = createRegistry({
+ *   isolator: "srt",  // or "none", "cloudflare", "e2b"
+ * });
  *
  * @example
  * // Server mode - custom storage
  * const registry = createRegistry({
- *   storage: new GitStorage({ url: "git@github.com:org/registry.git" }),
+ *   storage: new LocalStorage({ path: "./data" }),
  * });
  */
 export function createRegistry(config?: CreateRegistryConfig): Registry {
@@ -80,6 +104,7 @@ export function createRegistry(config?: CreateRegistryConfig): Registry {
     return new DefaultRegistry({
       storage: config.storage,
       types: config.types,
+      isolator: config.isolator,
     });
   }
 
@@ -89,5 +114,6 @@ export function createRegistry(config?: CreateRegistryConfig): Registry {
     storage,
     mirror: config?.mirror,
     types: config?.types,
+    isolator: config?.isolator,
   });
 }

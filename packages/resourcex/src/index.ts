@@ -60,11 +60,13 @@ export type {
   ResolvedResource,
   JSONSchema,
   BundledType,
-  SandboxType,
+  IsolatorType,
 } from "@resourcexjs/type";
 
-export { textType, jsonType, binaryType, builtinTypes } from "@resourcexjs/type";
 export { TypeHandlerChain, bundleResourceType } from "@resourcexjs/type";
+
+// Built-in types
+export { textType, jsonType, binaryType, builtinTypes } from "@resourcexjs/type";
 
 // ============================================
 // Resource Loading

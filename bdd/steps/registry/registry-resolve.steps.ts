@@ -76,14 +76,12 @@ Given(
       description: row.description,
       code: `
         ({
-          async resolve(rxr) {
-            const pkg = await rxr.archive.extract();
-            const buffer = await pkg.file("content");
-            return buffer.toString("utf-8");
+          async resolve(ctx, args) {
+            const content = ctx.files["content"];
+            return new TextDecoder().decode(content);
           }
         })
       `,
-      sandbox: "none" as const,
     }));
 
     this.registry = createRegistry({ path: TEST_DIR, types });
@@ -122,14 +120,12 @@ When(
       description: `Custom ${typeName} type`,
       code: `
         ({
-          async resolve(rxr) {
-            const pkg = await rxr.archive.extract();
-            const buffer = await pkg.file("content");
-            return buffer.toString("utf-8");
+          async resolve(ctx, args) {
+            const content = ctx.files["content"];
+            return new TextDecoder().decode(content);
           }
         })
       `,
-      sandbox: "none" as const,
     };
 
     this.registry!.supportType(customType);
@@ -220,7 +216,7 @@ Given(
       },
       code: `
         ({
-          async resolve(rxr, args) {
+          async resolve(ctx, args) {
             if (args) {
               return args.a + args.b;
             }
@@ -228,7 +224,6 @@ Given(
           }
         })
       `,
-      sandbox: "none" as const,
     };
 
     this.registry = createRegistry({ path: TEST_DIR, types: [toolType] });
@@ -293,12 +288,11 @@ Given(
       },
       code: `
         ({
-          async resolve(rxr) {
-            return () => "result";
+          async resolve(ctx, args) {
+            return "result";
           }
         })
       `,
-      sandbox: "none" as const,
     };
 
     this.registry = createRegistry({ path: TEST_DIR, types: [toolType] });
@@ -342,14 +336,12 @@ Given(
       description: `Custom ${typeName} type`,
       code: `
         ({
-          async resolve(rxr) {
-            const pkg = await rxr.archive.extract();
-            const buffer = await pkg.file("content");
-            return buffer.toString("utf-8");
+          async resolve(ctx, args) {
+            const content = ctx.files["content"];
+            return new TextDecoder().decode(content);
           }
         })
       `,
-      sandbox: "none" as const,
     };
 
     const registry = createRegistry({
@@ -415,14 +407,12 @@ Given(
       description: `Custom ${typeName} type with aliases`,
       code: `
         ({
-          async resolve(rxr) {
-            const pkg = await rxr.archive.extract();
-            const buffer = await pkg.file("content");
-            return buffer.toString("utf-8");
+          async resolve(ctx, args) {
+            const content = ctx.files["content"];
+            return new TextDecoder().decode(content);
           }
         })
       `,
-      sandbox: "none" as const,
     };
   }
 );
@@ -473,14 +463,12 @@ Given(
       schema,
       code: `
         ({
-          async resolve(rxr, args) {
-            const pkg = await rxr.archive.extract();
-            const buffer = await pkg.file("content");
-            return buffer.toString("utf-8");
+          async resolve(ctx, args) {
+            const content = ctx.files["content"];
+            return new TextDecoder().decode(content);
           }
         })
       `,
-      sandbox: "none" as const,
     };
   }
 );
@@ -499,12 +487,11 @@ Given(
       },
       code: `
         ({
-          async resolve(rxr, args) {
+          async resolve(ctx, args) {
             return args?.input ?? "";
           }
         })
       `,
-      sandbox: "none" as const,
     };
   }
 );

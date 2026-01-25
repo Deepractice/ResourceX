@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { resolve, isAbsolute } from "node:path";
-import type { BundledType, SandboxType, JSONSchema } from "./types.js";
+import type { BundledType, JSONSchema } from "./types.js";
 
 /**
  * ResourceType source file structure.
@@ -11,7 +11,6 @@ interface ResourceTypeSource {
   aliases?: string[];
   description: string;
   schema?: JSONSchema;
-  sandbox?: SandboxType;
   resolve: (rxr: unknown) => Promise<unknown>;
 }
 
@@ -79,6 +78,5 @@ export async function bundleResourceType(
     description: typeSource.description ?? "",
     schema: typeSource.schema,
     code: bundledCode,
-    sandbox: typeSource.sandbox ?? "none",
   };
 }

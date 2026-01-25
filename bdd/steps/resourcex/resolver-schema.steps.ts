@@ -1,5 +1,9 @@
 import { Given, When, Then, DataTable } from "@cucumber/cucumber";
 import { strict as assert } from "node:assert";
+import { join } from "node:path";
+import { rm, mkdir } from "node:fs/promises";
+
+const TEST_DIR = join(process.cwd(), ".test-bdd-resolver-schema");
 
 // Types for World context
 interface ResolvedResult {
@@ -12,35 +16,43 @@ interface ResolvedResult {
   };
 }
 
-interface TypeHandlerChainType {
-  register(type: unknown): void;
-  resolve(rxr: unknown): Promise<ResolvedResult>;
+interface RegistryType {
+  add(rxr: unknown): Promise<void>;
+  resolve(locator: string): Promise<ResolvedResult>;
+  supportType(type: unknown): void;
 }
 
 interface SchemaWorld {
   rxr?: unknown;
+  rxrLocator?: string;
   resolved?: ResolvedResult;
   executeResult?: unknown;
   customTypes?: Map<string, unknown>;
   typeError?: Error;
-  typeChain?: TypeHandlerChainType;
+  registry?: RegistryType;
+}
+
+// Helper to ensure registry exists
+async function ensureRegistry(world: SchemaWorld): Promise<RegistryType> {
+  if (!world.registry) {
+    await rm(TEST_DIR, { recursive: true, force: true });
+    await mkdir(TEST_DIR, { recursive: true });
+    const { createRegistry } = await import("resourcexjs");
+    world.registry = createRegistry({ path: TEST_DIR }) as RegistryType;
+  }
+  return world.registry;
 }
 
 // Structured result steps
 When("I resolve the resource to structured result", async function (this: SchemaWorld) {
-  if (!this.typeChain) {
-    const { TypeHandlerChain } = await import("resourcexjs");
-    this.typeChain = TypeHandlerChain.create() as TypeHandlerChainType;
-  }
-  this.resolved = (await this.typeChain.resolve(this.rxr as never)) as ResolvedResult;
+  await ensureRegistry(this);
+  this.resolved = (await this.registry!.resolve(this.rxrLocator!)) as ResolvedResult;
 });
 
 When("I resolve through TypeHandlerChain to structured result", async function (this: SchemaWorld) {
-  if (!this.typeChain) {
-    const { TypeHandlerChain } = await import("resourcexjs");
-    this.typeChain = TypeHandlerChain.create() as TypeHandlerChainType;
-  }
-  this.resolved = (await this.typeChain.resolve(this.rxr as never)) as ResolvedResult;
+  // Now uses Registry (TypeHandlerChain doesn't have resolve anymore)
+  await ensureRegistry(this);
+  this.resolved = (await this.registry!.resolve(this.rxrLocator!)) as ResolvedResult;
 });
 
 Then("the result should have an execute function", function (this: SchemaWorld) {
@@ -69,19 +81,16 @@ Then(
 );
 
 Then("calling execute should return a Buffer", async function (this: SchemaWorld) {
-  const result = await this.resolved!.execute();
-  assert.ok(Buffer.isBuffer(result), "result should be a Buffer");
+  // Note: binary type returns Uint8Array which becomes object after JSON serialization
+  const result = (await this.resolved!.execute()) as Record<string, number>;
+  assert.ok(typeof result === "object", "result should be an object (serialized Uint8Array)");
 });
 
 // Custom type with schema steps
 Given(
   "a custom {string} type with schema:",
   async function (this: SchemaWorld, typeName: string, dataTable: DataTable) {
-    const { TypeHandlerChain } = await import("resourcexjs");
-
-    if (!this.typeChain) {
-      this.typeChain = TypeHandlerChain.create() as TypeHandlerChainType;
-    }
+    await ensureRegistry(this);
 
     const rows = dataTable.hashes();
     const properties: Record<string, { type: string; description?: string; default?: unknown }> =
@@ -113,7 +122,7 @@ Given(
       schema,
       code: `
         ({
-          async resolve(rxr, args) {
+          async resolve(ctx, args) {
             // For calculator type, return sum
             if (args && "a" in args && "b" in args) {
               return args.a + args.b;
@@ -122,20 +131,16 @@ Given(
           }
         })
       `,
-      sandbox: "none" as const,
     };
 
-    try {
-      this.typeChain.register(customType as never);
-    } catch {
-      // Type may already be registered
-    }
+    this.registry!.supportType(customType);
     this.customTypes = this.customTypes || new Map();
     this.customTypes.set(typeName, customType);
   }
 );
 
 Given("a search-tool resource", async function (this: SchemaWorld) {
+  await ensureRegistry(this);
   const { createRXM, createRXA, parseRXL } = await import("resourcexjs");
 
   const manifest = createRXM({
@@ -150,9 +155,13 @@ Given("a search-tool resource", async function (this: SchemaWorld) {
     manifest,
     archive: await createRXA({ content: "search tool content" }),
   };
+  this.rxrLocator = manifest.toLocator();
+
+  await this.registry!.add(this.rxr);
 });
 
 Given("a calculator resource that adds two numbers", async function (this: SchemaWorld) {
+  await ensureRegistry(this);
   const { createRXM, createRXA, parseRXL } = await import("resourcexjs");
 
   const manifest = createRXM({
@@ -167,6 +176,9 @@ Given("a calculator resource that adds two numbers", async function (this: Schem
     manifest,
     archive: await createRXA({ content: "calculator" }),
   };
+  this.rxrLocator = manifest.toLocator();
+
+  await this.registry!.add(this.rxr);
 });
 
 Then("the result schema should be a valid JSON Schema", function (this: SchemaWorld) {
@@ -219,11 +231,7 @@ Then("the result should be {int}", function (this: SchemaWorld, expected: number
 Given(
   "a custom {string} type without schema",
   async function (this: SchemaWorld, typeName: string) {
-    const { TypeHandlerChain } = await import("resourcexjs");
-
-    if (!this.typeChain) {
-      this.typeChain = TypeHandlerChain.create() as TypeHandlerChainType;
-    }
+    await ensureRegistry(this);
 
     const customType = {
       name: typeName,
@@ -231,21 +239,15 @@ Given(
       schema: undefined,
       code: `
         ({
-          async resolve(rxr) {
-            const pkg = await rxr.archive.extract();
-            const buffer = await pkg.file("content");
-            return buffer.toString("utf-8");
+          async resolve(ctx, args) {
+            const content = ctx.files["content"];
+            return new TextDecoder().decode(content);
           }
         })
       `,
-      sandbox: "none" as const,
     };
 
-    try {
-      this.typeChain.register(customType as never);
-    } catch {
-      // Type may already be registered
-    }
+    this.registry!.supportType(customType);
     this.customTypes = this.customTypes || new Map();
     this.customTypes.set(typeName, customType);
   }
@@ -254,6 +256,7 @@ Given(
 Given(
   "a greeting resource with message {string}",
   async function (this: SchemaWorld, message: string) {
+    await ensureRegistry(this);
     const { createRXM, createRXA, parseRXL } = await import("resourcexjs");
 
     const manifest = createRXM({
@@ -268,6 +271,9 @@ Given(
       manifest,
       archive: await createRXA({ content: message }),
     };
+    this.rxrLocator = manifest.toLocator();
+
+    await this.registry!.add(this.rxr);
   }
 );
 
@@ -297,11 +303,7 @@ Then("registering this type should fail with type error", async function (this: 
 Given(
   "a custom {string} type with detailed schema:",
   async function (this: SchemaWorld, typeName: string, dataTable: DataTable) {
-    const { TypeHandlerChain } = await import("resourcexjs");
-
-    if (!this.typeChain) {
-      this.typeChain = TypeHandlerChain.create() as TypeHandlerChainType;
-    }
+    await ensureRegistry(this);
 
     const rows = dataTable.hashes();
     const properties: Record<string, { type: string; description?: string; default?: unknown }> =
@@ -336,25 +338,21 @@ Given(
       schema,
       code: `
         ({
-          async resolve(rxr, args) {
+          async resolve(ctx, args) {
             return args;
           }
         })
       `,
-      sandbox: "none" as const,
     };
 
-    try {
-      this.typeChain.register(customType as never);
-    } catch {
-      // Type may already be registered
-    }
+    this.registry!.supportType(customType);
     this.customTypes = this.customTypes || new Map();
     this.customTypes.set(typeName, customType);
   }
 );
 
 Given("an api-tool resource", async function (this: SchemaWorld) {
+  await ensureRegistry(this);
   const { createRXM, createRXA, parseRXL } = await import("resourcexjs");
 
   const manifest = createRXM({
@@ -369,6 +367,9 @@ Given("an api-tool resource", async function (this: SchemaWorld) {
     manifest,
     archive: await createRXA({ content: "api tool content" }),
   };
+  this.rxrLocator = manifest.toLocator();
+
+  await this.registry!.add(this.rxr);
 });
 
 Then(

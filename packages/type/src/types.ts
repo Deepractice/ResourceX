@@ -1,13 +1,45 @@
-import type { RXR } from "@resourcexjs/core";
+/**
+ * Isolator type for resolver execution.
+ * Matches SandboX isolator types directly.
+ * Configured at Registry level, not per-type.
+ *
+ * - "none": No isolation, fastest (~10ms), for development
+ * - "srt": OS-level isolation (~50ms), secure local dev
+ * - "cloudflare": Container isolation (~100ms), local Docker or edge
+ * - "e2b": MicroVM isolation (~150ms), production (planned)
+ */
+export type IsolatorType = "none" | "srt" | "cloudflare" | "e2b";
 
 /**
- * Sandbox isolation level for resolver execution.
+ * ResolveContext - Pure data context passed to resolver in sandbox.
+ *
+ * This is a serializable data structure that replaces RXR for sandbox execution.
+ * The executor pre-processes RXR (extracts files) before passing to resolver.
  */
-export type SandboxType = "none" | "isolated" | "container";
+export interface ResolveContext {
+  /**
+   * Resource manifest metadata.
+   */
+  manifest: {
+    domain: string;
+    path?: string;
+    name: string;
+    type: string;
+    version: string;
+  };
+
+  /**
+   * Extracted files from archive.
+   * Key is file path, value is file content as Uint8Array.
+   */
+  files: Record<string, Uint8Array>;
+}
 
 /**
  * BundledType - Pre-bundled resource type ready for execution.
  * Contains bundled code string instead of closure.
+ *
+ * Note: Sandbox isolation is configured at Registry level via createRegistry({ sandbox: ... })
  */
 export interface BundledType {
   /**
@@ -34,11 +66,6 @@ export interface BundledType {
    * Bundled resolver code (executable in sandbox).
    */
   code: string;
-
-  /**
-   * Sandbox isolation level. Defaults to "none".
-   */
-  sandbox?: SandboxType;
 }
 
 /**
@@ -69,9 +96,9 @@ export interface JSONSchema extends JSONSchemaProperty {
  */
 export interface ResolvedResource<TArgs = void, TResult = unknown> {
   /**
-   * Original RXR object (locator, manifest, content).
+   * Original resource object (RXR from @resourcexjs/core).
    */
-  resource: RXR;
+  resource: unknown;
 
   /**
    * Execute function to get the resource content.
@@ -88,7 +115,7 @@ export interface ResolvedResource<TArgs = void, TResult = unknown> {
 }
 
 /**
- * ResourceResolver - Transforms RXR into a structured result object.
+ * ResourceResolver - Transforms resource into a structured result object.
  * The execute function is lazy-loaded: content is only read when called.
  */
 export interface ResourceResolver<TArgs = void, TResult = unknown> {
@@ -99,9 +126,10 @@ export interface ResourceResolver<TArgs = void, TResult = unknown> {
   schema: TArgs extends void ? undefined : JSONSchema;
 
   /**
-   * Resolve RXR into a structured result object.
+   * Resolve resource into a structured result object.
+   * @param rxr - RXR object from @resourcexjs/core
    */
-  resolve(rxr: RXR): Promise<ResolvedResource<TArgs, TResult>>;
+  resolve(rxr: unknown): Promise<ResolvedResource<TArgs, TResult>>;
 }
 
 /**

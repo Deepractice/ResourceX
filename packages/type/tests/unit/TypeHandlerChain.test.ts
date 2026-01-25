@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach } from "bun:test";
 import { TypeHandlerChain, ResourceTypeError } from "../../src/index.js";
 import type { BundledType } from "../../src/types.js";
-import { createRXM, createRXA, parseRXL, type RXR } from "@resourcexjs/core";
 
 describe("TypeHandlerChain", () => {
   let chain: TypeHandlerChain;
@@ -11,8 +10,9 @@ describe("TypeHandlerChain", () => {
   });
 
   describe("create", () => {
-    it("creates a new instance with builtin types", () => {
+    it("creates instance with builtin types by default", () => {
       const instance = TypeHandlerChain.create();
+      // Builtin types are included by default
       expect(instance.canHandle("text")).toBe(true);
       expect(instance.canHandle("json")).toBe(true);
       expect(instance.canHandle("binary")).toBe(true);
@@ -30,11 +30,10 @@ describe("TypeHandlerChain", () => {
             async resolve(rxr) {
               const pkg = await rxr.archive.extract();
               const buffer = await pkg.file("content");
-              return buffer.toString("utf-8");
+              return new TextDecoder().decode(buffer);
             }
           })
         `,
-        sandbox: "none",
       };
 
       instance1.register(customType);
@@ -45,7 +44,7 @@ describe("TypeHandlerChain", () => {
   });
 
   describe("builtin types", () => {
-    it("has builtin types registered automatically", () => {
+    it("has builtin types by default", () => {
       expect(chain.canHandle("text")).toBe(true);
       expect(chain.canHandle("json")).toBe(true);
       expect(chain.canHandle("binary")).toBe(true);
@@ -70,11 +69,10 @@ describe("TypeHandlerChain", () => {
             async resolve(rxr) {
               const pkg = await rxr.archive.extract();
               const buffer = await pkg.file("content");
-              return buffer.toString("utf-8");
+              return new TextDecoder().decode(buffer);
             }
           })
         `,
-        sandbox: "none",
       };
 
       chain.register(customType);
@@ -92,11 +90,10 @@ describe("TypeHandlerChain", () => {
             async resolve(rxr) {
               const pkg = await rxr.archive.extract();
               const buffer = await pkg.file("content");
-              return buffer.toString("utf-8");
+              return new TextDecoder().decode(buffer);
             }
           })
         `,
-        sandbox: "none",
       };
 
       chain.register(customType);
@@ -107,18 +104,17 @@ describe("TypeHandlerChain", () => {
 
     it("throws error when registering duplicate type name", () => {
       const customType: BundledType = {
-        name: "text", // conflicts with builtin
+        name: "text", // conflicts with already registered builtin
         description: "Duplicate",
         code: `
           ({
             async resolve(rxr) {
               const pkg = await rxr.archive.extract();
               const buffer = await pkg.file("content");
-              return buffer.toString("utf-8");
+              return new TextDecoder().decode(buffer);
             }
           })
         `,
-        sandbox: "none",
       };
 
       expect(() => chain.register(customType)).toThrow(ResourceTypeError);
@@ -141,85 +137,35 @@ describe("TypeHandlerChain", () => {
     it("returns handler for registered type", () => {
       const handler = chain.getHandler("text");
       expect(handler).toBeDefined();
-      expect(handler?.name).toBe("text");
+      expect(handler.name).toBe("text");
     });
 
     it("returns handler for alias", () => {
       const handler = chain.getHandler("txt");
       expect(handler).toBeDefined();
+      expect(handler.name).toBe("text");
+    });
+
+    it("throws error for unregistered type", () => {
+      expect(() => chain.getHandler("unknown")).toThrow(ResourceTypeError);
+    });
+  });
+
+  describe("getHandlerOrUndefined", () => {
+    it("returns handler for registered type", () => {
+      const handler = chain.getHandlerOrUndefined("text");
+      expect(handler).toBeDefined();
       expect(handler?.name).toBe("text");
     });
 
     it("returns undefined for unregistered type", () => {
-      const handler = chain.getHandler("unknown");
+      const handler = chain.getHandlerOrUndefined("unknown");
       expect(handler).toBeUndefined();
     });
   });
 
-  describe("resolve", () => {
-    it("resolves text resource to structured result", async () => {
-      const manifest = createRXM({
-        domain: "localhost",
-        name: "test",
-        type: "text",
-        version: "1.0.0",
-      });
-      const rxr: RXR = {
-        locator: parseRXL(manifest.toLocator()),
-        manifest,
-        archive: await createRXA({ content: "Hello" }),
-      };
-
-      const result = await chain.resolve<void, string>(rxr);
-
-      expect(typeof result).toBe("object");
-      expect(typeof result.execute).toBe("function");
-      expect(result.schema).toBeUndefined();
-      expect(result.resource).toBe(rxr);
-      expect(await result.execute()).toBe("Hello");
-    });
-
-    it("resolves json resource to structured result", async () => {
-      const manifest = createRXM({
-        domain: "localhost",
-        name: "test",
-        type: "json",
-        version: "1.0.0",
-      });
-      const rxr: RXR = {
-        locator: parseRXL(manifest.toLocator()),
-        manifest,
-        archive: await createRXA({ content: '{"key": "value"}' }),
-      };
-
-      const result = await chain.resolve<void, { key: string }>(rxr);
-
-      expect(typeof result).toBe("object");
-      expect(typeof result.execute).toBe("function");
-      expect(result.schema).toBeUndefined();
-      expect(result.resource).toBe(rxr);
-      expect(await result.execute()).toEqual({ key: "value" });
-    });
-
-    it("throws error for unsupported type", async () => {
-      const manifest = createRXM({
-        domain: "localhost",
-        name: "test",
-        type: "unknown",
-        version: "1.0.0",
-      });
-      const rxr: RXR = {
-        locator: parseRXL(manifest.toLocator()),
-        manifest,
-        archive: await createRXA({ content: "test" }),
-      };
-
-      await expect(chain.resolve(rxr)).rejects.toThrow(ResourceTypeError);
-    });
-  });
-
-  describe("clearExtensions", () => {
-    it("clears extension types but keeps builtins", () => {
+  describe("clear", () => {
+    it("clears all registered types", () => {
       const customType: BundledType = {
         name: "custom",
         description: "Custom type",
@@ -228,25 +174,23 @@ describe("TypeHandlerChain", () => {
             async resolve(rxr) {
               const pkg = await rxr.archive.extract();
               const buffer = await pkg.file("content");
-              return buffer.toString("utf-8");
+              return new TextDecoder().decode(buffer);
             }
           })
         `,
-        sandbox: "none",
       };
 
       chain.register(customType);
       expect(chain.canHandle("custom")).toBe(true);
-
-      chain.clearExtensions();
-
-      // Extension cleared
-      expect(chain.canHandle("custom")).toBe(false);
-
-      // Builtins still available
       expect(chain.canHandle("text")).toBe(true);
-      expect(chain.canHandle("json")).toBe(true);
-      expect(chain.canHandle("binary")).toBe(true);
+
+      chain.clear();
+
+      // All types cleared
+      expect(chain.canHandle("custom")).toBe(false);
+      expect(chain.canHandle("text")).toBe(false);
+      expect(chain.canHandle("json")).toBe(false);
+      expect(chain.canHandle("binary")).toBe(false);
     });
   });
 });
