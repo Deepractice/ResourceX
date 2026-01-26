@@ -25,7 +25,7 @@ Base path: `/v1`
 ### Get Resource Manifest
 
 ```
-GET /v1/resource?locator={locator}
+GET /api/v1/resource?locator={locator}
 ```
 
 Returns the manifest for a resource.
@@ -50,7 +50,7 @@ Returns the manifest for a resource.
 ### Check Resource Existence
 
 ```
-HEAD /v1/resource?locator={locator}
+HEAD /api/v1/resource?locator={locator}
 ```
 
 Check if a resource exists without fetching the manifest.
@@ -64,7 +64,7 @@ Check if a resource exists without fetching the manifest.
 ### Get Resource Archive
 
 ```
-GET /v1/content?locator={locator}
+GET /api/v1/content?locator={locator}
 ```
 
 Download the resource archive (tar.gz).
@@ -82,7 +82,7 @@ Download the resource archive (tar.gz).
 ### Search Resources
 
 ```
-GET /v1/search?q={query}&limit={limit}&offset={offset}
+GET /api/v1/search?q={query}&limit={limit}&offset={offset}
 ```
 
 Search for resources by locator pattern.
@@ -102,7 +102,7 @@ Search for resources by locator pattern.
 ### Publish Resource
 
 ```
-POST /v1/publish
+POST /api/v1/publish
 Content-Type: multipart/form-data
 ```
 
@@ -140,7 +140,7 @@ Publish a new resource or update an existing one.
 ### Delete Resource
 
 ```
-DELETE /v1/resource?locator={locator}
+DELETE /api/v1/resource?locator={locator}
 ```
 
 Delete a resource and its archive.

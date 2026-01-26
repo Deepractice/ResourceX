@@ -4,6 +4,7 @@
   "main": ".open-next/worker.js",
   "compatibility_date": "2024-12-01",
   "compatibility_flags": ["nodejs_compat"],
+  "routes": [{ "pattern": "registry.deepractice.dev/*", "zone_name": "deepractice.dev" }],
   "assets": {
     "directory": ".open-next/assets",
   },

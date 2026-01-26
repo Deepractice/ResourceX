@@ -27,7 +27,7 @@ After({ tags: "@server" }, async function (this: ServerWorld) {
   // Clean up published resources
   for (const locator of this.publishedResources) {
     try {
-      await fetch(`${getBaseUrl()}/v1/resource?locator=${encodeURIComponent(locator)}`, {
+      await fetch(`${getBaseUrl()}/api/v1/resource?locator=${encodeURIComponent(locator)}`, {
         method: "DELETE",
       });
     } catch {
@@ -219,7 +219,7 @@ Given(
     formData.append("manifest", JSON.stringify(manifest));
     formData.append("archive", new Blob([archive], { type: "application/gzip" }), "archive.tar.gz");
 
-    const response = await fetch(`${getBaseUrl()}/v1/publish`, {
+    const response = await fetch(`${getBaseUrl()}/api/v1/publish`, {
       method: "POST",
       body: formData,
     });
@@ -252,7 +252,7 @@ Given("a published resource {string}", async function (this: ServerWorld, locato
     "archive.tar.gz"
   );
 
-  const response = await fetch(`${getBaseUrl()}/v1/publish`, {
+  const response = await fetch(`${getBaseUrl()}/api/v1/publish`, {
     method: "POST",
     body: formData,
   });
@@ -286,7 +286,7 @@ Given(
         "archive.tar.gz"
       );
 
-      const response = await fetch(`${getBaseUrl()}/v1/publish`, {
+      const response = await fetch(`${getBaseUrl()}/api/v1/publish`, {
         method: "POST",
         body: formData,
       });
@@ -314,7 +314,7 @@ Given("{int} published resources", async function (this: ServerWorld, count: num
       "archive.tar.gz"
     );
 
-    const response = await fetch(`${getBaseUrl()}/v1/publish`, {
+    const response = await fetch(`${getBaseUrl()}/api/v1/publish`, {
       method: "POST",
       body: formData,
     });
@@ -343,7 +343,7 @@ Given("I have an archive with content {string}", function (this: ServerWorld, co
 
 Then("the resource {string} should exist", async function (this: ServerWorld, locator: string) {
   const response = await fetch(
-    `${getBaseUrl()}/v1/resource?locator=${encodeURIComponent(locator)}`,
+    `${getBaseUrl()}/api/v1/resource?locator=${encodeURIComponent(locator)}`,
     { method: "HEAD" }
   );
   assert.equal(response.status, 200, `Resource ${locator} does not exist`);
@@ -351,7 +351,7 @@ Then("the resource {string} should exist", async function (this: ServerWorld, lo
 
 Then("the resource {string} should not exist", async function (this: ServerWorld, locator: string) {
   const response = await fetch(
-    `${getBaseUrl()}/v1/resource?locator=${encodeURIComponent(locator)}`,
+    `${getBaseUrl()}/api/v1/resource?locator=${encodeURIComponent(locator)}`,
     { method: "HEAD" }
   );
   assert.equal(response.status, 404, `Resource ${locator} still exists`);
@@ -381,7 +381,7 @@ When(
       "archive.tar.gz"
     );
 
-    this.response = await fetch(`${getBaseUrl()}/v1/publish`, {
+    this.response = await fetch(`${getBaseUrl()}/api/v1/publish`, {
       method: "POST",
       body: formData,
     });

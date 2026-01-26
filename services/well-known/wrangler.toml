@@ -4,5 +4,5 @@ name = "resourcex-well-known"
 main = "src/index.ts"
 compatibility_date = "2024-01-01"
 
-# Custom domain (configure in Cloudflare Dashboard after deployment)
-# routes = [{ pattern = "deepractice.dev/.well-known/*", zone_name = "deepractice.dev" }]
+# Custom domain
+routes = [{ pattern = "deepractice.dev/.well-known/*", zone_name = "deepractice.dev" }]

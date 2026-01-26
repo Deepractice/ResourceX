@@ -29,7 +29,7 @@ async function findAvailablePort(startPort: number): Promise<number> {
 async function waitForServer(url: string, maxAttempts = 30): Promise<boolean> {
   for (let i = 0; i < maxAttempts; i++) {
     try {
-      const response = await fetch(`${url}/v1/search`);
+      const response = await fetch(`${url}/api/v1/search`);
       if (response.ok) return true;
     } catch {
       // Not ready yet

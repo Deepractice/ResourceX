@@ -4,7 +4,7 @@
 
 const WELL_KNOWN_RESOURCEX = {
   version: "1.0",
-  registries: ["https://registry.deepractice.dev/v1"],
+  registries: ["https://registry.deepractice.dev/api/v1"],
 };
 
 export default {

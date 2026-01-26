@@ -1,5 +1,4 @@
-const API_BASE =
-  process.env.REGISTRY_API_URL || "https://resourcex-registry-api.jshansince93.workers.dev";
+const API_BASE = process.env.REGISTRY_API_URL || "/api";
 
 export interface ResourceManifest {
   domain: string;

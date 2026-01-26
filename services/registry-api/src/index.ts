@@ -17,10 +17,10 @@ const app = new Hono<{ Bindings: Bindings }>();
 app.use("*", cors());
 
 // ============================================
-// GET /v1/resource - Get manifest
+// GET /api/v1/resource - Get manifest
 // ============================================
 
-app.get("/v1/resource", async (c) => {
+app.get("/api/v1/resource", async (c) => {
   const locator = c.req.query("locator");
   if (!locator) {
     return c.json({ error: "locator is required" }, 400);
@@ -47,10 +47,10 @@ app.get("/v1/resource", async (c) => {
 });
 
 // ============================================
-// HEAD /v1/resource - Check existence
+// HEAD /api/v1/resource - Check existence
 // ============================================
 
-app.on("HEAD", "/v1/resource", async (c) => {
+app.on("HEAD", "/api/v1/resource", async (c) => {
   const locator = c.req.query("locator");
   if (!locator) {
     return c.body(null, 400);
@@ -67,10 +67,10 @@ app.on("HEAD", "/v1/resource", async (c) => {
 });
 
 // ============================================
-// GET /v1/content - Get archive
+// GET /api/v1/content - Get archive
 // ============================================
 
-app.get("/v1/content", async (c) => {
+app.get("/api/v1/content", async (c) => {
   const locator = c.req.query("locator");
   if (!locator) {
     return c.json({ error: "locator is required" }, 400);
@@ -93,10 +93,10 @@ app.get("/v1/content", async (c) => {
 });
 
 // ============================================
-// GET /v1/search - Search resources
+// GET /api/v1/search - Search resources
 // ============================================
 
-app.get("/v1/search", async (c) => {
+app.get("/api/v1/search", async (c) => {
   const query = c.req.query("q") || "";
   const limit = parseInt(c.req.query("limit") || "100", 10);
   const offset = parseInt(c.req.query("offset") || "0", 10);
@@ -120,10 +120,10 @@ app.get("/v1/search", async (c) => {
 });
 
 // ============================================
-// POST /v1/publish - Publish resource
+// POST /api/v1/publish - Publish resource
 // ============================================
 
-app.post("/v1/publish", async (c) => {
+app.post("/api/v1/publish", async (c) => {
   const formData = await c.req.formData();
   const manifestStr = formData.get("manifest");
   const archive = formData.get("archive");
@@ -200,10 +200,10 @@ app.post("/v1/publish", async (c) => {
 });
 
 // ============================================
-// DELETE /v1/resource - Delete resource
+// DELETE /api/v1/resource - Delete resource
 // ============================================
 
-app.delete("/v1/resource", async (c) => {
+app.delete("/api/v1/resource", async (c) => {
   const locator = c.req.query("locator");
   if (!locator) {
     return c.json({ error: "locator is required" }, 400);

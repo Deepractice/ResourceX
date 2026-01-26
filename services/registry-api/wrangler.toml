@@ -3,8 +3,8 @@ name = "resourcex-registry-api"
 main = "src/index.ts"
 compatibility_date = "2024-12-01"
 
-# Custom domain (configure in Cloudflare Dashboard after deployment)
-# routes = [{ pattern = "registry.deepractice.dev/*", zone_name = "deepractice.dev" }]
+# Custom domain - API routes (higher priority than web)
+routes = [{ pattern = "registry.deepractice.dev/api/*", zone_name = "deepractice.dev" }]
 
 # D1 Database for manifest and index
 [[d1_databases]]
