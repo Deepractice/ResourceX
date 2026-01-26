@@ -1,5 +1,89 @@
 # @resourcexjs/type
 
+## 2.4.0
+
+### Minor Changes
+
+- 8669eb7: feat: introduce BundledType for sandbox-compatible execution
+
+  Breaking changes:
+  - `ResourceType.resolver` closure replaced with `BundledType.code` string
+  - `textType`, `jsonType`, `binaryType` are now BundledType (pre-bundled)
+  - `Registry.supportType()` now accepts BundledType instead of ResourceType
+  - `TypeHandlerChain.register()` now accepts BundledType
+
+  New exports:
+  - `BundledType` interface - pre-bundled type with code string
+  - `SandboxType` - "none" | "isolated" | "container"
+  - `bundleResourceType()` - bundle custom types from source files
+
+  Migration:
+
+  ```typescript
+  // Before (closure-based)
+  const customType: ResourceType = {
+    name: "custom",
+    resolver: {
+      schema: undefined,
+      async resolve(rxr) { ... }
+    }
+  };
+
+  // After (code string)
+  const customType: BundledType = {
+    name: "custom",
+    description: "Custom type",
+    code: `({ async resolve(rxr) { ... } })`,
+    sandbox: "none"
+  };
+  ```
+
+- 7a46fbf: refactor: remove serializer from ResourceType, unify storage format
+
+  **Breaking Changes:**
+  - Removed `ResourceSerializer` interface from `@resourcexjs/type`
+  - Removed `serializer` field from `ResourceType` interface
+  - Removed `serialize()` and `deserialize()` methods from `TypeHandlerChain`
+
+  **Migration:**
+
+  If you have custom resource types with serializers, remove the `serializer` field:
+
+  ```typescript
+  // Before
+  const customType: ResourceType = {
+    name: "custom",
+    description: "Custom type",
+    serializer: customSerializer, // Remove this
+    resolver: customResolver,
+  };
+
+  // After
+  const customType: ResourceType = {
+    name: "custom",
+    description: "Custom type",
+    resolver: customResolver,
+  };
+  ```
+
+  **Internal Changes:**
+  - Registry now uses unified storage format (manifest.json + archive.tar.gz)
+  - Storage/retrieval uses `archive.buffer()` directly instead of type-specific serialization
+  - Type validation happens at `add()` time via `typeHandler.canHandle()`
+
+- f9e6bdf: feat: implement sandbox execution architecture
+  - Add ResolverExecutor for executing bundled code in SandboX
+  - Add ResolveContext type for sandbox-safe data passing
+  - Update TypeHandlerChain to only manage types (no execution)
+  - Bundle builtin types with real ESM code via Bun.build
+  - Support both ESM bundled and legacy object literal code formats
+  - Add srt isolator support with configurable isolation levels
+  - Add isolator tests for text, json, and custom types
+
+### Patch Changes
+
+- @resourcexjs/core@2.4.0
+
 ## 2.3.0
 
 ### Patch Changes
