@@ -1,6 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import { Button, SearchBox, ResourceCard } from "@resourcexjs/ui";
-import { searchResources, parseLocator } from "~/lib/api";
+import { parseLocator } from "~/lib/api";
 
 // Mock data for now - will be replaced with real API calls
 const mockResources = [
@@ -66,21 +68,9 @@ function FilterIcon() {
   );
 }
 
-export default async function HomePage() {
-  // Try to fetch real data, fall back to mock
-  let resources = mockResources;
-  try {
-    const locators = await searchResources();
-    if (locators.length > 0) {
-      resources = locators.slice(0, 6).map((locator) => ({
-        locator,
-        description: "",
-        downloads: 0,
-      }));
-    }
-  } catch {
-    // Use mock data
-  }
+export default function HomePage() {
+  // Use mock data for now
+  const resources = mockResources;
 
   const popularResources = resources.slice(0, 3);
   const recentResources = resources.slice(3, 6);
@@ -118,7 +108,10 @@ export default async function HomePage() {
           {popularResources.map((resource) => {
             const parsed = parseLocator(resource.locator);
             return (
-              <Link key={resource.locator} href={`/resource/${encodeURIComponent(resource.locator)}`}>
+              <Link
+                key={resource.locator}
+                href={`/resource/${encodeURIComponent(resource.locator)}`}
+              >
                 <ResourceCard
                   name={parsed.name}
                   type={parsed.type as "prompt" | "tool" | "agent"}
@@ -145,7 +138,10 @@ export default async function HomePage() {
           {recentResources.map((resource) => {
             const parsed = parseLocator(resource.locator);
             return (
-              <Link key={resource.locator} href={`/resource/${encodeURIComponent(resource.locator)}`}>
+              <Link
+                key={resource.locator}
+                href={`/resource/${encodeURIComponent(resource.locator)}`}
+              >
                 <ResourceCard
                   name={parsed.name}
                   type={parsed.type as "prompt" | "tool" | "agent"}

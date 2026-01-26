@@ -9,6 +9,8 @@ build/
 out/
 outputs/
 *.tsbuildinfo
+.next/
+.open-next/
 
 # Logs
 logs/

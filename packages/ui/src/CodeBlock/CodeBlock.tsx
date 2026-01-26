@@ -85,9 +85,7 @@ export const CodeBlock = forwardRef<HTMLDivElement, CodeBlockProps>(
 
     return (
       <div ref={ref} className={cn("flex flex-col gap-3", className)} {...props}>
-        {title && (
-          <h4 className="text-base font-semibold text-foreground">{title}</h4>
-        )}
+        {title && <h4 className="text-base font-semibold text-foreground">{title}</h4>}
         <div className="flex items-center justify-between gap-3 p-4 bg-background-secondary rounded-lg">
           <code className="flex-1 text-[13px] font-mono text-foreground overflow-x-auto">
             {code}

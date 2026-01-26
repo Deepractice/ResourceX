@@ -32,9 +32,7 @@ export const VersionList = forwardRef<HTMLDivElement, VersionListProps>(
         )}
         {...props}
       >
-        {title && (
-          <h4 className="text-base font-semibold text-foreground">{title}</h4>
-        )}
+        {title && <h4 className="text-base font-semibold text-foreground">{title}</h4>}
         <div className="flex flex-col">
           {versions.map((item, index) => {
             const isFirst = index === 0;
@@ -44,7 +42,8 @@ export const VersionList = forwardRef<HTMLDivElement, VersionListProps>(
                 className={cn(
                   "flex items-center justify-between py-3",
                   index < versions.length - 1 && "border-b border-border",
-                  onVersionClick && "cursor-pointer hover:bg-background-secondary -mx-2 px-2 rounded"
+                  onVersionClick &&
+                    "cursor-pointer hover:bg-background-secondary -mx-2 px-2 rounded"
                 )}
                 onClick={() => onVersionClick?.(item, index)}
               >

@@ -1,17 +1,9 @@
-import { notFound } from "next/navigation";
-import Link from "next/link";
-import {
-  Button,
-  Breadcrumb,
-  CodeBlock,
-  FileList,
-  VersionList,
-} from "@resourcexjs/ui";
-import { getResource, parseLocator } from "~/lib/api";
+"use client";
 
-interface PageProps {
-  params: Promise<{ locator: string }>;
-}
+import { useParams } from "next/navigation";
+import Link from "next/link";
+import { Button, Breadcrumb, CodeBlock, FileList, VersionList } from "@resourcexjs/ui";
+import { parseLocator } from "~/lib/api";
 
 // Mock data
 const mockFiles = [
@@ -57,29 +49,20 @@ function DownloadIcon() {
   );
 }
 
-export default async function ResourceDetailPage({ params }: PageProps) {
-  const { locator } = await params;
+export default function ResourceDetailPage() {
+  const params = useParams();
+  const locator = params.locator as string;
   const decodedLocator = decodeURIComponent(locator);
-
-  let resource;
-  try {
-    resource = await getResource(decodedLocator);
-  } catch {
-    // Use parsed locator for mock display
-    resource = parseLocator(decodedLocator);
-  }
-
-  if (!resource) {
-    notFound();
-  }
-
   const parsed = parseLocator(decodedLocator);
   const installCommand = `rxr add ${decodedLocator}`;
 
   // Build breadcrumb items
   const breadcrumbItems = [
     { label: "Browse", href: "/browse" },
-    { label: parsed.type.charAt(0).toUpperCase() + parsed.type.slice(1) + "s", href: `/browse?type=${parsed.type}` },
+    {
+      label: parsed.type.charAt(0).toUpperCase() + parsed.type.slice(1) + "s",
+      href: `/browse?type=${parsed.type}`,
+    },
     { label: parsed.name, current: true },
   ];
 
@@ -122,9 +105,9 @@ export default async function ResourceDetailPage({ params }: PageProps) {
           <section>
             <h2 className="text-lg font-semibold text-foreground mb-3">Description</h2>
             <p className="text-foreground-secondary leading-relaxed">
-              AI assistant prompt for conversational interactions with context awareness.
-              Supports multi-turn dialogue, maintains context across sessions, and adapts
-              to user preferences for natural dialogue.
+              AI assistant prompt for conversational interactions with context awareness. Supports
+              multi-turn dialogue, maintains context across sessions, and adapts to user preferences
+              for natural dialogue.
             </p>
           </section>
 

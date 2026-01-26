@@ -31,15 +31,14 @@ const sizeStyles = {
 };
 
 export const Logo = forwardRef<HTMLDivElement, LogoProps>(
-  ({ className, size = "md", iconOnly = false, text = "deepartist", iconLetter = "D", ...props }, ref) => {
+  (
+    { className, size = "md", iconOnly = false, text = "deepartist", iconLetter = "D", ...props },
+    ref
+  ) => {
     const styles = sizeStyles[size];
 
     return (
-      <div
-        ref={ref}
-        className={cn("flex items-center", styles.gap, className)}
-        {...props}
-      >
+      <div ref={ref} className={cn("flex items-center", styles.gap, className)} {...props}>
         <div
           className={cn(
             "flex items-center justify-center bg-primary text-primary-foreground font-bold",
@@ -49,9 +48,7 @@ export const Logo = forwardRef<HTMLDivElement, LogoProps>(
           {iconLetter}
         </div>
         {!iconOnly && (
-          <span className={cn("font-semibold text-foreground", styles.text)}>
-            {text}
-          </span>
+          <span className={cn("font-semibold text-foreground", styles.text)}>{text}</span>
         )}
       </div>
     );

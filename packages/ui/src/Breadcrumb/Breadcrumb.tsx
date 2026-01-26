@@ -30,13 +30,9 @@ export const Breadcrumb = forwardRef<HTMLElement, BreadcrumbProps>(
       >
         {items.map((item, index) => (
           <div key={index} className="flex items-center gap-2">
-            {index > 0 && (
-              <span className="text-[13px] text-foreground-muted">{separator}</span>
-            )}
+            {index > 0 && <span className="text-[13px] text-foreground-muted">{separator}</span>}
             {item.current ? (
-              <span className="text-[13px] text-foreground font-normal">
-                {item.label}
-              </span>
+              <span className="text-[13px] text-foreground font-normal">{item.label}</span>
             ) : (
               <button
                 type="button"

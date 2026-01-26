@@ -22,10 +22,7 @@ export const Default: Story = {
 
 export const TwoLevels: Story = {
   args: {
-    items: [
-      { label: "Home" },
-      { label: "Resources", current: true },
-    ],
+    items: [{ label: "Home" }, { label: "Resources", current: true }],
   },
 };
 
@@ -53,10 +50,6 @@ export const CustomSeparator: Story = {
 
 export const Localized: Story = {
   args: {
-    items: [
-      { label: "浏览" },
-      { label: "提示词" },
-      { label: "assistant-prompt", current: true },
-    ],
+    items: [{ label: "浏览" }, { label: "提示词" }, { label: "assistant-prompt", current: true }],
   },
 };

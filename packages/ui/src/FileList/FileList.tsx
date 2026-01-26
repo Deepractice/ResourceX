@@ -46,9 +46,7 @@ export const FileList = forwardRef<HTMLDivElement, FileListProps>(
         )}
         {...props}
       >
-        {title && (
-          <h4 className="text-base font-semibold text-foreground">{title}</h4>
-        )}
+        {title && <h4 className="text-base font-semibold text-foreground">{title}</h4>}
         <div className="flex flex-col">
           {files.map((file, index) => (
             <div
@@ -61,9 +59,7 @@ export const FileList = forwardRef<HTMLDivElement, FileListProps>(
               onClick={() => onFileClick?.(file, index)}
             >
               <div className="flex items-center gap-2.5">
-                <span className="text-foreground-muted">
-                  {file.icon || <FileIcon />}
-                </span>
+                <span className="text-foreground-muted">{file.icon || <FileIcon />}</span>
                 <span className="text-sm text-foreground">{file.name}</span>
               </div>
               <span className="text-xs text-foreground-muted">{file.size}</span>
