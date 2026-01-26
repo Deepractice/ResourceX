@@ -102,3 +102,30 @@ export const Grid: Story = {
     </div>
   ),
 };
+
+export const Localized: Story = {
+  render: () => (
+    <div className="grid grid-cols-2 gap-5 max-w-2xl">
+      <ResourceCard
+        name="assistant-prompt"
+        type="prompt"
+        typeLabel="提示词"
+        downloadsSuffix="次下载"
+        author="deepractice.ai/sean"
+        version="1.2.0"
+        description="用于对话交互的 AI 助手提示词"
+        downloads={2400}
+      />
+      <ResourceCard
+        name="code-reviewer"
+        type="tool"
+        typeLabel="工具"
+        downloadsSuffix="次下载"
+        author="deepractice.ai/tools"
+        version="2.0.1"
+        description="AI 驱动的自动代码审查工具"
+        downloads={5100}
+      />
+    </div>
+  ),
+};

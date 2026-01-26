@@ -11,6 +11,10 @@ export interface ResourceCardProps extends HTMLAttributes<HTMLDivElement> {
   description?: string;
   downloads?: number;
   icon?: ReactNode;
+  /** Custom label for type badge, defaults to type value */
+  typeLabel?: string;
+  /** Suffix for downloads count, defaults to "downloads" */
+  downloadsSuffix?: string;
 }
 
 const typeColors: Record<ResourceType, { bg: string; text: string }> = {
@@ -129,7 +133,20 @@ const defaultIcons: Record<ResourceType, () => JSX.Element> = {
 
 export const ResourceCard = forwardRef<HTMLDivElement, ResourceCardProps>(
   (
-    { className, name, type, author, version, description, downloads = 0, icon, onClick, ...props },
+    {
+      className,
+      name,
+      type,
+      author,
+      version,
+      description,
+      downloads = 0,
+      icon,
+      typeLabel,
+      downloadsSuffix = "downloads",
+      onClick,
+      ...props
+    },
     ref
   ) => {
     const colors = typeColors[type] || typeColors.text;
@@ -184,11 +201,11 @@ export const ResourceCard = forwardRef<HTMLDivElement, ResourceCardProps>(
           <span
             className={cn("px-2 py-0.5 text-[11px] font-medium rounded", colors.bg, colors.text)}
           >
-            {type}
+            {typeLabel ?? type}
           </span>
           {downloads > 0 && (
             <span className="text-xs text-foreground-muted">
-              {formatDownloads(downloads)} downloads
+              {formatDownloads(downloads)} {downloadsSuffix}
             </span>
           )}
         </div>
