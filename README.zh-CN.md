@@ -42,14 +42,15 @@ AI Agent 需要管理各种资源：**prompts**、**tools**、**agents**、**ski
 ┌─────────────────────────────────────────────────────────────┐
 │                     Registry 层                             │
 │                                                             │
-│  Local / Git / Remote    →  存储与发现                      │
-│  link / resolve / search →  资源操作                        │
+│  Local / Remote          →  存储与发现                      │
+│  add / resolve / search  →  资源操作                        │
 ├─────────────────────────────────────────────────────────────┤
 │                    ResourceX 层                             │
 │                                                             │
 │  RXL (定位符)    →  deepractice.ai/assistant.prompt@1.0.0  │
 │  RXM (清单)      →  资源元数据                              │
-│  RXA (归档)      →  归档（存储/传输） (tar.gz)                       │
+│  RXA (归档)      →  tar.gz 格式，用于存储/传输              │
+│  RXP (包)        →  解压后的文件，用于运行时访问            │
 │  类型系统        →  text / json / binary / custom           │
 ├─────────────────────────────────────────────────────────────┤
 │                       ARP 层                                │
@@ -63,12 +64,14 @@ AI Agent 需要管理各种资源：**prompts**、**tools**、**agents**、**ski
 
 ```bash
 npm install resourcexjs
+# 或者
+bun add resourcexjs
 ```
 
 ```typescript
 import { createRegistry, parseRXL, createRXM, createRXA } from "resourcexjs";
 
-// 1. 创建资源
+// 1. 创建资源 (RXR = 定位符 + 清单 + 归档)
 const manifest = createRXM({
   domain: "localhost",
   name: "my-prompt",
@@ -82,13 +85,16 @@ const rxr = {
   archive: await createRXA({ content: "You are a helpful assistant." }),
 };
 
-// 2. 链接到本地 registry (~/.resourcex)
+// 2. 添加到本地 registry (~/.resourcex)
 const registry = createRegistry();
 await registry.add(rxr);
 
-// 3. 随处解析
-const resource = await registry.resolve("localhost/my-prompt.text@1.0.0");
-const text = await resource.execute(); // "You are a helpful assistant."
+// 3. 解析并执行
+const resolved = await registry.resolve("localhost/my-prompt.text@1.0.0");
+const text = await resolved.execute(); // "You are a helpful assistant."
+
+// 访问原始资源
+console.log(resolved.resource.manifest.name); // "my-prompt"
 ```
 
 ## [文档](./docs/README.md)

@@ -453,14 +453,6 @@ Runtime parameters passed to transport operations.
 type TransportParams = Record<string, string>;
 ```
 
-**Example:**
-
-```typescript
-// File transport with pattern
-const arl = arp.parse("arp:binary:file:///path/to/dir");
-const files = await arl.list({ pattern: "*.json" });
-```
-
 ---
 
 ## ListOptions
@@ -603,6 +595,7 @@ const fileTransport: TransportHandler;
 - Returns file content or directory listing (JSON array)
 - Supports `recursive` and `pattern` parameters for listing
 - Full CRUD operations
+- Creates parent directories automatically
 
 **Example:**
 
@@ -625,7 +618,7 @@ const httpsTransport: TransportHandler;
 **Features:**
 
 - Merges URL query params with runtime params
-- Throws "read-only" error for set/delete operations
+- Throws "not supported" error for set/delete/list/mkdir operations
 
 **Example:**
 
@@ -795,7 +788,7 @@ main().catch(console.error);
 
 ---
 
-## RxrTransport (resourcexjs package)
+## RxrTransport (Main Package)
 
 The main `resourcexjs` package includes an enhanced ARP with RxrTransport for accessing files inside resources.
 
@@ -811,7 +804,7 @@ const resource = await arl.resolve();
 console.log(resource.content); // Content from RXA archive
 
 // Manual registry injection (for testing)
-import { createRegistry } from "@resourcexjs/registry";
+import { createRegistry } from "resourcexjs";
 
 const registry = createRegistry();
 const rxrTransport = new RxrTransport(registry);
@@ -825,3 +818,6 @@ const customArp = createARP({ transports: [rxrTransport] });
   - `localhost` - LocalRegistry (filesystem)
   - Other domains - RemoteRegistry (via well-known discovery)
 - Read-only (set/delete throw "read-only" error)
+- List: Supported (lists files in resource)
+
+**Note:** RxrTransport is only available in the main `resourcexjs` package, not in `@resourcexjs/arp`.

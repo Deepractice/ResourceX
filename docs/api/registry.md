@@ -1,6 +1,6 @@
 # @resourcexjs/registry API Reference
 
-The registry package provides resource storage and retrieval with support for local, remote (HTTP), and git-based registries.
+The registry package provides resource storage and retrieval with support for local storage, remote fetch via HTTP, and well-known discovery.
 
 ## Installation
 
@@ -13,40 +13,48 @@ bun add @resourcexjs/registry
 Factory function to create a registry instance.
 
 ```typescript
-function createRegistry(config?: RegistryConfig): Registry;
+function createRegistry(config?: CreateRegistryConfig): Registry;
 ```
 
 **Parameters:**
 
-| Name     | Type                          | Description            |
-| -------- | ----------------------------- | ---------------------- |
-| `config` | `RegistryConfig \| undefined` | Registry configuration |
+| Name     | Type                                | Description            |
+| -------- | ----------------------------------- | ---------------------- |
+| `config` | `CreateRegistryConfig \| undefined` | Registry configuration |
 
 **Returns:** `Registry` - Registry instance
-
-**Throws:** `RegistryError` if remote git URL is provided without domain
 
 **Example:**
 
 ```typescript
 import { createRegistry } from "@resourcexjs/registry";
 
-// Local registry (default path: ~/.resourcex)
-const local = createRegistry();
+// Default: local storage at ~/.resourcex
+const registry = createRegistry();
 
-// Local registry with custom path
+// With custom local path
 const customPath = createRegistry({ path: "./my-registry" });
 
-// Remote registry (HTTP API)
-const remote = createRegistry({
-  endpoint: "https://registry.deepractice.ai/v1",
+// With mirror for faster remote fetch
+const withMirror = createRegistry({
+  mirror: "https://mirror.example.com/v1",
 });
 
-// Git registry (requires domain for security)
-const git = createRegistry({
-  type: "git",
-  url: "git@github.com:Deepractice/Registry.git",
-  domain: "deepractice.ai",
+// With custom resource types
+const withTypes = createRegistry({
+  types: [myCustomType],
+});
+
+// With isolator for sandbox execution
+const withIsolator = createRegistry({
+  isolator: "srt", // or "none", "cloudflare", "e2b"
+});
+
+// Server mode: custom storage
+import { LocalStorage } from "@resourcexjs/registry";
+
+const serverRegistry = createRegistry({
+  storage: new LocalStorage({ path: "./server-data" }),
 });
 ```
 
@@ -58,11 +66,9 @@ The main interface for resource operations.
 
 ```typescript
 interface Registry {
-  supportType(type: ResourceType): void;
+  supportType(type: BundledType): void;
   link(path: string): Promise<void>;
   add(source: string | RXR): Promise<void>;
-  pull(locator: string, options?: PullOptions): Promise<void>;
-  publish(source: string | RXR, options: PublishOptions): Promise<void>;
   get(locator: string): Promise<RXR>;
   resolve<TArgs = void, TResult = unknown>(
     locator: string
@@ -78,23 +84,23 @@ interface Registry {
 Register a custom resource type.
 
 ```typescript
-supportType(type: ResourceType): void
+supportType(type: BundledType): void
 ```
 
 **Parameters:**
 
-| Name   | Type           | Description                     |
-| ------ | -------------- | ------------------------------- |
-| `type` | `ResourceType` | Custom resource type definition |
+| Name   | Type          | Description                     |
+| ------ | ------------- | ------------------------------- |
+| `type` | `BundledType` | Custom resource type definition |
 
 **Example:**
 
 ```typescript
-import { createRegistry } from "@resourcexjs/registry";
-import { myCustomType } from "./types";
+import { createRegistry, bundleResourceType } from "@resourcexjs/registry";
 
 const registry = createRegistry();
-registry.supportType(myCustomType);
+const promptType = await bundleResourceType("./prompt.type.ts");
+registry.supportType(promptType);
 ```
 
 ### link
@@ -111,23 +117,23 @@ link(path: string): Promise<void>
 | ------ | -------- | ---------------------------------------------------- |
 | `path` | `string` | Path to resource directory (must have resource.json) |
 
+**Throws:** `RegistryError` if storage does not support link
+
 **Example:**
 
 ```typescript
-import { createRegistry } from "@resourcexjs/registry";
-
 const registry = createRegistry();
 
 // Link development directory - changes reflect immediately
 await registry.link("./my-prompt");
 
 // Now you can resolve it
-const resolved = await registry.resolve("my-prompt.text@1.0.0");
+const resolved = await registry.resolve("localhost/my-prompt.text@1.0.0");
 ```
 
 ### add
 
-Add a resource to the local registry by copying its content.
+Add a resource to the storage by copying its content.
 
 ```typescript
 add(source: string | RXR): Promise<void>
@@ -139,11 +145,12 @@ add(source: string | RXR): Promise<void>
 | -------- | --------------- | ------------------------------------- |
 | `source` | `string \| RXR` | Resource directory path or RXR object |
 
+**Throws:** `ResourceTypeError` if resource type is not supported
+
 **Example:**
 
 ```typescript
-import { createRegistry } from "@resourcexjs/registry";
-import { createRXM, createRXA, parseRXL } from "@resourcexjs/core";
+import { createRegistry, createRXM, createRXA, parseRXL } from "@resourcexjs/registry";
 
 const registry = createRegistry();
 
@@ -157,12 +164,12 @@ const manifest = createRXM({
   type: "text",
   version: "1.0.0",
 });
-const content = await createRXA({ content: "Hello, World!" });
+const archive = await createRXA({ content: "Hello, World!" });
 
 await registry.add({
   locator: parseRXL(manifest.toLocator()),
   manifest,
-  content,
+  archive,
 });
 ```
 
@@ -184,6 +191,11 @@ get(locator: string): Promise<RXR>
 
 **Throws:** `RegistryError` if resource not found
 
+**Behavior:**
+
+- For `localhost` domain: Only checks local storage
+- For other domains: Checks local storage first, then fetches from remote if not found
+
 **Example:**
 
 ```typescript
@@ -191,7 +203,8 @@ const rxr = await registry.get("localhost/hello.text@1.0.0");
 console.log(rxr.manifest.domain); // "localhost"
 
 // Access raw content
-const files = await rxr.archive.extract().then(pkg => pkg.files();
+const pkg = await rxr.archive.extract();
+const files = await pkg.files();
 ```
 
 ### resolve
@@ -231,7 +244,7 @@ console.log(resolved.schema); // undefined
 
 ### exists
 
-Check if a resource exists.
+Check if a resource exists in local storage.
 
 ```typescript
 exists(locator: string): Promise<boolean>
@@ -243,7 +256,9 @@ exists(locator: string): Promise<boolean>
 | --------- | -------- | ----------------------- |
 | `locator` | `string` | Resource locator string |
 
-**Returns:** `Promise<boolean>` - True if resource exists
+**Returns:** `Promise<boolean>` - True if resource exists in local storage
+
+**Note:** For non-localhost domains, this only checks local cache. Use `get()` to trigger remote fetch.
 
 **Example:**
 
@@ -255,7 +270,7 @@ if (await registry.exists("localhost/hello.text@1.0.0")) {
 
 ### delete
 
-Delete a resource from the local registry.
+Delete a resource from the local storage.
 
 ```typescript
 delete(locator: string): Promise<void>
@@ -289,6 +304,8 @@ search(options?: SearchOptions): Promise<RXL[]>
 
 **Returns:** `Promise<RXL[]>` - Array of matching locators
 
+**Note:** Search only works on local storage.
+
 **Example:**
 
 ```typescript
@@ -310,40 +327,6 @@ for (const rxl of paginated) {
   console.log(rxl.toString());
 }
 ```
-
-### pull
-
-Pull a resource from a remote registry to local cache.
-
-```typescript
-pull(locator: string, options?: PullOptions): Promise<void>
-```
-
-**Parameters:**
-
-| Name      | Type                       | Description                            |
-| --------- | -------------------------- | -------------------------------------- |
-| `locator` | `string`                   | Resource locator (must include domain) |
-| `options` | `PullOptions \| undefined` | Pull options                           |
-
-**Note:** Not yet implemented. See issue #018.
-
-### publish
-
-Publish a resource to a remote registry.
-
-```typescript
-publish(source: string | RXR, options: PublishOptions): Promise<void>
-```
-
-**Parameters:**
-
-| Name      | Type             | Description                           |
-| --------- | ---------------- | ------------------------------------- |
-| `source`  | `string \| RXR`  | Resource directory path or RXR object |
-| `options` | `PublishOptions` | Publish target configuration          |
-
-**Note:** Not yet implemented. See issue #018.
 
 ---
 
@@ -371,57 +354,84 @@ interface SearchOptions {
 
 ## Configuration Types
 
-### LocalRegistryConfig
+### ClientRegistryConfig
+
+Configuration for client mode (default).
 
 ```typescript
-interface LocalRegistryConfig {
+interface ClientRegistryConfig {
   path?: string;
-  types?: ResourceType[];
+  mirror?: string;
+  types?: BundledType[];
+  isolator?: IsolatorType;
 }
 ```
 
 **Properties:**
 
-| Property | Type                          | Description                            |
-| -------- | ----------------------------- | -------------------------------------- |
-| `path`   | `string \| undefined`         | Storage path (default: `~/.resourcex`) |
-| `types`  | `ResourceType[] \| undefined` | Additional resource types to support   |
+| Property   | Type                         | Description                                |
+| ---------- | ---------------------------- | ------------------------------------------ |
+| `path`     | `string \| undefined`        | Local cache path (default: `~/.resourcex`) |
+| `mirror`   | `string \| undefined`        | Mirror URL for faster remote fetch         |
+| `types`    | `BundledType[] \| undefined` | Additional resource types to support       |
+| `isolator` | `IsolatorType \| undefined`  | Sandbox isolation level (default: "none")  |
 
-### RemoteRegistryConfig
+### ServerRegistryConfig
+
+Configuration for server mode (custom storage).
 
 ```typescript
-interface RemoteRegistryConfig {
-  endpoint: string;
+interface ServerRegistryConfig {
+  storage: Storage;
+  types?: BundledType[];
+  isolator?: IsolatorType;
 }
 ```
 
 **Properties:**
 
-| Property   | Type     | Description                  |
-| ---------- | -------- | ---------------------------- |
-| `endpoint` | `string` | Remote registry API endpoint |
+| Property   | Type                         | Description                          |
+| ---------- | ---------------------------- | ------------------------------------ |
+| `storage`  | `Storage`                    | Custom storage implementation        |
+| `types`    | `BundledType[] \| undefined` | Additional resource types to support |
+| `isolator` | `IsolatorType \| undefined`  | Sandbox isolation level              |
 
-### GitRegistryConfig
+### IsolatorType
+
+Sandbox isolation types for resolver execution.
 
 ```typescript
-interface GitRegistryConfig {
-  type: "git";
-  url: string;
-  ref?: string;
-  basePath?: string;
-  domain?: string;
+type IsolatorType = "none" | "srt" | "cloudflare" | "e2b";
+```
+
+| Type           | Overhead | Description                    |
+| -------------- | -------- | ------------------------------ |
+| `"none"`       | ~10ms    | No isolation (development)     |
+| `"srt"`        | ~50ms    | OS-level isolation (SRT)       |
+| `"cloudflare"` | ~100ms   | Container isolation (Docker)   |
+| `"e2b"`        | ~150ms   | MicroVM isolation (production) |
+
+---
+
+## ResolvedResource
+
+Result from `resolve()` method.
+
+```typescript
+interface ResolvedResource<TArgs = void, TResult = unknown> {
+  resource: RXR;
+  execute: (args?: TArgs) => TResult | Promise<TResult>;
+  schema: TArgs extends void ? undefined : JSONSchema;
 }
 ```
 
 **Properties:**
 
-| Property   | Type                  | Description                               |
-| ---------- | --------------------- | ----------------------------------------- |
-| `type`     | `"git"`               | Registry type identifier                  |
-| `url`      | `string`              | Git repository URL (SSH format)           |
-| `ref`      | `string \| undefined` | Git ref (branch/tag). Default: "main"     |
-| `basePath` | `string \| undefined` | Base path in repo. Default: ".resourcex"  |
-| `domain`   | `string \| undefined` | Trusted domain (required for remote URLs) |
+| Property   | Type                                            | Description               |
+| ---------- | ----------------------------------------------- | ------------------------- |
+| `resource` | `RXR`                                           | Original resource object  |
+| `execute`  | `(args?: TArgs) => TResult \| Promise<TResult>` | Lazy execution function   |
+| `schema`   | `JSONSchema \| undefined`                       | JSON Schema for arguments |
 
 ---
 
@@ -446,19 +456,12 @@ function discoverRegistry(domain: string): Promise<DiscoveryResult>;
 **Example:**
 
 ```typescript
-import { discoverRegistry, createRegistry } from "@resourcexjs/registry";
+import { discoverRegistry } from "@resourcexjs/registry";
 
 // Discover registry for a domain
 const discovery = await discoverRegistry("deepractice.ai");
 console.log(discovery.domain); // "deepractice.ai"
-console.log(discovery.registries); // ["git@github.com:Deepractice/Registry.git"]
-
-// Create registry from discovery (auto-bound domain)
-const registry = createRegistry({
-  type: "git",
-  url: discovery.registries[0],
-  domain: discovery.domain,
-});
+console.log(discovery.registries); // ["https://registry.deepractice.ai/v1"]
 ```
 
 ### DiscoveryResult
@@ -483,7 +486,7 @@ The format of the well-known endpoint response.
 
 ```typescript
 interface WellKnownResponse {
-  version: string;
+  version?: string;
   registries: string[];
 }
 ```
@@ -493,95 +496,67 @@ interface WellKnownResponse {
 ```json
 {
   "version": "1.0",
-  "registries": ["git@github.com:Example/Registry.git"]
+  "registries": ["https://registry.example.com/v1"]
 }
 ```
 
 ---
 
-## Registry Implementations
+## Storage Interface
 
-### LocalRegistry
-
-Filesystem-based registry for local development and caching.
+Storage abstraction for resource CRUD operations.
 
 ```typescript
-class LocalRegistry implements Registry {
-  constructor(config?: LocalRegistryConfig);
+interface Storage {
+  readonly type: string;
+  get(locator: string): Promise<RXR>;
+  put(rxr: RXR): Promise<void>;
+  exists(locator: string): Promise<boolean>;
+  delete(locator: string): Promise<void>;
+  search(options?: SearchOptions): Promise<RXL[]>;
+}
+```
+
+### LocalStorage
+
+Filesystem-based storage implementation.
+
+```typescript
+class LocalStorage implements Storage {
+  constructor(config?: LocalStorageConfig);
+  link(path: string): Promise<void>;
 }
 ```
 
 **Storage Structure:**
 
 ```
-~/.resourcex/
-├── local/                              # Development resources
-│   └── {name}.{type}/
-│       └── {version}/
-│           ├── manifest.json
-│           └── archive.tar.gz
-│
-└── cache/                              # Remote cached resources
-    └── {domain}/
-        └── {path}/
-            └── {name}.{type}/
-                └── {version}/
-                    ├── manifest.json
-                    └── archive.tar.gz
+{basePath}/{domain}/{path}/{name}.{type}/{version}/
+  ├── manifest.json
+  └── archive.tar.gz
 ```
 
-**Features:**
-
-- Full read/write support
-- Automatic local/cache path resolution
-- Supports all registry operations
-
-### RemoteRegistry
-
-HTTP API-based registry for remote access.
+**Example:**
 
 ```typescript
-class RemoteRegistry implements Registry {
-  constructor(config: RemoteRegistryConfig);
+import { LocalStorage } from "@resourcexjs/registry";
+
+const storage = new LocalStorage({ path: "./my-resources" });
+```
+
+### LocalStorageConfig
+
+```typescript
+interface LocalStorageConfig {
+  path?: string;
 }
 ```
 
-**Features:**
+**Properties:**
 
-- Read-only operations (get, resolve, exists, search)
-- HTTP API endpoints: `/resource`, `/content`, `/exists`, `/search`
-- Throws `RegistryError` for write operations
-
-**API Endpoints:**
-
-| Endpoint                                 | Method | Description              |
-| ---------------------------------------- | ------ | ------------------------ |
-| `/resource?locator=...`                  | GET    | Get resource manifest    |
-| `/content?locator=...`                   | GET    | Get resource content     |
-| `/exists?locator=...`                    | GET    | Check resource existence |
-| `/search?query=...&limit=...&offset=...` | GET    | Search resources         |
-
-### GitRegistry
-
-Git clone-based registry for repository-backed resources.
-
-```typescript
-class GitRegistry implements Registry {
-  constructor(config: GitRegistryConfig);
-}
-```
-
-**Features:**
-
-- Read-only operations
-- Auto-clones repository to `~/.resourcex/.git-cache/`
-- Fetches updates on every access
-- Supports main and master branches
-
-**Security:**
-
-- Remote URLs require `domain` parameter
-- Domain validation middleware auto-applied when domain is set
+| Property | Type                  | Description                            |
+| -------- | --------------------- | -------------------------------------- |
+| `path`   | `string \| undefined` | Storage path (default: `~/.resourcex`) |
 
 ---
 
@@ -593,7 +568,7 @@ Base class for creating registry middleware.
 
 ```typescript
 abstract class RegistryMiddleware implements Registry {
-  constructor(inner: Registry);
+  constructor(protected readonly inner: Registry);
 }
 ```
 
@@ -634,37 +609,21 @@ function withDomainValidation(registry: Registry, trustedDomain: string): Regist
 **Example:**
 
 ```typescript
-import { createRegistry, withDomainValidation, GitRegistry } from "@resourcexjs/registry";
+import { createRegistry, withDomainValidation, LocalStorage } from "@resourcexjs/registry";
 
-const gitRegistry = new GitRegistry({
-  type: "git",
-  url: "git@github.com:Deepractice/Registry.git",
+const baseRegistry = createRegistry({
+  storage: new LocalStorage({ path: "./resources" }),
 });
 
 // Wrap with domain validation
-const secured = withDomainValidation(gitRegistry, "deepractice.ai");
+const secured = withDomainValidation(baseRegistry, "deepractice.ai");
 
 // Resources with mismatched domains will throw RegistryError
-```
-
----
-
-## Type Guards
-
-### isRemoteConfig
-
-Check if config is for remote registry.
-
-```typescript
-function isRemoteConfig(config?: RegistryConfig): config is RemoteRegistryConfig;
-```
-
-### isGitConfig
-
-Check if config is for git registry.
-
-```typescript
-function isGitConfig(config?: RegistryConfig): config is GitRegistryConfig;
+try {
+  await secured.get("evil.com/resource.text@1.0.0");
+} catch (error) {
+  // "Untrusted domain: resource claims 'evil.com' but registry only trusts 'deepractice.ai'"
+}
 ```
 
 ---
@@ -676,7 +635,7 @@ function isGitConfig(config?: RegistryConfig): config is GitRegistryConfig;
 Error class for registry operations.
 
 ```typescript
-class RegistryError extends ResourceXError {
+class RegistryError extends Error {
   constructor(message: string);
 }
 ```
@@ -706,7 +665,7 @@ try {
 import {
   createRegistry,
   discoverRegistry,
-  LocalRegistry,
+  LocalStorage,
   RegistryError,
 } from "@resourcexjs/registry";
 import { parseRXL, createRXM, createRXA } from "@resourcexjs/core";
@@ -728,19 +687,19 @@ async function main() {
     type: "text",
     version: "1.0.0",
   });
-  const content = await createRXA({ content: "Hello, ResourceX!" });
+  const archive = await createRXA({ content: "Hello, ResourceX!" });
   await registry.add({
     locator: parseRXL(manifest.toLocator()),
     manifest,
-    content,
+    archive,
   });
 
   // Check existence
-  const exists = await registry.exists("greeting.text@1.0.0");
+  const exists = await registry.exists("localhost/greeting.text@1.0.0");
   console.log("Exists:", exists); // true
 
   // Resolve and execute
-  const resolved = await registry.resolve<void, string>("greeting.text@1.0.0");
+  const resolved = await registry.resolve<void, string>("localhost/greeting.text@1.0.0");
   const text = await resolved.execute();
   console.log("Content:", text); // "Hello, ResourceX!"
 
@@ -749,7 +708,7 @@ async function main() {
   console.log("Found:", results.length); // 1
 
   // Clean up
-  await registry.delete("greeting.text@1.0.0");
+  await registry.delete("localhost/greeting.text@1.0.0");
 }
 
 main().catch(console.error);

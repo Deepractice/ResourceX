@@ -5,23 +5,21 @@ ResourceX - Resource management protocol for AI Agents. Like npm for AI resource
 ## Installation
 
 ```bash
-npm install resourcexjs @resourcexjs/registry
+npm install resourcexjs
 # or
-bun add resourcexjs @resourcexjs/registry
+bun add resourcexjs
 ```
 
 ## Quick Start
 
 ```typescript
-import { createRegistry } from "@resourcexjs/registry";
-import { createRXM, createRXA, parseRXL } from "resourcexjs";
+import { createRegistry, parseRXL, createRXM, createRXA } from "resourcexjs";
 
 // Create registry
 const registry = createRegistry();
 
 // Prepare a resource
 const manifest = createRXM({
-  domain: "localhost",
   name: "my-prompt",
   type: "text",
   version: "1.0.0",
@@ -30,18 +28,19 @@ const manifest = createRXM({
 const rxr = {
   locator: parseRXL(manifest.toLocator()),
   manifest,
-  archive: createRXA("You are a helpful assistant."),
+  archive: await createRXA({ content: "You are a helpful assistant." }),
 };
 
-// Link to local registry
-await registry.link(rxr);
+// Add to registry
+await registry.add(rxr);
 
-// Resolve resource
-const resource = await registry.resolve("localhost/my-prompt.text@1.0.0");
-console.log(await resource.content.text());
+// Resolve and execute
+const resolved = await registry.resolve("localhost/my-prompt.text@1.0.0");
+const text = await resolved.execute();
+console.log(text); // "You are a helpful assistant."
 ```
 
-## API
+## Core Concepts
 
 ### RXL - Resource Locator
 
@@ -68,47 +67,41 @@ Create resource metadata:
 import { createRXM } from "resourcexjs";
 
 const manifest = createRXM({
-  domain: "deepractice.ai",
+  domain: "deepractice.ai", // optional, defaults to "localhost"
   path: "sean", // optional
   name: "assistant",
   type: "prompt",
   version: "1.0.0",
 });
 
-manifest.toLocator(); // → "deepractice.ai/sean/assistant.prompt@1.0.0"
-manifest.toJSON(); // → plain object
+manifest.toLocator(); // "deepractice.ai/sean/assistant.prompt@1.0.0"
+manifest.toJSON(); // plain object
 ```
 
 ### RXA - Resource Archive
 
-Archive container (tar.gz) for storage/transfer, extract to RXP for file access:
+Archive container (tar.gz) for storage/transfer:
 
 ```typescript
 import { createRXA } from "resourcexjs";
 
 // Single file
-const content = await createRXA({ content: "Hello, World!" });
+const archive = await createRXA({ content: "Hello, World!" });
 
 // Multiple files
-const content = await createRXA({
+const archive = await createRXA({
   "index.ts": "export default 1",
   "styles.css": "body {}",
 });
 
-// Nested directories
-const content = await createRXA({
-  "src/index.ts": "main code",
-  "src/utils/helper.ts": "helper code",
-});
-
 // Extract to package for file access
-const pkg = await content.extract();
-const buffer = await pkg.file("content"); // single file → Buffer
-const files = await pkg.files(); // all files → Map<string, Buffer>
+const pkg = await archive.extract();
+const buffer = await pkg.file("content"); // Buffer
+const files = await pkg.files(); // Map<string, Buffer>
 
 // Archive methods
-const archiveBuffer = await content.buffer(); // raw tar.gz
-const stream = content.stream; // tar.gz ReadableStream
+const tarGzBuffer = await archive.buffer();
+const stream = archive.stream;
 ```
 
 ### RXR - Resource
@@ -116,33 +109,41 @@ const stream = content.stream; // tar.gz ReadableStream
 Complete resource object (pure interface):
 
 ```typescript
-interface RXR {
-  locator: RXL;
-  manifest: RXM;
-  archive: RXA;
-}
+import type { RXR } from "resourcexjs";
 
-// Create from literals
-const rxr: RXR = { locator, manifest, content };
+const rxr: RXR = {
+  locator, // RXL
+  manifest, // RXM
+  archive, // RXA
+};
 ```
 
 ### Registry
 
-Resource storage and retrieval (from `@resourcexjs/registry`):
+Resource storage and retrieval:
 
 ```typescript
-import { createRegistry } from "@resourcexjs/registry";
+import { createRegistry, loadResource } from "resourcexjs";
 
 const registry = createRegistry({
   path: "~/.resourcex", // optional
   types: [customType], // optional, defaults to built-in types
+  isolator: "srt", // optional sandbox isolation
 });
 
-// Link (local development/cache)
-await registry.link(rxr);
+// Add from folder or RXR
+await registry.add("./my-prompt");
+await registry.add(rxr);
 
-// Resolve (local-first, then remote)
-const rxr = await registry.resolve("deepractice.ai/assistant.prompt@1.0.0");
+// Link for development (symlink)
+await registry.link("./my-prompt");
+
+// Resolve and execute
+const resolved = await registry.resolve("localhost/my-prompt.text@1.0.0");
+const text = await resolved.execute();
+
+// Get raw RXR
+const rxr = await registry.get("localhost/my-prompt.text@1.0.0");
 
 // Check existence
 const exists = await registry.exists("localhost/test.text@1.0.0");
@@ -164,44 +165,34 @@ Built-in types:
 | `json`   | config, manifest | JSON content   |
 | `binary` | bin, blob, raw   | Binary content |
 
-Define custom types:
+Custom types (requires bundling):
 
 ```typescript
-import { defineResourceType } from "resourcexjs";
+import { bundleResourceType, createRegistry } from "resourcexjs";
 
-defineResourceType({
-  name: "prompt",
-  aliases: ["deepractice-prompt"],
-  description: "AI Prompt template",
-  serializer: {
-    serialize: async (rxr) => Buffer.from(await rxr.content.text()),
-    deserialize: async (data, manifest) => ({
-      locator: parseRXL(manifest.toLocator()),
-      manifest,
-      archive: createRXA(data.toString()),
-    }),
-  },
-  resolver: {
-    resolve: async (rxr) => ({
-      template: await rxr.content.text(),
-      // ... custom methods
-    }),
-  },
+// Bundle from source file
+const promptType = await bundleResourceType("./prompt.type.ts");
+
+// Create registry with type
+const registry = createRegistry({
+  types: [promptType],
 });
 ```
 
-### TypeHandlerChain
+### Load Resources
 
-Responsibility chain for type handling (used internally):
+Load resources from folders:
 
 ```typescript
-import { createTypeHandlerChain, builtinTypes } from "resourcexjs";
+import { loadResource, FolderLoader } from "resourcexjs";
 
-const chain = createTypeHandlerChain(builtinTypes);
+// Load from folder (uses FolderLoader by default)
+const rxr = await loadResource("./my-prompt");
 
-chain.serialize(rxr); // → Buffer
-chain.deserialize(buffer, manifest); // → RXR
-chain.resolve<T>(rxr); // → T (usable object)
+// Use custom loader
+const rxr = await loadResource("./my-prompt", {
+  loader: new CustomLoader(),
+});
 ```
 
 ## ARP - Low-level I/O
@@ -211,7 +202,8 @@ For direct file/network operations:
 ```typescript
 import { createARP } from "resourcexjs/arp";
 
-const arp = createARP(); // Defaults include file, http, https, text, binary
+// createARP() includes rxr transport for ResourceX resources
+const arp = createARP();
 
 // Parse URL
 const arl = arp.parse("arp:text:file://./config.txt");
@@ -220,16 +212,16 @@ const arl = arp.parse("arp:text:file://./config.txt");
 const resource = await arl.resolve();
 console.log(resource.content); // string
 
-// Read with params (e.g., directory listing)
-const dirArl = arp.parse("arp:text:file://./data");
-const dir = await dirArl.resolve({ recursive: "true", pattern: "*.json" });
-
 // Write
 await arl.deposit("hello world");
 
 // Operations
-await arl.exists(); // → boolean
+await arl.exists(); // boolean
 await arl.delete();
+
+// Access files inside resources
+const rxrArl = arp.parse("arp:text:rxr://localhost/my-prompt.text@1.0.0/content");
+const { content } = await rxrArl.resolve();
 ```
 
 ## Exports
@@ -238,7 +230,9 @@ await arl.delete();
 
 ```typescript
 // Errors
-export { ResourceXError, LocatorError, ManifestError, ContentError, ResourceTypeError };
+export { ResourceXError, LocatorError, ManifestError, ContentError };
+export { ResourceTypeError };
+export { RegistryError };
 
 // RXL (Locator)
 export { parseRXL };
@@ -250,52 +244,93 @@ export type { RXM, ManifestData };
 
 // RXA (Archive) and RXP (Package)
 export { createRXA };
-export type { RXA, RXP, PathNode };
+export type { RXA, RXP, RXAInput, PathNode };
 
 // RXR (Resource)
-export type { RXR, ResourceType, ResourceSerializer, ResourceResolver };
+export type { RXR };
 
-// ResourceType
-export { defineResourceType, getResourceType, clearResourceTypes };
+// Type System
+export type {
+  ResourceType,
+  ResourceResolver,
+  ResolvedResource,
+  JSONSchema,
+  BundledType,
+  IsolatorType,
+};
+export { TypeHandlerChain, bundleResourceType };
 export { textType, jsonType, binaryType, builtinTypes };
-export { TypeHandlerChain, createTypeHandlerChain };
-```
 
-### Registry Package (`@resourcexjs/registry`)
+// Resource Loading
+export type { ResourceLoader, LoadResourceConfig };
+export { loadResource, FolderLoader };
 
-```typescript
-export { createRegistry, ARPRegistry };
-export { RegistryError };
-export type { Registry, RegistryConfig };
+// Registry
+export type {
+  Registry,
+  RegistryConfig,
+  ClientRegistryConfig,
+  ServerRegistryConfig,
+  CreateRegistryConfig,
+};
+export type { Storage, SearchOptions, DiscoveryResult, WellKnownResponse };
+export { DefaultRegistry, createRegistry, discoverRegistry, LocalStorage };
+
+// Middleware
+export { RegistryMiddleware, DomainValidation, withDomainValidation };
+
+// Version
+export const VERSION: string;
 ```
 
 ### ARP Package (`resourcexjs/arp`)
 
 ```typescript
+// Enhanced createARP with RxrTransport
 export { createARP, ARP, type ARPConfig };
+export { VERSION };
 export { ARPError, ParseError, TransportError, SemanticError };
 export type { ARI, ARL };
-export { fileTransport, httpTransport, httpsTransport };
-export { textSemantic, binarySemantic };
+
+// Transports
+export type { TransportHandler, TransportResult, TransportParams };
+export { FileTransportHandler, fileTransport };
+export { HttpTransportHandler, httpTransport, httpsTransport };
+export { RxrTransport, clearRegistryCache, type RxrTransportRegistry };
+
+// Semantics
+export type { Resource, SemanticHandler, ResourceMeta, SemanticContext };
+export type { TextResource, BinaryResource, BinaryInput };
+export { TextSemanticHandler, textSemantic };
+export { BinarySemanticHandler, binarySemantic };
 ```
 
 ## Error Hierarchy
 
 ```
 Error
-└── ResourceXError
-    ├── LocatorError (RXL parsing)
-    ├── ManifestError (RXM validation)
-    ├── ContentError (RXA/RXP operations)
-    └── ResourceTypeError (Type registration)
-
-└── RegistryError (Registry operations)
-
+├── ResourceXError
+│   ├── LocatorError (RXL parsing)
+│   ├── ManifestError (RXM validation)
+│   └── ContentError (RXA/RXP operations)
+├── ResourceTypeError (Type registration)
+├── RegistryError (Registry operations)
 └── ARPError
     ├── ParseError (URL parsing)
-    ├── TransportError (Transport not found)
-    └── SemanticError (Semantic not found)
+    ├── TransportError (Transport operations)
+    └── SemanticError (Semantic operations)
 ```
+
+## Packages
+
+| Package                 | Description                   |
+| ----------------------- | ----------------------------- |
+| `resourcexjs`           | Main package (re-exports all) |
+| `@resourcexjs/core`     | RXL, RXM, RXA, RXP, RXR       |
+| `@resourcexjs/type`     | Type system, bundler          |
+| `@resourcexjs/loader`   | Resource loading              |
+| `@resourcexjs/registry` | Storage and retrieval         |
+| `@resourcexjs/arp`      | Low-level I/O protocol        |
 
 ## License
 

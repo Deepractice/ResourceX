@@ -68,8 +68,19 @@ export class LocalStorage implements Storage {
 
   /**
    * Check if a resource exists at a specific path.
+   * Handles both regular storage (manifest.json) and symlinked dev directories (resource.json).
    */
   private async existsAt(resourcePath: string): Promise<boolean> {
+    // Check if path is a symlink (created by link())
+    if (await this.isSymlink(resourcePath)) {
+      // For symlinks, check if resource.json exists in the linked directory
+      const targetPath = await readlink(resourcePath);
+      const resourceJsonPath = join(targetPath, "resource.json");
+      const arl = this.arp.parse(this.toArpUrl(resourceJsonPath));
+      return arl.exists();
+    }
+
+    // Regular storage: check for manifest.json
     const manifestPath = join(resourcePath, "manifest.json");
     const arl = this.arp.parse(this.toArpUrl(manifestPath));
     return arl.exists();

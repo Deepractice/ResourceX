@@ -43,8 +43,8 @@ arp:binary:https://example.com/image.png
 
 **Semantics:**
 
-- `text` - UTF-8 text → string
-- `binary` - Raw bytes → Buffer
+- `text` - UTF-8 text -> string
+- `binary` - Raw bytes -> Buffer
 
 ## Usage
 
@@ -133,6 +133,22 @@ Parse ARP URL and return ARL (Agent Resource Locator).
 const arl = arp.parse("arp:text:file://./data.txt");
 ```
 
+### `ARP.registerTransport(transport: TransportHandler): void`
+
+Register a custom transport handler.
+
+```typescript
+arp.registerTransport(new S3Transport());
+```
+
+### `ARP.registerSemantic(semantic: SemanticHandler): void`
+
+Register a custom semantic handler.
+
+```typescript
+arp.registerSemantic(new JsonSemantic());
+```
+
 ### ARL Operations
 
 #### `resolve(params?): Promise<Resource>`
@@ -153,9 +169,6 @@ Read resource from location.
 ```typescript
 const resource = await arl.resolve();
 console.log(resource.content);
-
-// With params (e.g., directory listing)
-const dirResource = await arl.resolve({ recursive: "true", pattern: "*.json" });
 ```
 
 #### `deposit(data: unknown, params?): Promise<void>`
@@ -194,34 +207,6 @@ Delete resource from location.
 
 ```typescript
 await arl.delete();
-```
-
-## Semantic Handlers
-
-### Text Semantic (`text`)
-
-Interprets content as UTF-8 text.
-
-- **Input**: `string` or `Buffer`
-- **Output**: `string`
-
-```typescript
-const arl = arp.parse("arp:text:file://./file.txt");
-await arl.deposit("Hello"); // string
-const { content } = await arl.resolve(); // string
-```
-
-### Binary Semantic (`binary`)
-
-Interprets content as raw bytes.
-
-- **Input**: `Buffer` or `string`
-- **Output**: `Buffer`
-
-```typescript
-const arl = arp.parse("arp:binary:file://./file.bin");
-await arl.deposit(Buffer.from([1, 2, 3]));
-const { content } = await arl.resolve(); // Buffer
 ```
 
 ## Transport Handlers
@@ -266,19 +251,10 @@ arp.parse("arp:text:file://~/file.txt");
 
 **Operations:**
 
-- ✅ get (read file or directory listing)
-- ✅ set (write)
-- ✅ exists
-- ✅ delete
-
-**Params for directory listing:**
-
-```typescript
-// List directory with params
-const arl = arp.parse("arp:text:file://./data");
-const result = await arl.resolve({ recursive: "true", pattern: "*.json" });
-// Returns JSON array of matching file paths
-```
+- get (read file)
+- set (write file)
+- exists (check file)
+- delete (remove file)
 
 ### HTTP/HTTPS Transport
 
@@ -291,48 +267,34 @@ arp.parse("arp:binary:https://example.com/image.png");
 
 **Operations:**
 
-- ✅ get (read)
-- ❌ set (read-only, throws error)
-- ❌ exists (not supported)
-- ❌ delete (read-only, throws error)
+- get (read) - supported
+- set (write) - throws error
+- exists - not supported
+- delete - throws error
 
-**Params handling:**
-
-```typescript
-// URL params are merged with runtime params
-const arl = arp.parse("arp:text:https://api.example.com/data?format=json");
-const result = await arl.resolve({ lang: "en" });
-// Fetches: https://api.example.com/data?format=json&lang=en
-```
-
-### RXR Transport (`rxr`)
-
-> **Moved to main package:** RxrTransport is now available in `resourcexjs/arp`.
-> Use the main package for ResourceX-specific functionality.
+## Semantic Handlers
 
 ```typescript
-// Use resourcexjs/arp for rxr transport
-import { createARP, RxrTransport } from "resourcexjs/arp";
-
-// createARP() from main package auto-registers RxrTransport
-const arp = createARP();
-const arl = arp.parse("arp:text:rxr://localhost/my-prompt.text@1.0.0/content");
-const { content } = await arl.resolve();
+interface SemanticHandler {
+  readonly name: string;
+  encode(data: unknown): Promise<Buffer>;
+  decode(buffer: Buffer): Promise<unknown>;
+}
 ```
 
-**Format:** `arp:{semantic}:rxr://{rxl}/{internal-path}`
+### Text Semantic (`text`)
 
-**Operations:**
+Interprets content as UTF-8 text.
 
-- ✅ get (read file from resource)
-- ❌ set (read-only, throws error)
-- ✅ exists (check if file exists in resource)
-- ❌ delete (read-only, throws error)
+- **Input**: `string` or `Buffer`
+- **Output**: `string`
 
-**Auto-creates Registry:**
+### Binary Semantic (`binary`)
 
-- `localhost` domain → LocalRegistry (filesystem)
-- Other domains → RemoteRegistry (via well-known discovery)
+Interprets content as raw bytes.
+
+- **Input**: `Buffer` or `string`
+- **Output**: `Buffer`
 
 ## Error Handling
 
@@ -358,6 +320,7 @@ try {
 
 ### Error Types
 
+- **ARPError**: Base error class
 - **ParseError**: Invalid ARP URL format
 - **TransportError**: Transport operation failed
 - **SemanticError**: Semantic handler error
@@ -410,7 +373,6 @@ class S3Transport implements TransportHandler {
   readonly name = "s3";
 
   async get(location: string, params?: TransportParams): Promise<TransportResult> {
-    // Fetch from S3
     const data = await s3.getObject({ Bucket: "...", Key: location });
     return {
       content: data.Body as Buffer,
@@ -419,7 +381,6 @@ class S3Transport implements TransportHandler {
   }
 
   async set(location: string, content: Buffer, params?: TransportParams): Promise<void> {
-    // Upload to S3
     await s3.putObject({ Bucket: "...", Key: location, Body: content });
   }
 
@@ -451,7 +412,7 @@ const arl = arp.parse("arp:binary:s3://my-bucket/file.bin");
 import type { SemanticHandler } from "@resourcexjs/arp";
 
 class JsonSemantic implements SemanticHandler {
-  name = "json";
+  readonly name = "json";
 
   async encode(data: unknown): Promise<Buffer> {
     const json = JSON.stringify(data, null, 2);
@@ -473,27 +434,27 @@ await arl.deposit({ key: "value" });
 const { content } = await arl.resolve(); // parsed JSON
 ```
 
-## Architecture
+## Exports
 
-```
-┌──────────────────────────────────────┐
-│             ARP                      │
-└────────────┬─────────────────────────┘
-             │
-      ┌──────┴──────┐
-      │   parse()   │
-      └──────┬──────┘
-             │
-      ┌──────▼──────┐
-      │    ARL      │ (Agent Resource Locator)
-      └──────┬──────┘
-             │
-    ┌────────┴────────┐
-    │                 │
-┌───▼───┐      ┌──────▼──────┐
-│Semantic│     │  Transport  │
-│Handler │     │  Handler    │
-└────────┘     └─────────────┘
+```typescript
+// Core
+export { ARP, createARP, type ARPConfig };
+export type { ARI, ARL };
+export const VERSION: string;
+
+// Errors
+export { ARPError, ParseError, TransportError, SemanticError };
+
+// Transports
+export type { TransportHandler, TransportResult, TransportParams, ListOptions };
+export { FileTransportHandler, fileTransport };
+export { HttpTransportHandler, httpTransport, httpsTransport };
+
+// Semantics
+export type { Resource, SemanticHandler, ResourceMeta, SemanticContext };
+export type { TextResource, BinaryResource, BinaryInput };
+export { TextSemanticHandler, textSemantic };
+export { BinarySemanticHandler, binarySemantic };
 ```
 
 ## License

@@ -134,11 +134,11 @@ const content = await resolved.execute();
 
 ### 5. Extensible Type System
 
-Custom resource types can define:
+Custom resource types use a **BundledType** architecture for sandbox-compatible execution:
 
-- How content is serialized for storage
-- How content is resolved for execution
+- Bundled resolver code that can execute in isolated sandboxes
 - Optional JSON Schema for typed arguments
+- Multiple sandbox isolation levels (none, srt, cloudflare, e2b)
 
 ## Package Structure
 
@@ -148,10 +148,10 @@ packages/
 │                # RXL, RXM, RXA, RXP, RXR definitions
 │
 ├── type/        # @resourcexjs/type
-│                # ResourceType, TypeHandlerChain
+│                # BundledType, TypeHandlerChain, ResolverExecutor
 │
 ├── registry/    # @resourcexjs/registry
-│                # LocalRegistry, GitRegistry, RemoteRegistry
+│                # Registry, LocalStorage
 │
 ├── arp/         # @resourcexjs/arp
 │                # Low-level I/O primitives

@@ -126,7 +126,7 @@ interface RXR {
 }
 
 // Create from literals
-const rxr: RXR = { locator, manifest, content };
+const rxr: RXR = { locator, manifest, archive };
 ```
 
 RXR is a pure DTO (Data Transfer Object) - no factory function needed.
@@ -153,11 +153,11 @@ try {
 }
 
 try {
-  await content.text();
-  await content.text(); // Second consumption
+  const pkg = await archive.extract();
+  await pkg.file("nonexistent");
 } catch (error) {
   if (error instanceof ContentError) {
-    console.error("Content already consumed");
+    console.error("File not found in archive");
   }
 }
 ```
@@ -190,14 +190,14 @@ const manifest = createRXM({
 // Create locator from manifest
 const locator = parseRXL(manifest.toLocator());
 
-// Create content (single file)
-const content = await createRXA({ content: "You are a helpful assistant." });
+// Create archive (single file)
+const archive = await createRXA({ content: "You are a helpful assistant." });
 
 // Assemble RXR
 const rxr: RXR = {
   locator,
   manifest,
-  content,
+  archive,
 };
 ```
 
@@ -206,18 +206,21 @@ const rxr: RXR = {
 ```typescript
 import { createRXA } from "@resourcexjs/core";
 
-// Create multi-file content
-const content = await createRXA({
+// Create multi-file archive
+const archive = await createRXA({
   "prompt.md": "# System Prompt\nYou are...",
   "config.json": '{"temperature": 0.7}',
 });
 
+// Extract to package for file access
+const pkg = await archive.extract();
+
 // Read individual files
-const promptBuffer = await content.file("prompt.md");
-const configBuffer = await content.file("config.json");
+const promptBuffer = await pkg.file("prompt.md");
+const configBuffer = await pkg.file("config.json");
 
 // Read all files
-const allFiles = await content.files();
+const allFiles = await pkg.files();
 for (const [path, buffer] of allFiles) {
   console.log(path, buffer.toString());
 }
@@ -264,11 +267,12 @@ All types are fully typed with TypeScript:
 
 ```typescript
 import type { RXL, RXM, RXA, RXP, RXR } from "@resourcexjs/core";
+import { parseRXL, createRXM, createRXA } from "@resourcexjs/core";
 
-const locator: RXL = parseRXL("...");
-const manifest: RXM = createRXM({ ... });
-const archive: RXA = createRXA("...");
-const resource: RXR = { locator, manifest, content };
+const locator: RXL = parseRXL("localhost/test.text@1.0.0");
+const manifest: RXM = createRXM({ name: "test", type: "text", version: "1.0.0" });
+const archive: RXA = await createRXA({ content: "Hello" });
+const resource: RXR = { locator, manifest, archive };
 ```
 
 ## License

@@ -1,61 +1,85 @@
 # Remote Registry Usage Guide
 
-RemoteRegistry provides HTTP-based access to resources hosted on a remote server. It's ideal for accessing resources over the network when you have a dedicated registry server.
+The DefaultRegistry automatically fetches resources from remote registries when they're not found locally. This guide explains how remote fetch works and how to configure it.
 
 ## Overview
 
-RemoteRegistry is useful when:
+Remote fetch is useful when:
 
-- You have a centralized resource server
-- You need HTTP-based access (REST API)
-- You want to integrate with existing HTTP infrastructure
+- You need resources from a centralized registry
+- You want to share resources across teams
+- You want automatic caching of remote resources
 
 **Key characteristics:**
 
-- Read-only (link/delete operations not supported)
-- Uses HTTP API for all operations
-- Supports search with pagination
-- Works with any HTTP server implementing the registry API
+- Automatic remote fetch for non-localhost domains
+- Local caching of fetched resources
+- Optional mirror configuration for faster access
+- Well-known discovery for finding registry endpoints
 
-## Basic Usage
+## How Remote Fetch Works
 
-### Creating a Remote Registry
+When you request a resource with a domain other than `localhost`, the registry follows this flow:
+
+1. **Check local storage** - If found, return immediately
+2. **Try mirror** - If mirror is configured, try fetching from it
+3. **Discover endpoint** - Use well-known discovery (`https://{domain}/.well-known/resourcex`)
+4. **Fetch from source** - Fetch manifest and content from discovered endpoint
+5. **Cache locally** - Store in local storage for future access
 
 ```typescript
-import { createRegistry } from "@resourcexjs/registry";
+import { createRegistry } from "resourcexjs";
 
+const registry = createRegistry();
+
+// This triggers remote fetch for deepractice.ai domain
+const resolved = await registry.resolve("deepractice.ai/hello.text@1.0.0");
+// 1. Check ~/.resourcex/deepractice.ai/hello.text/1.0.0/
+// 2. (No mirror configured, skip)
+// 3. Fetch https://deepractice.ai/.well-known/resourcex
+// 4. Fetch from discovered endpoint
+// 5. Cache to local storage
+```
+
+## Configuration
+
+### Basic Usage (No Configuration)
+
+```typescript
+import { createRegistry } from "resourcexjs";
+
+// Creates registry with automatic remote fetch
+const registry = createRegistry();
+
+// Remote fetch happens automatically
+const resolved = await registry.resolve("example.com/resource.text@1.0.0");
+```
+
+### With Mirror
+
+Configure a mirror for faster remote access:
+
+```typescript
 const registry = createRegistry({
-  endpoint: "https://registry.deepractice.ai/v1",
-});
-```
-
-The endpoint should point to the base URL of the registry API.
-
-### Configuration
-
-```typescript
-interface RemoteRegistryConfig {
-  endpoint: string; // Base URL for the registry API
-}
-```
-
-### Examples
-
-```typescript
-// Production registry
-const prodRegistry = createRegistry({
-  endpoint: "https://registry.mycompany.com/api/v1",
+  mirror: "https://mirror.example.com/v1",
 });
 
-// Development/staging registry
-const devRegistry = createRegistry({
-  endpoint: "http://localhost:3000/registry",
+// Flow: Local -> Mirror -> Well-known -> Source
+const resolved = await registry.resolve("example.com/resource.text@1.0.0");
+```
+
+### Custom Local Path
+
+```typescript
+const registry = createRegistry({
+  path: "./custom-cache",
+  mirror: "https://mirror.example.com/v1",
 });
 ```
 
 ## HTTP API Endpoints
 
-RemoteRegistry expects the server to implement these endpoints:
+The registry expects remote endpoints to implement these HTTP endpoints:
 
 ### GET /resource
 
@@ -94,58 +118,47 @@ GET /content?locator=domain/name.type@version
 **Response (200):**
 Binary content (application/gzip)
 
-### GET /exists
+## Well-Known Discovery
 
-Check if resource exists.
+### How It Works
 
-**Request:**
+1. Domain owner publishes a well-known file at `https://{domain}/.well-known/resourcex`
+2. File lists authorized registries for that domain
+3. Registry fetches this file to discover the endpoint
 
-```
-GET /exists?locator=domain/name.type@version
-```
-
-**Response (200):**
+### Well-Known File Format
 
 ```json
+// https://example.com/.well-known/resourcex
 {
-  "exists": true
+  "version": "1.0",
+  "registries": ["https://registry.example.com/v1"]
 }
 ```
 
-### GET /search
+The first registry in the array is used as the primary endpoint.
 
-Search for resources.
+### Using discoverRegistry
 
-**Request:**
+You can manually discover registries:
 
-```
-GET /search?query=foo&limit=10&offset=0
-```
+```typescript
+import { discoverRegistry } from "resourcexjs";
 
-**Response (200):**
-
-```json
-{
-  "results": ["domain/foo-tool.text@1.0.0", "domain/foo-prompt.text@1.0.0"]
-}
+const discovery = await discoverRegistry("deepractice.ai");
+console.log(discovery.domain); // "deepractice.ai"
+console.log(discovery.registries); // ["https://registry.deepractice.ai/v1"]
 ```
 
 ## Operations
 
-### Resolving Resources
+### Resolving Remote Resources
 
 ```typescript
 const resolved = await registry.resolve("deepractice.ai/hello.text@1.0.0");
 const content = await resolved.execute();
 console.log(content);
 ```
-
-Under the hood, this:
-
-1. Fetches manifest from `/resource?locator=...`
-2. Fetches content from `/content?locator=...`
-3. Deserializes using TypeHandlerChain
-4. Returns ResolvedResource with lazy execute()
 
 ### Getting Raw Resources
 
@@ -154,22 +167,33 @@ const rxr = await registry.get("deepractice.ai/hello.text@1.0.0");
 console.log(rxr.manifest.name); // "hello"
 
 // Access content
-const files = await rxr.archive.extract().then(pkg => pkg.files();
+const pkg = await rxr.archive.extract();
+const files = await pkg.files();
 ```
 
 ### Checking Existence
 
 ```typescript
+// Note: exists() only checks local storage for non-localhost domains
+// Use get() to trigger remote fetch
 const exists = await registry.exists("deepractice.ai/hello.text@1.0.0");
-if (exists) {
-  // Resource is available
+if (!exists) {
+  // Resource not in local cache - try fetching
+  try {
+    await registry.get("deepractice.ai/hello.text@1.0.0");
+    console.log("Fetched and cached");
+  } catch (error) {
+    console.log("Not available remotely either");
+  }
 }
 ```
 
 ### Searching Resources
 
+Search only works on local storage:
+
 ```typescript
-// Basic search
+// Search local cache
 const results = await registry.search({ query: "prompt" });
 
 // With pagination
@@ -178,67 +202,103 @@ const page = await registry.search({
   limit: 20,
   offset: 0,
 });
-
-// Iterate through results
-for (const rxl of results) {
-  console.log(rxl.toString());
-  console.log(`  Name: ${rxl.name}`);
-  console.log(`  Type: ${rxl.type}`);
-  console.log(`  Version: ${rxl.version}`);
-}
 ```
 
-### Read-Only Restrictions
+### Write Operations
 
-RemoteRegistry is read-only. These operations throw errors:
+Write operations only work on local storage:
 
 ```typescript
-// All of these throw RegistryError
+// These work - writing to local storage
 await registry.add(resource);
-// "Cannot link to remote registry - use local registry for linking"
+await registry.link("./my-resource");
+await registry.delete("localhost/resource.text@1.0.0");
 
-await registry.delete("domain/resource.text@1.0.0");
-// "Cannot delete from remote registry - use local registry for deletion"
-
-await registry.publish(resource, options);
-// "Remote registry publish not implemented yet"
+// Note: There's no direct "push to remote" functionality yet
+// Resources are cached locally when fetched from remote
 ```
 
-## Caching Strategy
+## Caching Behavior
 
-RemoteRegistry doesn't cache resources locally. If you need caching:
+### Automatic Caching
 
-1. **Use LocalRegistry for caching**: Fetch from remote, then link to local
+Remote resources are automatically cached to local storage:
 
 ```typescript
-const remote = createRegistry({
-  endpoint: "https://registry.example.com/v1",
+// First call: fetches from remote, caches locally
+await registry.get("deepractice.ai/hello.text@1.0.0");
+
+// Second call: served from local cache
+await registry.get("deepractice.ai/hello.text@1.0.0");
+```
+
+### Cache Location
+
+Remote resources are cached at:
+
+```
+~/.resourcex/{domain}/{path}/{name}.{type}/{version}/
+```
+
+Example:
+
+```
+~/.resourcex/deepractice.ai/tools/calculator.text/1.0.0/
+  ├── manifest.json
+  └── archive.tar.gz
+```
+
+### Pre-populating Cache
+
+You can manually add resources to the cache:
+
+```typescript
+import { createRegistry, createRXM, createRXA, parseRXL } from "resourcexjs";
+
+const registry = createRegistry();
+
+const manifest = createRXM({
+  domain: "deepractice.ai", // Remote domain
+  name: "hello",
+  type: "text",
+  version: "1.0.0",
 });
 
-const local = createRegistry();
+const archive = await createRXA({ content: "Hello" });
 
-// Fetch from remote
-const rxr = await remote.get("example.com/tool.text@1.0.0");
-
-// Cache locally
-await local.link(rxr);
-
-// Now available locally
-await local.resolve("example.com/tool.text@1.0.0");
+// This stores in the cache area (not local)
+await registry.add({
+  locator: parseRXL(manifest.toLocator()),
+  manifest,
+  archive,
+});
 ```
-
-2. **Use RxrTransport** which handles caching automatically (see ARP Protocol guide)
 
 ## Error Handling
 
 ### Resource Not Found
 
 ```typescript
+import { RegistryError } from "resourcexjs";
+
 try {
   await registry.resolve("domain/not-exist.text@1.0.0");
 } catch (error) {
   if (error instanceof RegistryError) {
     console.log(error.message); // "Resource not found: domain/not-exist.text@1.0.0"
+  }
+}
+```
+
+### Well-Known Discovery Failed
+
+```typescript
+try {
+  await registry.resolve("unknown-domain.com/resource.text@1.0.0");
+} catch (error) {
+  if (error instanceof RegistryError) {
+    // Could be network error or invalid well-known response
+    console.log(error.message); // "Well-known discovery failed for unknown-domain.com: ..."
   }
 }
 ```
@@ -250,139 +310,112 @@ try {
   await registry.resolve("domain/resource.text@1.0.0");
 } catch (error) {
   if (error instanceof RegistryError) {
-    // Could be network error, server error, etc.
     console.log(error.message); // "Failed to fetch resource: ..."
-  }
-}
-```
-
-### Search Errors
-
-```typescript
-try {
-  await registry.search({ query: "test" });
-} catch (error) {
-  if (error instanceof RegistryError) {
-    console.log(error.message); // "Search failed: ..."
   }
 }
 ```
 
 ## Custom Resource Types
 
-Register custom types to handle specialized resources:
+Register custom types to handle specialized remote resources:
 
 ```typescript
-import { createRegistry } from "@resourcexjs/registry";
-import { myCustomType } from "./my-types";
+import { createRegistry, bundleResourceType } from "resourcexjs";
+
+const promptType = await bundleResourceType("./prompt.type.ts");
 
 const registry = createRegistry({
-  endpoint: "https://registry.example.com/v1",
+  types: [promptType],
 });
 
-// Register custom type
-registry.supportType(myCustomType);
-
-// Now can resolve custom type resources
-const resolved = await registry.resolve("domain/resource.custom@1.0.0");
+// Now can resolve custom type resources from remote
+const resolved = await registry.resolve("domain/my-prompt.prompt@1.0.0");
 ```
 
 ## Integration Patterns
 
-### With Well-Known Discovery
+### Fallback Pattern
 
-Combine with well-known discovery for dynamic endpoint resolution:
+Try local first, then remote:
 
 ```typescript
-import { discoverRegistry, createRegistry } from "@resourcexjs/registry";
+async function resolveWithFallback(locator: string) {
+  const registry = createRegistry();
 
-async function getRegistryForDomain(domain: string) {
-  const discovery = await discoverRegistry(domain);
-  const registryUrl = discovery.registries[0];
-
-  // Check if it's an HTTP endpoint (not git)
-  if (!registryUrl.startsWith("git@") && !registryUrl.endsWith(".git")) {
-    return createRegistry({ endpoint: registryUrl });
+  // Check local first
+  if (await registry.exists(locator)) {
+    return registry.resolve(locator);
   }
 
-  // Otherwise use git registry
-  return createRegistry({
-    type: "git",
-    url: registryUrl,
-    domain: discovery.domain,
-  });
+  // Try remote (this is automatic for non-localhost domains)
+  return registry.resolve(locator);
 }
 ```
 
-### Pull-Through Cache Pattern
+### Multiple Mirrors
 
-Create a local cache that pulls from remote on miss:
+Use a custom wrapper to try multiple mirrors:
 
 ```typescript
-class CachingRegistry {
-  constructor(
-    private local: Registry,
-    private remote: Registry
-  ) {}
+class MultiMirrorRegistry {
+  private registries: Registry[];
+
+  constructor(mirrors: string[]) {
+    this.registries = mirrors.map((mirror) => createRegistry({ mirror }));
+    // Also include default (no mirror) as fallback
+    this.registries.push(createRegistry());
+  }
 
   async resolve(locator: string) {
-    // Try local first
-    if (await this.local.exists(locator)) {
-      return this.local.resolve(locator);
+    for (const registry of this.registries) {
+      try {
+        return await registry.resolve(locator);
+      } catch {
+        // Try next
+      }
     }
-
-    // Pull from remote
-    const rxr = await this.remote.get(locator);
-    await this.local.link(rxr);
-
-    return this.local.resolve(locator);
+    throw new Error(`Resource not found: ${locator}`);
   }
 }
-
-// Usage
-const cache = new CachingRegistry(
-  createRegistry(), // local
-  createRegistry({ endpoint: "https://registry.example.com/v1" }) // remote
-);
 ```
 
-### Multiple Registry Fallback
+### Pre-warming Cache
 
-Try multiple registries in order:
+Fetch resources before they're needed:
 
 ```typescript
-async function resolveWithFallback(locator: string, registries: Registry[]) {
-  for (const registry of registries) {
+async function prewarmCache(locators: string[]) {
+  const registry = createRegistry();
+
+  for (const locator of locators) {
     try {
-      if (await registry.exists(locator)) {
-        return registry.resolve(locator);
-      }
-    } catch {
-      // Try next registry
+      await registry.get(locator);
+      console.log(`Cached: ${locator}`);
+    } catch (error) {
+      console.log(`Failed to cache: ${locator}`);
     }
   }
-  throw new Error(`Resource not found in any registry: ${locator}`);
 }
 
 // Usage
-const resolved = await resolveWithFallback("domain/tool.text@1.0.0", [
-  createRegistry(), // Local first
-  createRegistry({ endpoint: "https://primary.example.com/v1" }),
-  createRegistry({ endpoint: "https://backup.example.com/v1" }),
+await prewarmCache([
+  "deepractice.ai/prompt-a.text@1.0.0",
+  "deepractice.ai/prompt-b.text@1.0.0",
+  "deepractice.ai/tool-c.text@1.0.0",
 ]);
 ```
 
 ## Implementing a Registry Server
 
-To implement a compatible registry server, you need these endpoints:
+To implement a compatible registry server:
 
 ```typescript
 // Express.js example
 import express from "express";
-import { LocalRegistry } from "@resourcexjs/registry";
+import { createRegistry } from "resourcexjs";
 
 const app = express();
-const registry = new LocalRegistry({ path: "./server-resources" });
+const registry = createRegistry({ path: "./server-resources" });
 
 // GET /resource - Fetch manifest
 app.get("/resource", async (req, res) => {
@@ -409,28 +442,6 @@ app.get("/content", async (req, res) => {
   }
 });
 
-// GET /exists - Check existence
-app.get("/exists", async (req, res) => {
-  const { locator } = req.query;
-  const exists = await registry.exists(locator as string);
-  res.json({ exists });
-});
-
-// GET /search - Search resources
-app.get("/search", async (req, res) => {
-  const { query, limit, offset } = req.query;
-
-  const results = await registry.search({
-    query: query as string,
-    limit: limit ? parseInt(limit as string) : undefined,
-    offset: offset ? parseInt(offset as string) : undefined,
-  });
-
-  res.json({
-    results: results.map((rxl) => rxl.toString()),
-  });
-});
-
 app.listen(3000, () => {
   console.log("Registry server running on port 3000");
 });
@@ -439,40 +450,38 @@ app.listen(3000, () => {
 ## Complete Example
 
 ```typescript
-import { createRegistry, RegistryError } from "@resourcexjs/registry";
+import { createRegistry, RegistryError } from "resourcexjs";
 
 async function main() {
-  // Create remote registry
+  // Create registry with mirror
   const registry = createRegistry({
-    endpoint: "https://registry.example.com/v1",
+    mirror: "https://mirror.example.com/v1",
   });
 
-  // Search for available resources
-  console.log("Searching for resources...");
-  const results = await registry.search({ limit: 10 });
-  console.log(`Found ${results.length} resources:`);
+  // Search local cache
+  console.log("Searching local cache...");
+  const localResults = await registry.search({ limit: 10 });
+  console.log(`Found ${localResults.length} local resources`);
 
-  for (const rxl of results) {
-    console.log(`  - ${rxl.toString()}`);
-  }
+  // Resolve a remote resource
+  const locator = "deepractice.ai/hello.text@1.0.0";
+  console.log(`\nResolving: ${locator}`);
 
-  // Resolve a specific resource
-  if (results.length > 0) {
-    const locator = results[0].toString();
-    console.log(`\nResolving: ${locator}`);
+  try {
+    const resolved = await registry.resolve(locator);
+    const content = await resolved.execute();
 
-    try {
-      const resolved = await registry.resolve(locator);
-      const content = await resolved.execute();
+    console.log("Content type:", typeof content);
+    console.log("Content preview:", String(content).slice(0, 100));
 
-      console.log("Content type:", typeof content);
-      console.log("Content preview:", String(content).slice(0, 100));
-    } catch (error) {
-      if (error instanceof RegistryError) {
-        console.error("Registry error:", error.message);
-      } else {
-        throw error;
-      }
+    // Now it's cached locally
+    const exists = await registry.exists(locator);
+    console.log("Cached locally:", exists); // true
+  } catch (error) {
+    if (error instanceof RegistryError) {
+      console.error("Registry error:", error.message);
+    } else {
+      throw error;
     }
   }
 }

@@ -1,6 +1,6 @@
 # @resourcexjs/type
 
-Type system for ResourceX with global singleton TypeHandlerChain.
+Type system for ResourceX with sandbox-compatible execution.
 
 ## Installation
 
@@ -10,142 +10,113 @@ bun add @resourcexjs/type
 
 ## Overview
 
-The `@resourcexjs/type` package provides the type system for ResourceX, managing how different resource types are serialized, deserialized, and resolved.
+The `@resourcexjs/type` package provides the type system for ResourceX, managing how different resource types are resolved and executed.
 
 ### Key Concepts
 
-- **ResourceType**: Defines how a resource type is handled (serialization, deserialization, resolution)
-- **TypeHandlerChain**: Global singleton managing all registered types
-- **Builtin Types**: Text, JSON, and Binary types are automatically registered
+- **BundledType**: Pre-bundled resource type ready for sandbox execution
+- **TypeHandlerChain**: Type registry managing type lookup and registration
+- **ResourceType**: Interface for defining custom types (before bundling)
+- **ResolvedResource**: Result object with execute function and optional schema
+- **Builtin Types**: Text, JSON, and Binary types are included by default
 
 ## Usage
 
-### Using Builtin Types
-
-Builtin types are automatically available:
+### Using TypeHandlerChain
 
 ```typescript
-import { globalTypeHandlerChain } from "@resourcexjs/type";
+import { TypeHandlerChain } from "@resourcexjs/type";
+
+// Create a new chain (builtin types included)
+const chain = TypeHandlerChain.create();
 
 // Check if type is supported
-globalTypeHandlerChain.canHandle("text"); // true
-globalTypeHandlerChain.canHandle("json"); // true
-globalTypeHandlerChain.canHandle("binary"); // true
+chain.canHandle("text"); // true
+chain.canHandle("json"); // true
+chain.canHandle("binary"); // true
 
 // Builtin aliases
-globalTypeHandlerChain.canHandle("txt"); // true (alias for text)
-globalTypeHandlerChain.canHandle("config"); // true (alias for json)
+chain.canHandle("txt"); // true (alias for text)
+chain.canHandle("config"); // true (alias for json)
+
+// Get handler
+const handler = chain.getHandler("text");
+console.log(handler.name); // "text"
+
+// Get all supported types
+const types = chain.getSupportedTypes();
+// ["text", "txt", "plaintext", "json", "config", "manifest", "binary", "bin", "blob", "raw"]
 ```
 
 ### Registering Custom Types
 
 ```typescript
-import { globalTypeHandlerChain } from "@resourcexjs/type";
-import type { ResourceType } from "@resourcexjs/type";
+import { TypeHandlerChain, bundleResourceType } from "@resourcexjs/type";
+import type { BundledType } from "@resourcexjs/type";
 
-// Define custom type - resolver returns a callable function
-const promptType: ResourceType<void, string> = {
+// Bundle a resource type from source file
+const promptType = await bundleResourceType("./prompt.type.ts");
+
+// Register with chain
+const chain = TypeHandlerChain.create();
+chain.register(promptType);
+```
+
+### Bundling Resource Types
+
+Resource types must be bundled before registration. The bundler converts a `.type.ts` source file into a `BundledType` with executable code:
+
+```typescript
+import { bundleResourceType } from "@resourcexjs/type";
+
+// Bundle from source file
+const myType = await bundleResourceType("./my-resource.type.ts");
+// → { name, aliases, description, schema, code }
+```
+
+**Source file format (`my-resource.type.ts`):**
+
+```typescript
+export default {
   name: "prompt",
   aliases: ["deepractice-prompt"],
   description: "AI Prompt template",
-  serializer: {
-    async serialize(rxr) {
-      return rxr.content.buffer();
-    },
-    async deserialize(data, manifest) {
-      // ... implementation
-    },
-  },
-  resolver: {
-    async resolve(rxr) {
-      // Return a callable function (lazy loading)
-      return async () => {
-        const buffer = await rxr.content.file("content");
-        return buffer.toString("utf-8");
-      };
-    },
+  schema: undefined, // or JSONSchema for types with args
+  async resolve(ctx) {
+    // ctx.manifest - resource metadata
+    // ctx.files - extracted files as Record<string, Uint8Array>
+    const content = new TextDecoder().decode(ctx.files["content"]);
+    return content;
   },
 };
-
-// Register globally
-globalTypeHandlerChain.register(promptType);
-```
-
-### Query Supported Types
-
-```typescript
-import { globalTypeHandlerChain } from "@resourcexjs/type";
-
-// Get all supported types (including aliases)
-const types = globalTypeHandlerChain.getSupportedTypes();
-// ["text", "txt", "plaintext", "json", "config", "manifest", "binary", "bin", "blob", "raw"]
-
-// Get handler for specific type
-const handler = globalTypeHandlerChain.getHandler("text");
-console.log(handler?.name); // "text"
-```
-
-### Serialize/Deserialize
-
-```typescript
-import { globalTypeHandlerChain } from "@resourcexjs/type";
-import { createRXM, createRXA, parseRXL } from "@resourcexjs/core";
-
-// Serialize RXR to Buffer
-const manifest = createRXM({
-  domain: "localhost",
-  name: "test",
-  type: "text",
-  version: "1.0.0",
-});
-
-const rxr = {
-  locator: parseRXL(manifest.toLocator()),
-  manifest,
-  archive: await createRXA({ content: "Hello, World!" }),
-};
-
-const buffer = await globalTypeHandlerChain.serialize(rxr);
-// Buffer containing tar.gz archive
-
-// Deserialize Buffer to RXR
-const restored = await globalTypeHandlerChain.deserialize(buffer, manifest);
-const pkg = await restored.archive.extract();
-console.log((await pkg.file("content")).toString()); // "Hello, World!"
-```
-
-### Resolve Content
-
-```typescript
-import { globalTypeHandlerChain } from "@resourcexjs/type";
-
-// Resolve RXR to structured result (lazy loading)
-const result = await globalTypeHandlerChain.resolve<void, string>(rxr);
-
-// Check schema (undefined for builtin types)
-console.log(result.schema); // undefined
-
-// Execute to get the actual content
-const text = await result.execute();
-console.log(text); // "Hello, World!"
 ```
 
 ## API Reference
 
-### `globalTypeHandlerChain`
+### `TypeHandlerChain`
 
-Global singleton instance of TypeHandlerChain.
+Type registry managing type lookup and registration.
 
-#### Methods
+#### Static Methods
 
-##### `register(type: ResourceType): void`
+##### `TypeHandlerChain.create(): TypeHandlerChain`
 
-Register an extension type.
+Create a new TypeHandlerChain instance with builtin types.
+
+```typescript
+const chain = TypeHandlerChain.create();
+```
+
+#### Instance Methods
+
+##### `register(type: BundledType): void`
+
+Register a custom type.
 
 **Throws**: `ResourceTypeError` if type name or alias already exists.
 
 ```typescript
-globalTypeHandlerChain.register(customType);
+chain.register(promptType);
 ```
 
 ##### `canHandle(typeName: string): boolean`
@@ -153,15 +124,25 @@ globalTypeHandlerChain.register(customType);
 Check if a type is supported.
 
 ```typescript
-globalTypeHandlerChain.canHandle("text"); // true
+chain.canHandle("text"); // true
 ```
 
-##### `getHandler(typeName: string): ResourceType | undefined`
+##### `getHandler(typeName: string): BundledType`
 
 Get handler for a type.
 
+**Throws**: `ResourceTypeError` if type not supported.
+
 ```typescript
-const handler = globalTypeHandlerChain.getHandler("text");
+const handler = chain.getHandler("text");
+```
+
+##### `getHandlerOrUndefined(typeName: string): BundledType | undefined`
+
+Get handler or undefined if not found.
+
+```typescript
+const handler = chain.getHandlerOrUndefined("unknown"); // undefined
 ```
 
 ##### `getSupportedTypes(): string[]`
@@ -169,180 +150,152 @@ const handler = globalTypeHandlerChain.getHandler("text");
 Get all supported type names (including aliases).
 
 ```typescript
-const types = globalTypeHandlerChain.getSupportedTypes();
+const types = chain.getSupportedTypes();
 ```
 
-##### `serialize(rxr: RXR): Promise<Buffer>`
+##### `clear(): void`
 
-Serialize RXR to Buffer using appropriate type handler.
-
-**Throws**: `ResourceTypeError` if type not supported.
-
-##### `deserialize(data: Buffer, manifest: RXM): Promise<RXR>`
-
-Deserialize Buffer to RXR using appropriate type handler.
-
-**Throws**: `ResourceTypeError` if type not supported.
-
-##### `resolve<TArgs, TResult>(rxr: RXR): Promise<ResolvedResource<TArgs, TResult>>`
-
-Resolve RXR content to structured result using appropriate type handler.
-
-**Returns**: A structured object with `execute` function and optional `schema`.
-
-**Throws**: `ResourceTypeError` if type not supported.
+Clear all registered types (for testing).
 
 ```typescript
-const result = await globalTypeHandlerChain.resolve<void, string>(rxr);
-result.schema; // undefined for builtin types
-await result.execute(); // Lazy load content
-
-// For types with args
-const toolResult = await globalTypeHandlerChain.resolve<{ query: string }, unknown>(rxr);
-toolResult.schema; // JSONSchema for UI form rendering
-await toolResult.execute({ query: "test" });
+chain.clear();
 ```
 
-##### `clearExtensions(): void`
+### `bundleResourceType(sourcePath, basePath?)`
 
-Clear all extension types (for testing). Builtin types remain.
+Bundle a resource type from a source file.
+
+**Parameters:**
+
+- `sourcePath: string` - Path to the .type.ts file
+- `basePath?: string` - Base path for resolving relative paths (defaults to cwd)
+
+**Returns**: `Promise<BundledType>`
 
 ```typescript
-globalTypeHandlerChain.clearExtensions();
+const myType = await bundleResourceType("./my-resource.type.ts");
 ```
+
+## Types
+
+### BundledType
+
+Pre-bundled resource type ready for execution:
+
+```typescript
+interface BundledType {
+  name: string; // Type name (e.g., "text", "json")
+  aliases?: string[]; // Alternative names
+  description: string; // Human-readable description
+  schema?: JSONSchema; // JSON Schema for resolver arguments
+  code: string; // Bundled resolver code
+}
+```
+
+### ResolvedResource
+
+Result object returned after resolution:
+
+```typescript
+interface ResolvedResource<TArgs = void, TResult = unknown> {
+  resource: unknown; // Original RXR object
+  execute: (args?: TArgs) => TResult | Promise<TResult>;
+  schema: TArgs extends void ? undefined : JSONSchema;
+}
+```
+
+### ResolveContext
+
+Context passed to resolver in sandbox:
+
+```typescript
+interface ResolveContext {
+  manifest: {
+    domain: string;
+    path?: string;
+    name: string;
+    type: string;
+    version: string;
+  };
+  files: Record<string, Uint8Array>;
+}
+```
+
+### IsolatorType
+
+Sandbox isolation levels (configured at Registry level):
+
+```typescript
+type IsolatorType = "none" | "srt" | "cloudflare" | "e2b";
+```
+
+- `"none"`: No isolation, fastest (~10ms), for development
+- `"srt"`: OS-level isolation (~50ms), secure local dev
+- `"cloudflare"`: Container isolation (~100ms), local Docker or edge
+- `"e2b"`: MicroVM isolation (~150ms), production (planned)
 
 ## Builtin Types
 
-All builtin types return structured results with `schema: undefined` (no args):
+All builtin types have `schema: undefined` (no arguments):
 
 ### Text Type
 
 - **Name**: `text`
 - **Aliases**: `txt`, `plaintext`
-- **Storage**: tar.gz archive
-- **Resolves to**: `{ execute: () => Promise<string>, schema: undefined }`
+- **Resolves to**: `string`
 
 ### JSON Type
 
 - **Name**: `json`
 - **Aliases**: `config`, `manifest`
-- **Storage**: tar.gz archive
-- **Resolves to**: `{ execute: () => Promise<unknown>, schema: undefined }`
+- **Resolves to**: `unknown`
 
 ### Binary Type
 
 - **Name**: `binary`
 - **Aliases**: `bin`, `blob`, `raw`
-- **Storage**: tar.gz archive
-- **Resolves to**: `{ execute: () => Promise<Buffer>, schema: undefined }`
-
-## Type System Architecture
-
-```
-┌─────────────────────────────────────────┐
-│   globalTypeHandlerChain (Singleton)    │
-│                                         │
-│   Builtin: text, json, binary          │
-│   Extensions: custom types...           │
-└─────────────────────────────────────────┘
-              ↑
-              │
-         All packages use
-         global singleton
-```
+- **Resolves to**: `Uint8Array`
 
 ## Creating Custom Types
 
 ### Example: Prompt Type (No Arguments)
 
-```typescript
-import type { ResourceType } from "@resourcexjs/type";
-import { createRXA, parseRXL } from "@resourcexjs/core";
+**prompt.type.ts:**
 
-export const promptType: ResourceType<void, string> = {
+```typescript
+export default {
   name: "prompt",
   aliases: ["deepractice-prompt"],
   description: "AI Prompt template",
-
-  serializer: {
-    async serialize(rxr) {
-      return rxr.content.buffer();
-    },
-
-    async deserialize(data, manifest) {
-      return {
-        locator: parseRXL(manifest.toLocator()),
-        manifest,
-        archive: await createRXA({ buffer: data }),
-      };
-    },
-  },
-
-  resolver: {
-    schema: undefined, // No args, schema is undefined
-    async resolve(rxr) {
-      return {
-        schema: undefined,
-        execute: async () => {
-          const buffer = await rxr.content.file("content");
-          return buffer.toString("utf-8");
-        },
-      };
-    },
+  schema: undefined,
+  async resolve(ctx) {
+    const content = new TextDecoder().decode(ctx.files["content"]);
+    return content;
   },
 };
 ```
 
-### Example: Tool Type (With Arguments and Schema)
+### Example: Tool Type (With Arguments)
+
+**tool.type.ts:**
 
 ```typescript
-import type { ResourceType, JSONSchema } from "@resourcexjs/type";
-
-interface ToolArgs {
-  query: string;
-  limit?: number;
-}
-
-const toolSchema: JSONSchema = {
-  type: "object",
-  properties: {
-    query: { type: "string", description: "Search keyword" },
-    limit: { type: "number", description: "Max results", default: 10 },
-  },
-  required: ["query"],
-};
-
-export const toolType: ResourceType<ToolArgs, unknown> = {
+export default {
   name: "tool",
   description: "Executable tool with arguments",
-
-  serializer: {
-    async serialize(rxr) {
-      return rxr.content.buffer();
+  schema: {
+    type: "object",
+    properties: {
+      query: { type: "string", description: "Search keyword" },
+      limit: { type: "number", description: "Max results", default: 10 },
     },
-    async deserialize(data, manifest) {
-      // ... implementation
-    },
+    required: ["query"],
   },
-
-  resolver: {
-    schema: toolSchema, // Required for types with args
-    async resolve(rxr) {
-      return {
-        schema: toolSchema,
-        execute: async (args) => {
-          // Execute with args
-          return { query: args?.query, limit: args?.limit ?? 10 };
-        },
-      };
-    },
+  async resolve(ctx, args) {
+    // Execute with args
+    return { query: args?.query, limit: args?.limit ?? 10 };
   },
 };
-
-// Usage
-const result = await globalTypeHandlerChain.resolve<ToolArgs, unknown>(rxr);
-result.schema; // JSONSchema for UI form rendering
-await result.execute({ query: "test", limit: 5 });
 ```
 
 ## Error Handling
@@ -351,25 +304,12 @@ await result.execute({ query: "test", limit: 5 });
 import { ResourceTypeError } from "@resourcexjs/type";
 
 try {
-  await globalTypeHandlerChain.serialize(rxr);
+  chain.getHandler("unknown");
 } catch (error) {
   if (error instanceof ResourceTypeError) {
     console.error("Type error:", error.message);
   }
 }
-```
-
-## Testing
-
-When testing, use `clearExtensions()` to reset extension types:
-
-```typescript
-import { afterEach } from "bun:test";
-import { globalTypeHandlerChain } from "@resourcexjs/type";
-
-afterEach(() => {
-  globalTypeHandlerChain.clearExtensions();
-});
 ```
 
 ## License

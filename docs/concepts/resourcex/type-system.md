@@ -1,42 +1,37 @@
 # Type System
 
-The ResourceX Type System defines how different types of resources are serialized (for storage) and resolved (for execution). It provides built-in types for common use cases and allows custom types for specialized needs.
+The ResourceX Type System defines how different types of resources are resolved for execution. It uses a **BundledType** architecture that supports sandbox-isolated execution for security and portability.
 
 ## Core Concepts
 
-### ResourceType
+### BundledType
 
-A ResourceType defines the complete behavior for a type:
+A BundledType contains pre-bundled resolver code ready for sandbox execution:
 
 ```typescript
-interface ResourceType<TArgs = void, TResult = unknown> {
-  name: string; // Primary type name
-  aliases?: string[]; // Alternative names
+interface BundledType {
+  name: string; // Type name (e.g., "text", "json")
+  aliases?: string[]; // Alternative names (e.g., ["txt", "plaintext"])
   description: string; // Human-readable description
-  serializer: ResourceSerializer; // RXR <-> Buffer
-  resolver: ResourceResolver<TArgs, TResult>; // RXR -> executable
+  schema?: JSONSchema; // JSON Schema for resolver arguments
+  code: string; // Bundled resolver code (executable in sandbox)
 }
 ```
 
-### ResourceSerializer
+### ResolveContext
 
-Handles conversion between RXR and storage format:
-
-```typescript
-interface ResourceSerializer {
-  serialize(rxr: RXR): Promise<Buffer>;
-  deserialize(data: Buffer, manifest: RXM): Promise<RXR>;
-}
-```
-
-### ResourceResolver
-
-Transforms RXR into an executable result:
+The data structure passed to resolvers in the sandbox:
 
 ```typescript
-interface ResourceResolver<TArgs = void, TResult = unknown> {
-  schema: TArgs extends void ? undefined : JSONSchema;
-  resolve(rxr: RXR): Promise<ResolvedResource<TArgs, TResult>>;
+interface ResolveContext {
+  manifest: {
+    domain: string;
+    path?: string;
+    name: string;
+    type: string;
+    version: string;
+  };
+  files: Record<string, Uint8Array>; // Extracted files from archive
 }
 ```
 
@@ -46,32 +41,58 @@ The executable wrapper returned by resolution:
 
 ```typescript
 interface ResolvedResource<TArgs = void, TResult = unknown> {
-  resource: RXR; // Original resource
+  resource: unknown; // Original RXR resource
   execute: (args?: TArgs) => TResult | Promise<TResult>; // Callable
   schema: TArgs extends void ? undefined : JSONSchema; // For UI rendering
 }
 ```
 
+### IsolatorType
+
+Sandbox isolation levels for resolver execution:
+
+```typescript
+type IsolatorType = "none" | "srt" | "cloudflare" | "e2b";
+```
+
+| Level        | Description         | Latency | Use Case             |
+| ------------ | ------------------- | ------- | -------------------- |
+| `none`       | No isolation        | ~10ms   | Development          |
+| `srt`        | OS-level isolation  | ~50ms   | Secure local dev     |
+| `cloudflare` | Container isolation | ~100ms  | Edge/Docker          |
+| `e2b`        | MicroVM isolation   | ~150ms  | Production (planned) |
+
 ## Built-in Types
+
+Built-in types are pre-bundled and registered automatically. They expect a file named "content" in the archive.
 
 ### text
 
 Plain text content.
 
 ```typescript
-const textType: ResourceType<void, string> = {
+const textType: BundledType = {
   name: "text",
   aliases: ["txt", "plaintext"],
   description: "Plain text content",
-  // ...
+  code: `...`, // Bundled resolver code
 };
+```
+
+**Resolver logic:**
+
+```typescript
+async resolve(ctx) {
+  const content = ctx.files["content"];
+  return new TextDecoder().decode(content);
+}
 ```
 
 **Usage:**
 
 ```typescript
 // Create
-const content = await createRXA({ content: "Hello World" });
+const archive = await createRXA({ content: "Hello World" });
 
 // Resolve
 const resolved = await registry.resolve("greeting.text@1.0.0");
@@ -83,19 +104,28 @@ const text = await resolved.execute(); // "Hello World"
 JSON content, parsed to objects.
 
 ```typescript
-const jsonType: ResourceType<void, unknown> = {
+const jsonType: BundledType = {
   name: "json",
   aliases: ["config", "manifest"],
   description: "JSON content",
-  // ...
+  code: `...`, // Bundled resolver code
 };
+```
+
+**Resolver logic:**
+
+```typescript
+async resolve(ctx) {
+  const content = ctx.files["content"];
+  return JSON.parse(new TextDecoder().decode(content));
+}
 ```
 
 **Usage:**
 
 ```typescript
 // Create
-const content = await createRXA({ content: '{"key": "value"}' });
+const archive = await createRXA({ content: '{"key": "value"}' });
 
 // Resolve
 const resolved = await registry.resolve("config.json@1.0.0");
@@ -107,23 +137,31 @@ const obj = await resolved.execute(); // { key: "value" }
 Raw binary data.
 
 ```typescript
-const binaryType: ResourceType<void, Buffer> = {
+const binaryType: BundledType = {
   name: "binary",
   aliases: ["bin", "blob", "raw"],
   description: "Binary content",
-  // ...
+  code: `...`, // Bundled resolver code
 };
+```
+
+**Resolver logic:**
+
+```typescript
+async resolve(ctx) {
+  return ctx.files["content"];
+}
 ```
 
 **Usage:**
 
 ```typescript
 // Create
-const content = await createRXA({ content: Buffer.from([0x00, 0x01, 0x02]) });
+const archive = await createRXA({ content: Buffer.from([0x00, 0x01, 0x02]) });
 
 // Resolve
 const resolved = await registry.resolve("data.binary@1.0.0");
-const buffer = await resolved.execute(); // Buffer
+const buffer = await resolved.execute(); // Uint8Array
 ```
 
 ## Type Aliases
@@ -145,7 +183,7 @@ registry.resolve("doc.plaintext@1.0.0");
 
 ## TypeHandlerChain
 
-The TypeHandlerChain manages type registration and delegates operations:
+The TypeHandlerChain manages type registration and lookup:
 
 ```typescript
 import { TypeHandlerChain } from "@resourcexjs/type";
@@ -158,13 +196,14 @@ chain.canHandle("text"); // true
 chain.canHandle("txt"); // true (alias)
 chain.canHandle("unknown"); // false
 
-// Serialize/deserialize
-const buffer = await chain.serialize(rxr);
-const rxr = await chain.deserialize(buffer, manifest);
+// Get handler for a type
+const handler = chain.getHandler("text"); // BundledType
+console.log(handler.name); // "text"
+console.log(handler.code); // Bundled resolver code
 
-// Resolve
-const resolved = await chain.resolve<void, string>(rxr);
-const result = await resolved.execute();
+// Get all supported types
+const types = chain.getSupportedTypes();
+// ["text", "txt", "plaintext", "json", "config", "manifest", "binary", "bin", "blob", "raw"]
 ```
 
 ### Registering Custom Types
@@ -176,8 +215,8 @@ chain.register({
   name: "prompt",
   aliases: ["tpl", "template"],
   description: "AI prompt template",
-  serializer: promptSerializer,
-  resolver: promptResolver,
+  schema: { type: "object", properties: { name: { type: "string" } } },
+  code: `// Bundled resolver code...`,
 });
 
 // Now can handle prompt type
@@ -186,38 +225,34 @@ chain.canHandle("prompt"); // true
 
 ## Custom Types
 
-### Basic Custom Type (No Arguments)
+Custom types are created as `.type.ts` files and bundled using `bundleResourceType()`.
+
+### Creating a Custom Type Source File
+
+Create a `.type.ts` file with a default export:
 
 ```typescript
-const greetingType: ResourceType<void, string> = {
+// greeting.type.ts
+export default {
   name: "greeting",
+  aliases: ["greet"],
   description: "A greeting message",
-  serializer: {
-    async serialize(rxr) {
-      return rxr.archive.buffer();
-    },
-    async deserialize(data, manifest) {
-      return {
-        locator: parseRXL(manifest.toLocator()),
-        manifest,
-        archive: await createRXA({ buffer: data }),
-      };
-    },
-  },
-  resolver: {
-    schema: undefined, // No arguments
-    async resolve(rxr) {
-      return {
-        resource: rxr,
-        schema: undefined,
-        execute: async () => {
-          const buffer = await rxr.archive.extract().then(pkg => pkg.file("content");
-          return `Greeting: ${buffer.toString()}`;
-        },
-      };
-    },
+
+  async resolve(ctx: any) {
+    const content = ctx.files["content"];
+    const text = new TextDecoder().decode(content);
+    return `Greeting: ${text}`;
   },
 };
+```
+
+### Bundling the Type
+
+```typescript
+import { bundleResourceType } from "@resourcexjs/type";
+
+const greetingType = await bundleResourceType("./greeting.type.ts");
+// Returns BundledType with bundled code
 ```
 
 ### Custom Type with Arguments
@@ -225,50 +260,29 @@ const greetingType: ResourceType<void, string> = {
 Types that accept arguments must define a JSON Schema:
 
 ```typescript
-interface CalculatorArgs {
-  a: number;
-  b: number;
-}
-
-const calculatorType: ResourceType<CalculatorArgs, number> = {
+// calculator.type.ts
+export default {
   name: "calculator",
   description: "A simple calculator",
-  serializer: {
-    async serialize(rxr) {
-      return rxr.archive.buffer();
+
+  // Schema required for typed args
+  schema: {
+    type: "object",
+    properties: {
+      a: { type: "number", description: "First number" },
+      b: { type: "number", description: "Second number" },
     },
-    async deserialize(data, manifest) {
-      return {
-        locator: parseRXL(manifest.toLocator()),
-        manifest,
-        archive: await createRXA({ buffer: data }),
-      };
-    },
+    required: ["a", "b"],
   },
-  resolver: {
-    // Schema required for typed args!
-    schema: {
-      type: "object",
-      properties: {
-        a: { type: "number", description: "First number" },
-        b: { type: "number", description: "Second number" },
-      },
-      required: ["a", "b"],
-    },
-    async resolve(rxr) {
-      return {
-        resource: rxr,
-        schema: this.schema,
-        execute: async (args) => {
-          return args!.a + args!.b;
-        },
-      };
-    },
+
+  async resolve(ctx: any, args: any) {
+    // args contains { a: number, b: number }
+    return args.a + args.b;
   },
 };
 
 // Usage
-const resolved = await registry.resolve<CalculatorArgs, number>("add.calculator@1.0.0");
+const resolved = await registry.resolve<{ a: number; b: number }, number>("add.calculator@1.0.0");
 const result = await resolved.execute({ a: 5, b: 3 }); // 8
 ```
 
@@ -316,15 +330,15 @@ This is important for:
 
 ## Registry Integration
 
-Registry uses TypeHandlerChain internally:
+Registry uses TypeHandlerChain internally and supports configurable isolation:
 
 ```typescript
 import { createRegistry } from "resourcexjs";
 
-// Default registry has built-in types
+// Default registry has built-in types (no isolation)
 const registry = createRegistry();
 
-// Add custom type at creation
+// Add custom types at creation
 const registry = createRegistry({
   types: [promptType, toolType],
 });
@@ -332,50 +346,58 @@ const registry = createRegistry({
 // Or add dynamically
 registry.supportType(calculatorType);
 
+// With sandbox isolation
+const secureRegistry = createRegistry({
+  isolator: "srt", // OS-level isolation
+  types: [promptType],
+});
+
 // Now can resolve custom types
 const resolved = await registry.resolve("my-calc.calculator@1.0.0");
 ```
 
 ## Design Decisions
 
-### Why Separate Serializer and Resolver?
+### Why Bundled Code?
 
-Different concerns, different implementations:
+The BundledType architecture uses pre-bundled code strings for several reasons:
 
-- **Serializer**: How to store (format, compression)
-- **Resolver**: How to use (parsing, execution)
+1. **Sandbox compatibility**: Code can be executed in isolated environments
+2. **Security**: No closure access to host environment
+3. **Portability**: Same code runs across different runtimes (Node, Bun, edge)
+4. **Caching**: Bundled code is static and cacheable
 
-This separation allows:
+### Why ResolveContext instead of RXR?
 
-- Same serialization, different resolution strategies
-- Caching serialized form independently
-- Swapping implementations without affecting the other
+Resolvers receive `ResolveContext` (pure data) instead of RXR:
 
-### Why Require Schema for Args?
+- **Serializable**: Can be passed to sandboxes
+- **Pre-extracted**: Files are already extracted from archive
+- **Simple**: No need to handle async archive operations
 
-Type safety at definition time:
+### Why Configurable Isolation?
+
+Different use cases require different security levels:
 
 ```typescript
-// This should fail - args expected but no schema!
-const badType: ResourceType<{ name: string }, string> = {
-  name: "bad",
-  resolver: {
-    schema: undefined, // TypeScript error!
-    // ...
-  },
-};
+// Development: speed matters, trust local code
+createRegistry({ isolator: "none" });
+
+// Production: security matters
+createRegistry({ isolator: "cloudflare" });
 ```
 
-### Why ResolvedResource Contains Original RXR?
+### Why Schema in BundledType?
 
-Access to metadata after resolution:
+Schema enables UI form generation without executing code:
 
 ```typescript
 const resolved = await registry.resolve("tool.binary@1.0.0");
 
-// Can still access original resource
-console.log(resolved.resource.manifest.version);
-console.log(resolved.resource.manifest.domain);
+// Schema available before execution
+if (resolved.schema) {
+  renderForm(resolved.schema); // Generate UI form
+}
 ```
 
 ## Error Handling
@@ -418,23 +440,25 @@ import {
   jsonType,
   binaryType,
   builtinTypes,
+  bundleResourceType,
 } from "@resourcexjs/type";
 
 // or from main package
 import { TypeHandlerChain } from "resourcexjs";
 
-// Create chain
+// Create chain (built-in types included)
 const chain = TypeHandlerChain.create();
 
 // Methods
-chain.register(type: ResourceType): void
+chain.register(type: BundledType): void
 chain.canHandle(typeName: string): boolean
-chain.getHandler(typeName: string): ResourceType | undefined
+chain.getHandler(typeName: string): BundledType  // throws if not found
+chain.getHandlerOrUndefined(typeName: string): BundledType | undefined
 chain.getSupportedTypes(): string[]
-chain.serialize(rxr: RXR): Promise<Buffer>
-chain.deserialize(data: Buffer, manifest: RXM): Promise<RXR>
-chain.resolve<TArgs, TResult>(rxr: RXR): Promise<ResolvedResource<TArgs, TResult>>
-chain.clearExtensions(): void  // For testing
+chain.clear(): void  // For testing
+
+// Bundle custom type from source file
+const myType = await bundleResourceType("./my.type.ts");
 ```
 
 ## See Also

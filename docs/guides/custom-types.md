@@ -1,13 +1,15 @@
 # Custom Resource Types Guide
 
-ResourceX provides built-in types (text, json, binary), but you can define custom types to handle specialized resources with their own serialization and resolution logic.
+ResourceX provides built-in types (text, json, binary), but you can define custom types to handle specialized resources with their own resolution logic.
 
 ## Overview
 
-A ResourceType defines:
+A **BundledType** defines:
 
-- **Serializer**: How to convert resources to/from storage format (Buffer)
-- **Resolver**: How to transform resources into executable results
+- **Name**: Primary type identifier (e.g., "prompt", "tool")
+- **Aliases**: Alternative names for the type
+- **Schema**: JSON Schema for resolver arguments (optional)
+- **Code**: Bundled resolver code that runs in the sandbox
 
 Custom types are useful for:
 
@@ -15,251 +17,32 @@ Custom types are useful for:
 - Resources with arguments and schemas (executable tools)
 - Resources with complex multi-file structures
 
-## ResourceType Interface
+## BundledType Interface
 
 ```typescript
-interface ResourceType<TArgs = void, TResult = unknown> {
+interface BundledType {
   name: string; // Primary type name
   aliases?: string[]; // Alternative names
   description: string; // Human-readable description
-  serializer: ResourceSerializer; // Storage operations
-  resolver: ResourceResolver<TArgs, TResult>; // Resolution logic
+  schema?: JSONSchema; // JSON Schema for arguments (optional)
+  code: string; // Bundled resolver code
 }
 ```
 
-## Implementing a Serializer
+## Creating Custom Types
 
-The serializer handles converting resources to and from storage format.
+### Option 1: Using bundleResourceType (Recommended)
 
-```typescript
-interface ResourceSerializer {
-  serialize(rxr: RXR): Promise<Buffer>;
-  deserialize(data: Buffer, manifest: RXM): Promise<RXR>;
-}
-```
-
-### Basic Serializer (Archive-Based)
-
-Most types use the archive-based approach, storing content as tar.gz:
+Create a `.type.ts` file with your type definition:
 
 ```typescript
-import { createRXA, parseRXL } from "@resourcexjs/core";
+// prompt.type.ts
+export default {
+  name: "prompt",
+  aliases: ["template"],
+  description: "AI prompt with variable substitution",
 
-const mySerializer: ResourceSerializer = {
-  async serialize(rxr: RXR): Promise<Buffer> {
-    // Return the raw archive buffer
-    return rxr.archive.buffer();
-  },
-
-  async deserialize(data: Buffer, manifest: RXM): Promise<RXR> {
-    return {
-      locator: parseRXL(manifest.toLocator()),
-      manifest,
-      archive: await createRXA({ buffer: data }),
-    };
-  },
-};
-```
-
-### Custom Serializer Example
-
-If you need custom serialization logic:
-
-```typescript
-const jsonConfigSerializer: ResourceSerializer = {
-  async serialize(rxr: RXR): Promise<Buffer> {
-    // Read the config file
-    const configBuffer = await rxr.archive.extract().then(pkg => pkg.file("config.json");
-    const config = JSON.parse(configBuffer.toString());
-
-    // Add metadata before storing
-    const enriched = {
-      ...config,
-      _meta: {
-        serializedAt: new Date().toISOString(),
-        version: rxr.manifest.version,
-      },
-    };
-
-    // Store as single-file archive
-    const enrichedContent = await createRXA({
-      content: JSON.stringify(enriched, null, 2),
-    });
-
-    return enrichedContent.buffer();
-  },
-
-  async deserialize(data: Buffer, manifest: RXM): Promise<RXR> {
-    // Standard deserialization
-    return {
-      locator: parseRXL(manifest.toLocator()),
-      manifest,
-      archive: await createRXA({ buffer: data }),
-    };
-  },
-};
-```
-
-## Implementing a Resolver
-
-The resolver transforms resources into executable results.
-
-```typescript
-interface ResourceResolver<TArgs = void, TResult = unknown> {
-  schema: TArgs extends void ? undefined : JSONSchema;
-  resolve(rxr: RXR): Promise<ResolvedResource<TArgs, TResult>>;
-}
-
-interface ResolvedResource<TArgs = void, TResult = unknown> {
-  resource: RXR; // Original resource
-  execute: (args?: TArgs) => TResult | Promise<TResult>; // Execution function
-  schema: TArgs extends void ? undefined : JSONSchema; // Argument schema
-}
-```
-
-### Simple Resolver (No Arguments)
-
-For resources that don't take arguments:
-
-```typescript
-const promptResolver: ResourceResolver<void, string> = {
-  schema: undefined, // No arguments needed
-
-  async resolve(rxr: RXR): Promise<ResolvedResource<void, string>> {
-    return {
-      resource: rxr,
-      schema: undefined,
-
-      // Lazy execution - content read only when called
-      execute: async () => {
-        const buffer = await rxr.archive.extract().then(pkg => pkg.file("content");
-        return buffer.toString("utf-8");
-      },
-    };
-  },
-};
-```
-
-### Resolver with Arguments
-
-For resources that accept arguments (like tools):
-
-```typescript
-interface AddToolArgs {
-  a: number;
-  b: number;
-}
-
-const toolResolver: ResourceResolver<AddToolArgs, number> = {
-  schema: {
-    type: "object",
-    properties: {
-      a: { type: "number", description: "First number" },
-      b: { type: "number", description: "Second number" },
-    },
-    required: ["a", "b"],
-  },
-
-  async resolve(rxr: RXR): Promise<ResolvedResource<AddToolArgs, number>> {
-    return {
-      resource: rxr,
-      schema: this.schema,
-
-      execute: async (args?: AddToolArgs) => {
-        if (!args) {
-          throw new Error("Arguments required for tool execution");
-        }
-        return args.a + args.b;
-      },
-    };
-  },
-};
-```
-
-### Complex Resolver Example
-
-A resolver that loads code from the resource:
-
-```typescript
-interface ScriptToolArgs {
-  input: string;
-}
-
-interface ScriptToolResult {
-  output: string;
-  duration: number;
-}
-
-const scriptToolResolver: ResourceResolver<ScriptToolArgs, ScriptToolResult> = {
-  schema: {
-    type: "object",
-    properties: {
-      input: { type: "string", description: "Input to process" },
-    },
-    required: ["input"],
-  },
-
-  async resolve(rxr: RXR): Promise<ResolvedResource<ScriptToolArgs, ScriptToolResult>> {
-    // Load the script at resolution time
-    const scriptBuffer = await rxr.archive.extract().then(pkg => pkg.file("script.js");
-    const scriptCode = scriptBuffer.toString("utf-8");
-
-    // Create a function from the code
-    const scriptFn = new Function("input", scriptCode);
-
-    return {
-      resource: rxr,
-      schema: this.schema,
-
-      execute: async (args?: ScriptToolArgs) => {
-        if (!args) {
-          throw new Error("Arguments required");
-        }
-
-        const start = Date.now();
-        const output = scriptFn(args.input);
-        const duration = Date.now() - start;
-
-        return { output, duration };
-      },
-    };
-  },
-};
-```
-
-## Complete ResourceType Examples
-
-### Prompt Type
-
-A type for AI prompts with template support:
-
-```typescript
-import type {
-  ResourceType,
-  ResourceSerializer,
-  ResourceResolver,
-  ResolvedResource,
-} from "@resourcexjs/type";
-import { createRXA, parseRXL } from "@resourcexjs/core";
-
-interface PromptArgs {
-  variables?: Record<string, string>;
-}
-
-const promptSerializer: ResourceSerializer = {
-  async serialize(rxr) {
-    return rxr.archive.buffer();
-  },
-  async deserialize(data, manifest) {
-    return {
-      locator: parseRXL(manifest.toLocator()),
-      manifest,
-      archive: await createRXA({ buffer: data }),
-    };
-  },
-};
-
-const promptResolver: ResourceResolver<PromptArgs, string> = {
+  // Optional: JSON Schema for arguments
   schema: {
     type: "object",
     properties: {
@@ -270,146 +53,237 @@ const promptResolver: ResourceResolver<PromptArgs, string> = {
     },
   },
 
-  async resolve(rxr): Promise<ResolvedResource<PromptArgs, string>> {
-    return {
-      resource: rxr,
-      schema: this.schema,
+  // Resolver function - receives ResolveContext
+  async resolve(ctx) {
+    // ctx.manifest: { domain, path?, name, type, version }
+    // ctx.files: Record<string, Uint8Array>
 
-      execute: async (args?: PromptArgs) => {
-        const buffer = await rxr.archive.extract().then(pkg => pkg.file("content");
-        let template = buffer.toString("utf-8");
+    const content = ctx.files["content"];
+    let template = new TextDecoder().decode(content);
 
-        // Substitute variables
-        if (args?.variables) {
-          for (const [key, value] of Object.entries(args.variables)) {
-            template = template.replace(new RegExp(`{{${key}}}`, "g"), value);
-          }
-        }
-
-        return template;
-      },
-    };
+    // Return the result directly or a function for dynamic execution
+    return template;
   },
-};
-
-export const promptType: ResourceType<PromptArgs, string> = {
-  name: "prompt",
-  aliases: ["template"],
-  description: "AI prompt with variable substitution",
-  serializer: promptSerializer,
-  resolver: promptResolver,
 };
 ```
 
-### Tool Type
-
-A type for executable tools:
+Bundle it using `bundleResourceType`:
 
 ```typescript
-interface ToolArgs {
-  [key: string]: unknown;
-}
+import { bundleResourceType } from "resourcexjs";
 
-interface ToolResult {
-  success: boolean;
-  data?: unknown;
-  error?: string;
-}
+const promptType = await bundleResourceType("./prompt.type.ts");
 
-const toolSerializer: ResourceSerializer = {
-  async serialize(rxr) {
-    return rxr.archive.buffer();
+// Now register with registry
+const registry = createRegistry({ types: [promptType] });
+```
+
+### Option 2: Manual BundledType Definition
+
+For simple types, you can define the BundledType directly:
+
+```typescript
+import type { BundledType } from "resourcexjs";
+
+const myType: BundledType = {
+  name: "mytype",
+  aliases: ["mt"],
+  description: "My custom type",
+  code: `
+    // @resolver: mytype_default
+    var mytype_default = {
+      name: "mytype",
+      async resolve(ctx) {
+        const content = ctx.files["content"];
+        return new TextDecoder().decode(content);
+      }
+    };
+  `,
+};
+```
+
+## ResolveContext
+
+The resolver function receives a `ResolveContext` with:
+
+```typescript
+interface ResolveContext {
+  manifest: {
+    domain: string;
+    path?: string;
+    name: string;
+    type: string;
+    version: string;
+  };
+  files: Record<string, Uint8Array>;
+}
+```
+
+- `manifest`: Resource metadata from the RXR
+- `files`: Extracted files from the archive as Uint8Array values
+
+## Type Examples
+
+### Simple Text Type
+
+```typescript
+// text-uppercase.type.ts
+export default {
+  name: "uppercase",
+  description: "Returns text content in uppercase",
+
+  async resolve(ctx) {
+    const content = ctx.files["content"];
+    const text = new TextDecoder().decode(content);
+    return text.toUpperCase();
   },
-  async deserialize(data, manifest) {
+};
+```
+
+### JSON Config Type
+
+```typescript
+// config.type.ts
+export default {
+  name: "appconfig",
+  aliases: ["conf"],
+  description: "Application configuration with validation",
+
+  async resolve(ctx) {
+    const content = ctx.files["config.json"];
+    const config = JSON.parse(new TextDecoder().decode(content));
+
+    // Validate required fields
+    if (!config.name || !config.version) {
+      throw new Error("Config must have name and version");
+    }
+
+    return config;
+  },
+};
+```
+
+### Multi-File Component Type
+
+```typescript
+// component.type.ts
+export default {
+  name: "component",
+  aliases: ["comp"],
+  description: "UI component with template and styles",
+
+  async resolve(ctx) {
+    const template = new TextDecoder().decode(ctx.files["template.html"]);
+    const styles = ctx.files["styles.css"] ? new TextDecoder().decode(ctx.files["styles.css"]) : "";
+    const script = ctx.files["script.js"] ? new TextDecoder().decode(ctx.files["script.js"]) : "";
+
     return {
-      locator: parseRXL(manifest.toLocator()),
-      manifest,
-      archive: await createRXA({ buffer: data }),
+      name: ctx.manifest.name,
+      template,
+      styles,
+      script,
     };
   },
 };
+```
 
-const toolResolver: ResourceResolver<ToolArgs, ToolResult> = {
+### Type with Arguments (Schema)
+
+```typescript
+// prompt.type.ts
+export default {
+  name: "prompt",
+  aliases: ["template"],
+  description: "AI prompt with variable substitution",
+
+  // Schema enables UI rendering and validation
   schema: {
     type: "object",
-    description: "Tool arguments - schema defined per tool",
+    title: "Prompt Variables",
+    properties: {
+      variables: {
+        type: "object",
+        description: "Key-value pairs for template substitution",
+        additionalProperties: { type: "string" },
+      },
+    },
   },
 
-  async resolve(rxr): Promise<ResolvedResource<ToolArgs, ToolResult>> {
-    // Load tool definition
-    const defBuffer = await rxr.archive.extract().then(pkg => pkg.file("tool.json");
-    const definition = JSON.parse(defBuffer.toString());
+  async resolve(ctx) {
+    const content = ctx.files["content"];
+    let template = new TextDecoder().decode(content);
 
-    // Load handler code
-    const handlerBuffer = await rxr.archive.extract().then(pkg => pkg.file("handler.js");
-    const handlerCode = handlerBuffer.toString();
-
-    return {
-      resource: rxr,
-      schema: definition.schema || this.schema,
-
-      execute: async (args?: ToolArgs) => {
-        try {
-          // Execute the tool
-          const handler = new Function("args", handlerCode);
-          const result = await handler(args);
-          return { success: true, data: result };
-        } catch (error) {
-          return { success: false, error: (error as Error).message };
+    // Return a function that accepts args
+    return (args?: { variables?: Record<string, string> }) => {
+      if (args?.variables) {
+        for (const [key, value] of Object.entries(args.variables)) {
+          template = template.replace(new RegExp(`{{${key}}}`, "g"), value);
         }
-      },
+      }
+      return template;
     };
   },
 };
+```
 
-export const toolType: ResourceType<ToolArgs, ToolResult> = {
+### Tool Type with Schema
+
+```typescript
+// tool.type.ts
+export default {
   name: "tool",
   aliases: ["function", "action"],
   description: "Executable tool with schema",
-  serializer: toolSerializer,
-  resolver: toolResolver,
+
+  schema: {
+    type: "object",
+    title: "Tool Arguments",
+    description: "Arguments passed to the tool",
+  },
+
+  async resolve(ctx) {
+    // Load tool definition
+    const defContent = ctx.files["tool.json"];
+    const definition = JSON.parse(new TextDecoder().decode(defContent));
+
+    // Load handler code
+    const handlerContent = ctx.files["handler.js"];
+    const handlerCode = new TextDecoder().decode(handlerContent);
+
+    return {
+      definition,
+      execute: async (args: unknown) => {
+        // Create and execute the handler
+        const fn = new Function("args", handlerCode);
+        return fn(args);
+      },
+    };
+  },
 };
 ```
 
 ## Registering Custom Types
 
-### With TypeHandlerChain
-
-For direct type chain usage:
+### At Registry Creation
 
 ```typescript
-import { TypeHandlerChain } from "@resourcexjs/type";
-import { promptType, toolType } from "./my-types";
+import { createRegistry, bundleResourceType } from "resourcexjs";
 
-const chain = TypeHandlerChain.create();
+const promptType = await bundleResourceType("./prompt.type.ts");
+const toolType = await bundleResourceType("./tool.type.ts");
 
-// Register custom types
-chain.register(promptType);
-chain.register(toolType);
-
-// Check type support
-console.log(chain.canHandle("prompt")); // true
-console.log(chain.canHandle("template")); // true (alias)
-console.log(chain.getSupportedTypes()); // ['text', 'txt', ..., 'prompt', 'template', ...]
-```
-
-### With Registry
-
-Register types when creating or after creating a registry:
-
-```typescript
-import { createRegistry } from "@resourcexjs/registry";
-import { promptType, toolType } from "./my-types";
-
-// Option 1: At creation time
 const registry = createRegistry({
   types: [promptType, toolType],
 });
+```
 
-// Option 2: After creation
-const registry2 = createRegistry();
-registry2.supportType(promptType);
-registry2.supportType(toolType);
+### After Creation
+
+```typescript
+const registry = createRegistry();
+
+registry.supportType(promptType);
+registry.supportType(toolType);
 ```
 
 ## Using Custom Types
@@ -417,6 +291,10 @@ registry2.supportType(toolType);
 ### Creating Resources
 
 ```typescript
+import { createRegistry, createRXM, createRXA, parseRXL } from "resourcexjs";
+
+const registry = createRegistry({ types: [promptType] });
+
 const manifest = createRXM({
   domain: "localhost",
   name: "greeting-prompt",
@@ -424,25 +302,24 @@ const manifest = createRXM({
   version: "1.0.0",
 });
 
-const content = await createRXA({
+const archive = await createRXA({
   content: "Hello, {{name}}! Welcome to {{place}}.",
 });
 
 await registry.add({
   locator: parseRXL(manifest.toLocator()),
   manifest,
-  content,
+  archive,
 });
 ```
 
 ### Resolving Resources
 
 ```typescript
-const resolved = await registry.resolve<PromptArgs, string>(
-  "localhost/greeting-prompt.prompt@1.0.0"
-);
+// Resolve the resource
+const resolved = await registry.resolve("localhost/greeting-prompt.prompt@1.0.0");
 
-// Execute with arguments
+// For types with arguments
 const result = await resolved.execute({
   variables: {
     name: "Alice",
@@ -456,21 +333,17 @@ console.log(result); // "Hello, Alice! Welcome to Wonderland."
 ### Using Schema
 
 ```typescript
-const resolved = await registry.resolve<ToolArgs, ToolResult>("localhost/calculator.tool@1.0.0");
+const resolved = await registry.resolve("localhost/calculator.tool@1.0.0");
 
-// Schema describes expected arguments
+// Schema describes expected arguments (useful for UI)
 console.log(resolved.schema);
 // {
 //   type: "object",
-//   properties: {
-//     operation: { type: "string", enum: ["add", "subtract"] },
-//     a: { type: "number" },
-//     b: { type: "number" }
-//   },
-//   required: ["operation", "a", "b"]
+//   title: "Tool Arguments",
+//   properties: { ... }
 // }
 
-// Execute with validated arguments
+// Execute with arguments
 const result = await resolved.execute({
   operation: "add",
   a: 5,
@@ -478,46 +351,85 @@ const result = await resolved.execute({
 });
 ```
 
+## TypeHandlerChain
+
+The `TypeHandlerChain` manages type registration internally:
+
+```typescript
+import { TypeHandlerChain } from "resourcexjs";
+
+const chain = TypeHandlerChain.create();
+
+// Built-in types are already registered
+console.log(chain.canHandle("text")); // true
+console.log(chain.canHandle("txt")); // true (alias)
+
+// Register custom types
+chain.register(promptType);
+
+// Check type support
+console.log(chain.canHandle("prompt")); // true
+console.log(chain.canHandle("template")); // true (alias)
+
+// Get all supported types
+console.log(chain.getSupportedTypes());
+// ['text', 'txt', 'plaintext', 'json', 'config', 'manifest', 'binary', 'bin', 'blob', 'raw', 'prompt', 'template']
+
+// Get handler for a type
+const handler = chain.getHandler("prompt");
+console.log(handler.name); // "prompt"
+console.log(handler.code); // Bundled resolver code
+```
+
+## Sandbox Execution
+
+Custom type resolvers run in a sandbox environment for security. The sandbox isolation level is configured at the registry level:
+
+```typescript
+const registry = createRegistry({
+  types: [myCustomType],
+  isolator: "srt", // OS-level isolation
+});
+```
+
+### Isolation Levels
+
+| Level          | Overhead | Security           | Use Case             |
+| -------------- | -------- | ------------------ | -------------------- |
+| `"none"`       | ~10ms    | No isolation       | Development          |
+| `"srt"`        | ~50ms    | OS-level (SRT)     | Secure local dev     |
+| `"cloudflare"` | ~100ms   | Container (Docker) | Local Docker or edge |
+| `"e2b"`        | ~150ms   | MicroVM            | Production (planned) |
+
+### Sandbox Constraints
+
+When writing resolver code, keep in mind:
+
+1. **Pure functions**: Resolvers should be pure functions without side effects
+2. **No Node.js APIs**: Sandbox doesn't have access to Node.js built-ins
+3. **No network access**: Cannot make HTTP requests (by design)
+4. **Serializable context**: Only ResolveContext data is available
+
 ## Best Practices
 
-### 1. Keep Serializers Simple
+### 1. Keep Resolvers Simple
 
-Most types can use the standard archive-based serializer:
-
-```typescript
-const standardSerializer: ResourceSerializer = {
-  async serialize(rxr) {
-    return rxr.archive.buffer();
-  },
-  async deserialize(data, manifest) {
-    return {
-      locator: parseRXL(manifest.toLocator()),
-      manifest,
-      archive: await createRXA({ buffer: data }),
-    };
-  },
-};
-```
-
-### 2. Make Execution Lazy
-
-Only read content when `execute()` is called:
+Resolvers should focus on transforming data, not complex logic:
 
 ```typescript
-// Good - lazy
-execute: async () => {
-  const buffer = await rxr.archive.extract().then(pkg => pkg.file("content");
-  return buffer.toString();
-};
+// Good - simple transformation
+async resolve(ctx) {
+  const content = ctx.files["content"];
+  return new TextDecoder().decode(content).trim();
+}
 
-// Bad - eager (reads on resolve)
-const buffer = await rxr.archive.extract().then(pkg => pkg.file("content"); // During resolve
-execute: async () => {
-  return buffer.toString();
-};
+// Bad - complex logic that's hard to test
+async resolve(ctx) {
+  // Multiple database calls, external API requests, etc.
+}
 ```
 
-### 3. Provide Meaningful Schemas
+### 2. Use Meaningful Schemas
 
 Schemas help UI tools render argument forms:
 
@@ -545,55 +457,38 @@ schema: {
 }
 ```
 
-### 4. Handle Errors Gracefully
+### 3. Handle Errors Gracefully
 
 ```typescript
-execute: async (args) => {
-  try {
-    // Tool logic
-    return { success: true, data: result };
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Unknown error",
-    };
+async resolve(ctx) {
+  const content = ctx.files["config.json"];
+  if (!content) {
+    throw new Error("Missing config.json file in archive");
   }
-};
+
+  try {
+    return JSON.parse(new TextDecoder().decode(content));
+  } catch (error) {
+    throw new Error(`Invalid JSON in config.json: ${error.message}`);
+  }
+}
 ```
 
-### 5. Type Safety
+### 4. Document File Requirements
 
-Use TypeScript generics for type safety:
+Make clear what files your type expects:
 
 ```typescript
-// Define your argument and result types
-interface MyToolArgs {
-  query: string;
-  limit?: number;
-}
-
-interface MyToolResult {
-  items: string[];
-  total: number;
-}
-
-// Type your resolver
-const resolver: ResourceResolver<MyToolArgs, MyToolResult> = {
-  schema: {
-    /* ... */
-  },
-  async resolve(rxr) {
-    return {
-      resource: rxr,
-      schema: this.schema,
-      execute: async (args) => {
-        // TypeScript knows args is MyToolArgs | undefined
-        if (!args) throw new Error("Arguments required");
-        // TypeScript knows we return MyToolResult
-        return { items: [], total: 0 };
-      },
-    };
-  },
+// component.type.ts
+/**
+ * Component type expects the following files:
+ * - template.html (required): HTML template
+ * - styles.css (optional): Component styles
+ * - script.js (optional): Component logic
+ */
+export default {
+  name: "component",
+  // ...
 };
 ```
 
@@ -606,22 +501,19 @@ chain.register(promptType);
 chain.register(promptType); // Error: Type 'prompt' is already registered
 ```
 
-Solution: Check before registering or clear extensions for testing:
+Solution: Check before registering:
 
 ```typescript
 if (!chain.canHandle("prompt")) {
   chain.register(promptType);
 }
-
-// For testing
-chain.clearExtensions(); // Resets to built-in types only
 ```
 
 ### Alias Conflicts
 
 ```typescript
-const type1: ResourceType = { name: "foo", aliases: ["bar"] };
-const type2: ResourceType = { name: "baz", aliases: ["bar"] }; // Conflict!
+const type1: BundledType = { name: "foo", aliases: ["bar"], ... };
+const type2: BundledType = { name: "baz", aliases: ["bar"], ... }; // Conflict!
 
 chain.register(type1);
 chain.register(type2); // Error: Alias 'bar' conflicts with existing type or alias
@@ -630,11 +522,21 @@ chain.register(type2); // Error: Alias 'bar' conflicts with existing type or ali
 ### Unsupported Type Error
 
 ```typescript
-// Type not registered
-await registry.add(resourceWithUnknownType);
-// ResourceTypeError: Unsupported resource type: unknown
+import { ResourceTypeError } from "resourcexjs";
 
-// Solution: Register the type first
+try {
+  await registry.add(resourceWithUnknownType);
+} catch (error) {
+  if (error instanceof ResourceTypeError) {
+    // Type not registered
+    console.log(error.message); // "Unsupported resource type: unknown"
+  }
+}
+```
+
+Solution: Register the type first:
+
+```typescript
 registry.supportType(unknownType);
 await registry.add(resourceWithUnknownType);
 ```

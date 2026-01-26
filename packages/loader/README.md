@@ -15,8 +15,8 @@ The `@resourcexjs/loader` package provides a pluggable system for loading resour
 ### Key Concepts
 
 - **ResourceLoader**: Strategy interface for loading resources from different sources
-- **FolderLoader**: Builtin loader for loading resources from local folders
-- **loadResource()**: High-level function that auto-detects and uses appropriate loader
+- **FolderLoader**: Built-in loader for loading resources from local folders
+- **loadResource()**: High-level function that uses a loader to create RXR objects
 
 ## Usage
 
@@ -27,11 +27,11 @@ The simplest way to load a resource:
 ```typescript
 import { loadResource } from "@resourcexjs/loader";
 
-// Load from folder (auto-detects FolderLoader)
-const rxr = await loadResource("/path/to/my-prompt");
+// Load from folder (uses FolderLoader by default)
+const rxr = await loadResource("./my-prompt");
 
 console.log(rxr.manifest.name); // "my-prompt"
-console.log(await rxr.content.text()); // Resource content
+console.log(rxr.manifest.type); // "text"
 ```
 
 ### Folder Structure
@@ -39,7 +39,7 @@ console.log(await rxr.content.text()); // Resource content
 A valid resource folder must contain:
 
 1. **resource.json** - Manifest file with metadata
-2. **content** - Content file
+2. **Any other files** - Content files (all files except resource.json are packaged)
 
 Example folder structure:
 
@@ -47,6 +47,17 @@ Example folder structure:
 my-prompt/
 ├── resource.json
 └── content
+```
+
+Or with multiple files:
+
+```
+my-component/
+├── resource.json
+├── index.ts
+├── styles.css
+└── utils/
+    └── helper.ts
 ```
 
 **resource.json** format:
@@ -57,9 +68,7 @@ my-prompt/
   "type": "text",
   "version": "1.0.0",
   "domain": "localhost",
-  "path": "optional/path",
-  "description": "Optional description",
-  "tags": ["optional", "tags"]
+  "path": "optional/path"
 }
 ```
 
@@ -71,9 +80,9 @@ import { FolderLoader } from "@resourcexjs/loader";
 const loader = new FolderLoader();
 
 // Check if loader can handle source
-if (await loader.canLoad("/path/to/resource")) {
-  // Load resource
-  const rxr = await loader.load("/path/to/resource");
+if (await loader.canLoad("./my-resource")) {
+  const rxr = await loader.load("./my-resource");
+  console.log(rxr.manifest.name);
 }
 ```
 
@@ -82,10 +91,11 @@ if (await loader.canLoad("/path/to/resource")) {
 Implement the `ResourceLoader` interface to create custom loaders:
 
 ```typescript
-import type { ResourceLoader, RXR } from "@resourcexjs/loader";
+import type { ResourceLoader } from "@resourcexjs/loader";
+import type { RXR } from "@resourcexjs/core";
 
 class UrlLoader implements ResourceLoader {
-  canLoad(source: string): boolean {
+  async canLoad(source: string): Promise<boolean> {
     return source.startsWith("http://") || source.startsWith("https://");
   }
 
@@ -101,7 +111,7 @@ class UrlLoader implements ResourceLoader {
 import { loadResource } from "@resourcexjs/loader";
 
 const rxr = await loadResource("https://example.com/resource", {
-  loaders: [new UrlLoader(), new FolderLoader()],
+  loader: new UrlLoader(),
 });
 ```
 
@@ -109,37 +119,31 @@ const rxr = await loadResource("https://example.com/resource", {
 
 ### `loadResource(source, config?)`
 
-Load a resource from a source using auto-detected loader.
+Load a resource from a source using a loader.
 
 **Parameters:**
 
 - `source: string` - Path or identifier to load from
 - `config?: LoadResourceConfig` - Optional configuration
-  - `loaders?: ResourceLoader[]` - Custom loaders (defaults to `[new FolderLoader()]`)
+  - `loader?: ResourceLoader` - Custom loader (defaults to `FolderLoader`)
 
 **Returns**: `Promise<RXR>`
 
-**Throws**: `ResourceXError` if no loader can handle the source or loading fails
+**Throws**: `ResourceXError` if the source cannot be loaded
 
 ```typescript
 // With default FolderLoader
-const rxr = await loadResource("/path/to/resource");
+const rxr = await loadResource("./my-resource");
 
-// With custom loaders
+// With custom loader
 const rxr = await loadResource("https://example.com/resource", {
-  loaders: [new UrlLoader(), new FolderLoader()],
+  loader: new UrlLoader(),
 });
 ```
 
 ### `FolderLoader`
 
 Loads resources from local filesystem folders.
-
-#### Constructor
-
-```typescript
-const loader = new FolderLoader();
-```
 
 #### Methods
 
@@ -148,19 +152,20 @@ const loader = new FolderLoader();
 Check if source is a valid folder with resource.json.
 
 ```typescript
-if (await loader.canLoad("/path/to/folder")) {
+const loader = new FolderLoader();
+if (await loader.canLoad("./my-resource")) {
   // Can load
 }
 ```
 
 ##### `load(source: string): Promise<RXR>`
 
-Load resource from folder.
+Load resource from folder. Reads all files in the folder (except resource.json) into the archive.
 
 **Throws**: `ResourceXError` if folder structure is invalid
 
 ```typescript
-const rxr = await loader.load("/path/to/folder");
+const rxr = await loader.load("./my-resource");
 ```
 
 ### `ResourceLoader` Interface
@@ -212,9 +217,7 @@ Hello, World!
   "path": "prompts/assistants",
   "name": "chat-assistant",
   "type": "prompt",
-  "version": "1.0.0",
-  "description": "A helpful chat assistant prompt",
-  "tags": ["assistant", "chat", "helpful"]
+  "version": "1.0.0"
 }
 ```
 
@@ -222,21 +225,7 @@ Hello, World!
 
 ```
 You are a helpful assistant. Be concise and clear.
-
-When asked a question:
-1. Understand the context
-2. Provide accurate information
-3. Be friendly and professional
 ```
-
-### Default Values
-
-If not specified in resource.json:
-
-- `domain`: defaults to `"localhost"`
-- `path`: defaults to `undefined`
-- `description`: defaults to `undefined`
-- `tags`: defaults to `undefined`
 
 ### Required Fields
 
@@ -244,13 +233,19 @@ If not specified in resource.json:
 - `type` (string)
 - `version` (string)
 
+### Optional Fields
+
+- `domain` - defaults to `"localhost"`
+- `path` - defaults to `undefined`
+
 ## Error Handling
 
 ```typescript
-import { ResourceXError } from "@resourcexjs/loader";
+import { loadResource } from "@resourcexjs/loader";
+import { ResourceXError } from "@resourcexjs/core";
 
 try {
-  const rxr = await loadResource("/path/to/resource");
+  const rxr = await loadResource("./my-resource");
 } catch (error) {
   if (error instanceof ResourceXError) {
     console.error("Loading failed:", error.message);
@@ -260,27 +255,33 @@ try {
 
 ### Common Errors
 
+**Cannot load resource:**
+
+```
+ResourceXError: Cannot load resource from: /path/to/resource
+```
+
 **Missing resource.json:**
 
 ```
-Cannot find resource.json in folder: /path/to/resource
+ResourceXError: Failed to read resource.json: ...
 ```
 
 **Invalid resource.json:**
 
 ```
-Invalid resource.json: missing required field 'name'
+ResourceXError: Invalid resource.json: missing required field 'name'
 ```
 
-**Missing content file:**
+**No content files:**
 
 ```
-Cannot find content file in folder: /path/to/resource
+ResourceXError: No content files found in resource folder
 ```
 
 ## Examples
 
-### Load and Use
+### Load and Add to Registry
 
 ```typescript
 import { loadResource } from "@resourcexjs/loader";
@@ -289,13 +290,13 @@ import { createRegistry } from "@resourcexjs/registry";
 // Load resource from folder
 const rxr = await loadResource("./my-prompts/assistant");
 
-// Link to registry
+// Add to registry
 const registry = createRegistry();
-await registry.link(rxr);
+await registry.add(rxr);
 
 // Resolve later
 const resolved = await registry.resolve("localhost/assistant.prompt@1.0.0");
-console.log(await resolved.content.text());
+const text = await resolved.execute();
 ```
 
 ### Validate Before Loading
@@ -328,37 +329,6 @@ const resources = await Promise.all(
 );
 
 console.log(`Loaded ${resources.length} resources`);
-```
-
-## Architecture
-
-```
-┌─────────────────────────────────────┐
-│        loadResource()               │
-│  (Auto-detect & delegate)           │
-└──────────────┬──────────────────────┘
-               │
-       ┌───────┴────────┐
-       │                │
-┌──────▼──────┐  ┌─────▼──────┐
-│FolderLoader │  │UrlLoader   │
-│             │  │(custom)    │
-└─────────────┘  └────────────┘
-```
-
-## Type Safety
-
-All loaders return fully-typed RXR objects:
-
-```typescript
-import type { RXR } from "@resourcexjs/loader";
-
-const rxr: RXR = await loadResource("./my-resource");
-
-// TypeScript knows the structure
-rxr.locator; // RXL
-rxr.manifest; // RXM
-rxr.archive; // RXA
 ```
 
 ## License

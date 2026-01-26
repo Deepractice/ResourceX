@@ -28,6 +28,8 @@ function parseRXL(locator: string): RXL;
 
 **Returns:** `RXL` - Parsed locator object
 
+**Throws:** `LocatorError` if locator format is invalid
+
 **Example:**
 
 ```typescript
@@ -129,11 +131,11 @@ console.log(manifest.toJSON());
 
 ```typescript
 interface ManifestData {
-  domain?: string;
+  domain: string;
   path?: string;
-  name?: string;
-  type?: string;
-  version?: string;
+  name: string;
+  type: string;
+  version: string;
 }
 ```
 
@@ -320,6 +322,9 @@ const indexContent = await pkg.file("src/index.ts");
 
 // Read all files
 const allFiles = await pkg.files();
+
+// Pack back to archive
+const newArchive = await pkg.pack();
 ```
 
 ---

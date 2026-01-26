@@ -71,6 +71,8 @@ bun run format
 packages/
 ├── arp/         # @resourcexjs/arp - ARP protocol (low-level I/O)
 ├── core/        # @resourcexjs/core - RXL, RXM, RXA, RXP, RXR
+├── type/        # @resourcexjs/type - Type system (BundledType, TypeHandlerChain)
+├── loader/      # @resourcexjs/loader - Resource loading (FolderLoader)
 ├── registry/    # @resourcexjs/registry - Registry implementation
 └── resourcex/   # resourcexjs - Main package (re-exports)
 ```
@@ -136,51 +138,75 @@ const rxr: RXR = { locator, manifest, archive };
 
 ### Type System
 
-**ResourceType** defines how resources are serialized and resolved:
+**BundledType** - Pre-bundled resource type ready for sandbox execution:
 
 ```typescript
-// ResolvedResource - structured result with execute and schema
-interface ResolvedResource<TArgs = void, TResult = unknown> {
-  execute: (args?: TArgs) => TResult | Promise<TResult>;
-  schema: TArgs extends void ? undefined : JSONSchema;
-}
-
-// ResourceResolver - requires schema for typed args
-interface ResourceResolver<TArgs = void, TResult = unknown> {
-  schema: TArgs extends void ? undefined : JSONSchema;
-  resolve(rxr: RXR): Promise<ResolvedResource<TArgs, TResult>>;
-}
-
-interface ResourceType<TArgs = void, TResult = unknown> {
-  name: string;               // "text", "json", "prompt"
-  aliases?: string[];         // ["txt"], ["config"]
+interface BundledType {
+  name: string;           // "text", "json", "prompt"
+  aliases?: string[];     // ["txt"], ["config"]
   description: string;
-  serializer: ResourceSerializer;  // RXR ↔ Buffer (for storage)
-  resolver: ResourceResolver<TArgs, TResult>;  // RXR → structured result
+  schema?: JSONSchema;    // For typed arguments
+  code: string;           // Bundled resolver code (executable in sandbox)
 }
 
 // Built-in types (schema: undefined, no args)
 text   → aliases: [txt, plaintext]  → execute() => Promise<string>
 json   → aliases: [config, manifest] → execute() => Promise<unknown>
-binary → aliases: [bin, blob, raw]   → execute() => Promise<Buffer>
+binary → aliases: [bin, blob, raw]   → execute() => Promise<Uint8Array>
 ```
 
-**TypeHandlerChain** - Responsibility chain for type handling:
+**ResolveContext** - Pure data context passed to resolver in sandbox:
 
 ```typescript
-chain.register(type); // Register a type
-chain.canHandle(name); // Check if type supported
-chain.serialize(rxr); // RXR → Buffer
-chain.deserialize(data, manifest); // Buffer → RXR
-chain.resolve<TArgs, TResult>(rxr); // RXR → structured result
+interface ResolveContext {
+  manifest: {
+    domain: string;
+    path?: string;
+    name: string;
+    type: string;
+    version: string;
+  };
+  files: Record<string, Uint8Array>; // Extracted archive files
+}
 
-// Example usage
-const result = await chain.resolve<void, string>(rxr);
-result.schema; // undefined for builtin types
-await result.execute(); // Lazy load content
+// Resolver code example (in .type.ts file)
+export default {
+  name: "text",
+  description: "Plain text content",
+  async resolve(ctx: ResolveContext) {
+    return new TextDecoder().decode(ctx.files["content"]);
+  },
+};
 ```
 
-Used by Registry to delegate serialization logic.
+**ResolvedResource** - Result from registry.resolve():
+
+```typescript
+interface ResolvedResource<TArgs = void, TResult = unknown> {
+  resource: RXR; // Original resource
+  execute: (args?: TArgs) => TResult | Promise<TResult>; // Lazy execution
+  schema: TArgs extends void ? undefined : JSONSchema; // For UI rendering
+}
+```
+
+**TypeHandlerChain** - Type registration and lookup:
+
+```typescript
+const chain = TypeHandlerChain.create(); // Includes builtins by default
+chain.register(type); // Register custom type
+chain.canHandle(name); // Check if type supported
+chain.getHandler(name); // Get BundledType (throws if not found)
+```
+
+**Bundling Custom Types:**
+
+```typescript
+import { bundleResourceType } from "@resourcexjs/type";
+
+// Bundle from .type.ts file (uses Bun.build)
+const promptType = await bundleResourceType("./prompt.type.ts");
+registry.supportType(promptType);
+```
 
 ### Registry
 
@@ -188,14 +214,14 @@ Used by Registry to delegate serialization logic.
 
 ```typescript
 interface Registry {
+  supportType(type: BundledType): void; // Add custom resource type
   link(path: string): Promise<void>; // Symlink to dev directory (live changes)
   add(source: string | RXR): Promise<void>; // Copy to local (~/.resourcex)
   get(locator: string): Promise<RXR>; // Get raw RXR without resolving
-  resolve(locator: string): Promise<ResolvedResource>; // Resolve with execute()
+  resolve<TArgs, TResult>(locator: string): Promise<ResolvedResource<TArgs, TResult>>;
   exists(locator: string): Promise<boolean>;
   delete(locator: string): Promise<void>;
   search(options?: SearchOptions): Promise<RXL[]>;
-  publish(source: string | RXR, options: PublishOptions): Promise<void>; // Publish to remote
 }
 
 interface SearchOptions {
@@ -208,27 +234,44 @@ interface SearchOptions {
 **Registry Configuration:**
 
 ```typescript
-// Local registry (default)
+// Client mode (default) - LocalStorage as cache, fetches from remote
 const registry = createRegistry();
 const registry2 = createRegistry({ path: "./custom-path" });
 
-// Remote registry (HTTP)
+// With mirror for remote fetch
 const registry3 = createRegistry({
-  endpoint: "https://registry.deepractice.ai/v1",
+  mirror: "https://registry.deepractice.ai/v1",
 });
 
-// Git registry (requires domain for security)
+// With custom types
 const registry4 = createRegistry({
-  type: "git",
-  url: "git@github.com:Deepractice/Registry.git",
-  domain: "deepractice.dev", // Required for remote URLs
+  types: [myPromptType, myToolType],
 });
 
-// Well-known discovery (for any remote registry, not just git)
+// With sandbox isolator
+const registry5 = createRegistry({
+  isolator: "srt", // "none" | "srt" | "cloudflare" | "e2b"
+});
+
+// Server mode - custom Storage implementation
+const registry6 = createRegistry({
+  storage: new LocalStorage({ path: "./data" }),
+});
+```
+
+**Isolator Types (SandboX integration):**
+
+- `"none"` - No isolation, fastest (~10ms), for development
+- `"srt"` - OS-level isolation (~50ms), secure local dev
+- `"cloudflare"` - Container isolation (~100ms), local Docker or edge
+- `"e2b"` - MicroVM isolation (~150ms), production (planned)
+
+**Well-known Discovery:**
+
+```typescript
 import { discoverRegistry } from "@resourcexjs/registry";
 const discovery = await discoverRegistry("deepractice.dev");
-// → { domain: "deepractice.dev", registries: ["git@github.com:...", "https://..."] }
-// Can return git URLs, HTTP endpoints, or any supported registry type
+// → { domain: "deepractice.dev", registries: ["https://..."] }
 ```
 
 **Well-known Format:**
@@ -237,114 +280,90 @@ const discovery = await discoverRegistry("deepractice.dev");
 // https://deepractice.dev/.well-known/resourcex
 {
   "version": "1.0",
-  "registries": ["git@github.com:Deepractice/Registry.git", "https://registry.deepractice.dev/v1"]
+  "registries": ["https://registry.deepractice.dev/v1"]
 }
 ```
 
-First registry is primary, rest are fallbacks. Supports git URLs, HTTP endpoints, etc.
+**Storage Interface:**
 
-**Security:**
-
-- Remote URLs require `domain` parameter (prevents impersonation)
-- Local paths (./repo) don't require domain (development use)
-- `discoverRegistry()` auto-binds domain from well-known
-- Domain validation: middleware checks manifest.domain matches trustedDomain
-
-**Registry Middleware:**
-
-Middleware pattern for adding cross-cutting concerns:
+Registry uses pluggable Storage backend:
 
 ```typescript
-// Base class - delegates all operations to inner registry
-abstract class RegistryMiddleware implements Registry {
-  constructor(protected readonly inner: Registry) {}
-  // All methods delegate to inner by default
+interface Storage {
+  readonly type: string;
+  get(locator: string): Promise<RXR>;
+  put(rxr: RXR): Promise<void>;
+  exists(locator: string): Promise<boolean>;
+  delete(locator: string): Promise<void>;
+  search(options?: SearchOptions): Promise<RXL[]>;
 }
 
-// DomainValidation - validates manifest.domain matches trusted domain
-class DomainValidation extends RegistryMiddleware {
-  constructor(inner: Registry, private trustedDomain: string) { ... }
-
-  async get(locator: string): Promise<RXR> {
-    const rxr = await this.inner.get(locator);
-    if (rxr.manifest.domain !== this.trustedDomain) {
-      throw new RegistryError(`Untrusted domain: ${rxr.manifest.domain}`);
-    }
-    return rxr;
-  }
-}
-
-// Factory function
-const registry = withDomainValidation(gitRegistry, "deepractice.ai");
+// Built-in implementations:
+LocalStorage; // Filesystem-based (uses ARP)
 ```
 
-**Auto-injected Middleware:**
-
-`createRegistry()` automatically wraps GitRegistry with DomainValidation when `domain` is provided:
-
-```typescript
-// This automatically wraps with DomainValidation
-const registry = createRegistry({
-  type: "git",
-  url: "git@github.com:Deepractice/Registry.git",
-  domain: "deepractice.ai", // Triggers auto-wrap
-});
-```
-
-**LocalRegistry Implementation:**
-
-- Uses ARP file transport for I/O operations
-- Uses TypeHandlerChain for serialization/deserialization
-- Storage: `~/.resourcex/{domain}/{path}/{name}.{type}/{version}/`
-
-**RemoteRegistry Implementation:**
-
-- Uses HTTP API for resource access
-- Read-only (link/delete not supported)
-- Endpoints: `/resource`, `/content`, `/exists`, `/search`
-
-**GitRegistry Implementation:**
-
-- Uses ARP file transport for I/O operations
-- Clones git repository to `~/.resourcex/.git-cache/{repo-name}/`
-- Every access does `git fetch` to stay current
-- Read-only (link/delete not supported)
-- Domain validation handled by middleware (not built-in)
-
-**Storage Structure (Local):**
+**Storage Structure:**
 
 ```
 ~/.resourcex/
-├── local/                              # Development resources
-│   └── {name}.{type}/
-│       └── {version}/
-│           ├── manifest.json
-│           └── archive.tar.gz
-│
-└── cache/                              # Remote cached resources
-    └── {domain}/
-        └── {path}/
-            └── {name}.{type}/
-                └── {version}/
-                    ├── manifest.json
-                    └── archive.tar.gz
+└── {domain}/
+    └── {path}/
+        └── {name}.{type}/
+            └── {version}/
+                ├── manifest.json
+                └── archive.tar.gz
+
+# For localhost (no domain):
+~/.resourcex/localhost/{name}.{type}/{version}/
 ```
+
+### Loader
+
+**loadResource** - Load resource from directory:
+
+```typescript
+import { loadResource } from "@resourcexjs/loader";
+
+const rxr = await loadResource("./my-resource");
+await registry.add(rxr);
+```
+
+**FolderLoader** expects this structure:
+
+```
+my-resource/
+├── resource.json    # Required: metadata
+└── content          # Content files (any name)
+```
+
+**resource.json format:**
+
+```json
+{
+  "name": "my-resource",
+  "type": "text",
+  "version": "1.0.0",
+  "domain": "localhost",
+  "path": "optional/path"
+}
+```
+
+All files except `resource.json` are packaged into RXA.
 
 ### Resolution Flow
 
 ```
 registry.resolve("my-tool.text@1.0.0")
   ↓
-LocalRegistry:
-1. Check local/ first: ~/.resourcex/local/my-tool.text/1.0.0/
-2. If not found, check cache/: ~/.resourcex/cache/.../my-tool.text/1.0.0/
-3. Read manifest.json + archive.tar.gz
-4. typeChain.deserialize → RXR
-
-RemoteRegistry:
-1. GET /resource?locator=... → manifest
-2. GET /content?locator=... → content
-3. typeChain.deserialize → RXR
+1. Check local storage: ~/.resourcex/localhost/my-tool.text/1.0.0/
+2. If not found and domain != localhost:
+   a. Try mirror (if configured)
+   b. Discover via well-known
+   c. Fetch from remote endpoint
+   d. Cache to local storage
+3. Get BundledType from TypeHandlerChain
+4. Execute resolver in sandbox via ResolverExecutor
+5. Return ResolvedResource with execute()
 ```
 
 ### ARP Layer
@@ -456,26 +475,47 @@ const registry = new GitHubRegistry({ url: "..." });
 
 ## Key Implementation Details
 
-### TypeHandlerChain Pattern
+### Registry Architecture
 
-Registry delegates serialization to TypeHandlerChain, keeping concerns separated:
+Registry separates concerns into three layers:
+
+1. **Storage** - Pure CRUD operations (LocalStorage)
+2. **TypeHandlerChain** - Type registration and lookup
+3. **ResolverExecutor** - Sandbox execution of resolver code
 
 ```typescript
-// LocalRegistry (storage layer)
-class LocalRegistry implements Registry {
-  private typeChain: TypeHandlerChain;
+class DefaultRegistry implements Registry {
+  private storage: Storage;
+  private typeHandler: TypeHandlerChain;
+  private executor: ResolverExecutor;
 
-  async add(source: string | RXR) {
-    const rxr = typeof source === "string" ? await loadResource(source) : source;
-    // Delegate to chain
-    const buffer = await this.typeChain.serialize(rxr);
-    // Store using fs
-    await writeFile(contentPath, buffer);
+  async resolve(locator: string) {
+    const rxr = await this.get(locator);              // Storage
+    const handler = this.typeHandler.getHandler(...); // Type lookup
+    return {
+      resource: rxr,
+      schema: handler.schema,
+      execute: (args) => this.executor.execute(handler.code, rxr, args),
+    };
   }
 }
 ```
 
-This allows swapping storage implementations without changing serialization logic.
+### ResolverExecutor
+
+Executes bundled resolver code in sandbox (via SandboX):
+
+```typescript
+interface ResolverExecutor {
+  execute<TResult>(code: string, rxr: RXR, args?: unknown): Promise<TResult>;
+}
+
+// Flow:
+// 1. RXR → ResolveContext (extract files to Uint8Array)
+// 2. Serialize context to JSON
+// 3. Execute resolver code in sandbox
+// 4. Parse stdout as result
+```
 
 ### Archive and Package
 
@@ -530,57 +570,78 @@ createRXM(data: ManifestData): RXM
 // Archive and Package
 createRXA(files: Record<string, Buffer | string>): Promise<RXA>
 createRXA({ buffer: Buffer }): Promise<RXA>
+```
 
-// ResourceType
-defineResourceType<T>(config: ResourceType<T>): ResourceType<T>
-getResourceType<T>(name: string): ResourceType<T> | undefined
-clearResourceTypes(): void
+### Type Package (`@resourcexjs/type`)
+
+```typescript
+// Types
+interface BundledType { name, aliases?, description, schema?, code }
+interface ResolveContext { manifest, files: Record<string, Uint8Array> }
+interface ResolvedResource<TArgs, TResult> { resource, execute, schema }
+type IsolatorType = "none" | "srt" | "cloudflare" | "e2b"
+
+// TypeHandlerChain
+TypeHandlerChain.create(): TypeHandlerChain  // Includes builtins
+chain.register(type: BundledType): void
+chain.canHandle(name: string): boolean
+chain.getHandler(name: string): BundledType
+
+// Bundler
+bundleResourceType(sourcePath: string): Promise<BundledType>
 
 // Built-in types
 textType, jsonType, binaryType, builtinTypes
+```
 
-// TypeHandlerChain
-createTypeHandlerChain(types?: ResourceType[]): TypeHandlerChain
+### Loader Package (`@resourcexjs/loader`)
+
+```typescript
+// Load resource from folder
+loadResource(path: string): Promise<RXR>
+loadResource(path: string, { loader: CustomLoader }): Promise<RXR>
+
+// Loader interface
+interface ResourceLoader {
+  canLoad(source: string): Promise<boolean>;
+  load(source: string): Promise<RXR>;
+}
+
+// Built-in loader
+FolderLoader  // Loads from folder with resource.json
 ```
 
 ### Registry Package (`@resourcexjs/registry`)
 
 ```typescript
-// Create registry (local, remote, or git)
-createRegistry(): Registry                              // LocalRegistry with default path
-createRegistry({ path?: string }): Registry             // LocalRegistry
-createRegistry({ endpoint: string }): Registry          // RemoteRegistry
-createRegistry({ type: "git", url: string, domain: string }): Registry  // GitRegistry
+// Create registry
+createRegistry(): Registry                        // Client mode, default path
+createRegistry({ path?: string }): Registry       // Client mode, custom path
+createRegistry({ mirror?: string }): Registry     // Client mode with mirror
+createRegistry({ types?: BundledType[] }): Registry
+createRegistry({ isolator?: IsolatorType }): Registry
+createRegistry({ storage: Storage }): Registry    // Server mode
 
-// Well-known discovery (returns domain + registries)
+// Well-known discovery
 discoverRegistry(domain: string): Promise<DiscoveryResult>
-// → { domain: "example.com", registries: ["git@github.com:..."] }
+// → { domain: "example.com", registries: ["https://..."] }
 
-// Types
-interface DiscoveryResult {
-  domain: string;
-  registries: string[];
-}
+// Storage
+interface Storage { type, get, put, exists, delete, search }
+LocalStorage   // Filesystem-based (uses ARP)
 
-// Classes
-LocalRegistry   // Filesystem-based (uses ARP)
-RemoteRegistry  // HTTP API-based
-GitRegistry     // Git clone-based (uses ARP, read-only)
+// Registry interface
+registry.supportType(type: BundledType): void
+registry.link(path: string): Promise<void>
+registry.add(source: string | RXR): Promise<void>
+registry.get(locator: string): Promise<RXR>
+registry.resolve<TArgs, TResult>(locator: string): Promise<ResolvedResource<TArgs, TResult>>
+registry.exists(locator: string): Promise<boolean>
+registry.delete(locator: string): Promise<void>
+registry.search(options?: SearchOptions): Promise<RXL[]>
 
-// Middleware
-RegistryMiddleware              // Base class for custom middleware
-DomainValidation                // Validates manifest.domain
-withDomainValidation(registry, domain): Registry  // Factory function
-
-// Registry methods
-registry.link(path): Promise<void>          // Symlink to dev directory
-registry.add(source): Promise<void>         // Copy to local (source: path | RXR)
-registry.get(locator): Promise<RXR>         // Raw RXR without resolving
-registry.resolve(locator): Promise<ResolvedResource>
-registry.exists(locator): Promise<boolean>
-registry.delete(locator): Promise<void>
-registry.search(options?): Promise<RXL[]>   // { query?, limit?, offset? }
-registry.publish(source, options): Promise<void>  // Publish to remote
+// Middleware (for custom extensions)
+RegistryMiddleware, DomainValidation, withDomainValidation
 ```
 
 ### ARP Package (`@resourcexjs/arp`)
@@ -629,15 +690,16 @@ const arp2 = createARP({ transports: [rxrTransport] }); // Override default
 ## Error Hierarchy
 
 ```
-ResourceXError
+ResourceXError (base for @resourcexjs/core)
 ├── LocatorError (RXL parsing)
 ├── ManifestError (RXM validation)
-├── ContentError (RXA/RXP operations)
-└── ResourceTypeError (Type not found)
+└── ContentError (RXA/RXP operations)
 
-RegistryError (Registry operations)
+ResourceTypeError (type not found/already registered - @resourcexjs/type)
 
-ARPError
+RegistryError (registry operations - @resourcexjs/registry)
+
+ARPError (base for @resourcexjs/arp)
 ├── ParseError (ARP URL parsing)
 ├── TransportError (Transport not found)
 └── SemanticError (Semantic not found)
@@ -648,11 +710,12 @@ ARPError
 - [x] Registry.search() - Implemented with query/limit/offset options
 - [x] Registry.get() - Get raw RXR without resolving
 - [x] RxrTransport - Access files inside resources via ARP
-- [x] RemoteRegistry - HTTP client for remote registry access
 - [x] Well-known discovery - `discoverRegistry()` for service discovery
 - [x] RxrTransport auto-create - Auto-creates Registry based on domain
 - [x] ARP list/mkdir - Directory operations for file transport
-- [x] Registry Middleware - DomainValidation middleware with auto-injection
-- [x] Registry uses ARP - LocalRegistry and GitRegistry use ARP for I/O
-- [ ] Registry.publish() - Remote publishing to domain-based registry
+- [x] Registry Middleware - DomainValidation middleware
+- [x] Registry uses ARP - LocalStorage uses ARP for I/O
+- [x] BundledType - Pre-bundled types for sandbox execution
+- [x] ResolverExecutor - Sandbox execution via SandboX
+- [x] Loader package - loadResource with FolderLoader
 - [ ] Registry HTTP Server - Server-side routes (see `issues/015-registry-remote-support.md`)

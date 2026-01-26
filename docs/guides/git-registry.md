@@ -1,196 +1,29 @@
 # Git Registry Usage Guide
 
-GitRegistry provides read-only access to resources stored in a Git repository. It clones the repository locally and serves resources from the cloned copy, fetching updates on each access.
+This guide explains how to work with Git-based resource registries using ResourceX's well-known discovery mechanism.
 
 ## Overview
 
-GitRegistry is ideal for:
+Git-based registries allow you to:
 
-- Publishing resources through Git workflows (PRs, code review)
-- Sharing resources across teams via existing Git infrastructure
-- Accessing resources without running a dedicated server
+- Publish resources through Git workflows (PRs, code review)
+- Share resources across teams via existing Git infrastructure
+- Version resources with Git history
 
-**Key characteristics:**
+**How it works:**
 
-- Read-only (link/delete operations not supported)
-- Automatically clones and updates repository
-- Supports domain binding for security
-- Caches repository at `~/.resourcex/.git-cache/`
-
-## Basic Usage
-
-### Creating a Git Registry
-
-```typescript
-import { createRegistry } from "@resourcexjs/registry";
-
-// For remote repositories, domain binding is required
-const registry = createRegistry({
-  type: "git",
-  url: "git@github.com:Deepractice/Registry.git",
-  domain: "deepractice.dev", // Required for security
-});
-```
-
-### Configuration Options
-
-```typescript
-interface GitRegistryConfig {
-  type: "git"; // Required: identifies as git registry
-  url: string; // Git repository URL (SSH or HTTPS)
-  domain?: string; // Trusted domain (required for remote URLs)
-  ref?: string; // Branch/tag/commit (default: "main")
-  basePath?: string; // Resource path in repo (default: ".resourcex")
-}
-```
-
-### Example Configurations
-
-```typescript
-// SSH URL with domain binding
-const registry1 = createRegistry({
-  type: "git",
-  url: "git@github.com:MyOrg/Resources.git",
-  domain: "myorg.com",
-});
-
-// HTTPS URL with custom branch
-const registry2 = createRegistry({
-  type: "git",
-  url: "https://github.com/MyOrg/Resources.git",
-  domain: "myorg.com",
-  ref: "production",
-});
-
-// Local path (no domain required for development)
-const registry3 = createRegistry({
-  type: "git",
-  url: "./local-repo",
-  // domain not required for local paths
-});
-```
-
-## Domain Binding (Security)
-
-### Why Domain Binding Matters
-
-Without domain binding, a malicious registry could:
-
-- Claim to provide resources for any domain
-- Impersonate trusted sources (e.g., `deepractice.ai/official-tool`)
-- Deliver malicious content under a trusted namespace
-
-Domain binding ensures resources from a registry can only claim their authorized domain.
-
-### How It Works
-
-When you create a GitRegistry with a `domain` parameter, the registry is automatically wrapped with DomainValidation middleware:
-
-```typescript
-// Creates GitRegistry wrapped with DomainValidation
-const registry = createRegistry({
-  type: "git",
-  url: "git@github.com:Deepractice/Registry.git",
-  domain: "deepractice.dev",
-});
-
-// This will succeed - domain matches
-await registry.get("deepractice.dev/hello.text@1.0.0");
-
-// This will throw RegistryError - domain mismatch
-await registry.get("evil.com/hello.text@1.0.0");
-// Error: "Untrusted domain: resource claims 'evil.com' but registry only trusts 'deepractice.dev'"
-```
-
-### Security Rules
-
-1. **Remote URLs require domain**: SSH (`git@...`) and HTTPS URLs must have a `domain` parameter
-2. **Local paths don't require domain**: Paths like `./repo` are for development only
-3. **Domain validation on access**: Every `get()` and `resolve()` validates the resource's manifest domain
-
-```typescript
-// This throws RegistryError immediately
-createRegistry({
-  type: "git",
-  url: "git@github.com:Example/Repo.git",
-  // Missing domain - error!
-});
-// Error: "Remote git registry requires a trusted domain"
-```
-
-## Well-Known Discovery
-
-Well-known discovery automates registry configuration by looking up a domain's authorized registries.
-
-### How It Works
-
-1. Domain owner publishes a well-known file at `https://{domain}/.well-known/resourcex`
-2. File lists authorized registries for that domain
-3. `discoverRegistry()` fetches this file and returns the configuration
-
-### Well-Known File Format
-
-```json
-// https://deepractice.dev/.well-known/resourcex
-{
-  "version": "1.0",
-  "registries": ["git@github.com:Deepractice/Registry.git"]
-}
-```
-
-### Using Discovery
-
-```typescript
-import { discoverRegistry, createRegistry } from "@resourcexjs/registry";
-
-// Discover registry for a domain
-const discovery = await discoverRegistry("deepractice.dev");
-// → { domain: "deepractice.dev", registries: ["git@github.com:Deepractice/Registry.git"] }
-
-// Create registry from discovery (domain auto-bound)
-const registry = createRegistry({
-  type: "git",
-  url: discovery.registries[0],
-  domain: discovery.domain, // Security: domain from discovery
-});
-
-// Access resources
-const resolved = await registry.resolve("deepractice.dev/hello.text@1.0.0");
-```
-
-### Complete Discovery Pattern
-
-```typescript
-async function getRegistryForDomain(domain: string) {
-  const discovery = await discoverRegistry(domain);
-  const registryUrl = discovery.registries[0];
-
-  // Determine registry type
-  if (registryUrl.startsWith("git@") || registryUrl.endsWith(".git")) {
-    return createRegistry({
-      type: "git",
-      url: registryUrl,
-      domain: discovery.domain,
-    });
-  } else {
-    return createRegistry({
-      endpoint: registryUrl,
-    });
-  }
-}
-
-// Usage
-const registry = await getRegistryForDomain("deepractice.dev");
-const resource = await registry.resolve("deepractice.dev/assistant.text@1.0.0");
-```
+1. Resources are stored in a Git repository in a specific format
+2. A registry server serves the resources via HTTP
+3. The well-known file at the domain points to the registry endpoint
+4. ResourceX clients discover and fetch resources automatically
 
 ## Repository Structure
 
-GitRegistry expects resources in a specific directory structure:
+Git repositories should store resources in a specific directory structure:
 
 ```
 {repository}/
-└── .resourcex/                         # basePath (configurable)
+└── .resourcex/                         # Base path (configurable)
     └── {domain}/
         └── {path}/
             └── {name}.{type}/
@@ -202,15 +35,15 @@ GitRegistry expects resources in a specific directory structure:
 ### Example Repository Layout
 
 ```
-Registry/
+my-registry/
 └── .resourcex/
     └── deepractice.dev/
         ├── hello.text/
         │   └── 1.0.0/
         │       ├── manifest.json
         │       └── archive.tar.gz
-        └── sean/
-            └── assistant.text/
+        └── tools/
+            └── calculator.text/
                 ├── 1.0.0/
                 │   ├── manifest.json
                 │   └── archive.tar.gz
@@ -219,230 +52,420 @@ Registry/
                     └── archive.tar.gz
 ```
 
-### Custom Base Path
+### Manifest Format
 
-```typescript
-const registry = createRegistry({
-  type: "git",
-  url: "git@github.com:MyOrg/Resources.git",
-  domain: "myorg.com",
-  basePath: "resources", // Instead of .resourcex
-});
+Each `manifest.json` file contains:
+
+```json
+{
+  "domain": "deepractice.dev",
+  "path": "tools",
+  "name": "calculator",
+  "type": "text",
+  "version": "1.0.0"
+}
 ```
 
-## Operations
+## Setting Up Well-Known Discovery
 
-### Resolving Resources
+### 1. Create Well-Known File
+
+Host a well-known file at `https://{domain}/.well-known/resourcex`:
+
+```json
+{
+  "version": "1.0",
+  "registries": ["https://registry.deepractice.dev/v1"]
+}
+```
+
+### 2. Set Up Registry Server
+
+Create a server that reads from your Git repository and serves the HTTP API:
 
 ```typescript
+import express from "express";
+import { createRegistry, LocalStorage } from "resourcexjs";
+
+const app = express();
+
+// Point to cloned git repository
+const registry = createRegistry({
+  storage: new LocalStorage({ path: "./git-repo/.resourcex" }),
+});
+
+app.get("/resource", async (req, res) => {
+  const { locator } = req.query;
+  try {
+    const rxr = await registry.get(locator as string);
+    res.json(rxr.manifest.toJSON());
+  } catch (error) {
+    res.status(404).json({ error: "Resource not found" });
+  }
+});
+
+app.get("/content", async (req, res) => {
+  const { locator } = req.query;
+  try {
+    const rxr = await registry.get(locator as string);
+    const buffer = await rxr.archive.buffer();
+    res.type("application/gzip").send(buffer);
+  } catch (error) {
+    res.status(404).json({ error: "Resource not found" });
+  }
+});
+
+app.listen(3000);
+```
+
+## Using discoverRegistry
+
+The `discoverRegistry` function helps find registries for a domain:
+
+```typescript
+import { discoverRegistry, createRegistry } from "resourcexjs";
+
+// Discover registry for a domain
+const discovery = await discoverRegistry("deepractice.dev");
+console.log(discovery.domain); // "deepractice.dev"
+console.log(discovery.registries); // ["https://registry.deepractice.dev/v1"]
+```
+
+## Client Usage
+
+### Accessing Remote Resources
+
+Once well-known discovery is set up, clients can access resources automatically:
+
+```typescript
+import { createRegistry } from "resourcexjs";
+
+const registry = createRegistry();
+
+// ResourceX discovers the registry via well-known
 const resolved = await registry.resolve("deepractice.dev/hello.text@1.0.0");
 const content = await resolved.execute();
-console.log(content);
 ```
 
-### Getting Raw Resources
+### With Mirror for Faster Access
 
 ```typescript
-const rxr = await registry.get("deepractice.dev/hello.text@1.0.0");
-console.log(rxr.manifest.name); // "hello"
-console.log(rxr.manifest.domain); // "deepractice.dev"
-```
-
-### Checking Existence
-
-```typescript
-const exists = await registry.exists("deepractice.dev/hello.text@1.0.0");
-```
-
-### Searching Resources
-
-```typescript
-// Search all resources
-const all = await registry.search();
-
-// Search with query
-const filtered = await registry.search({ query: "hello" });
-
-// With pagination
-const page = await registry.search({
-  query: "tool",
-  limit: 10,
-  offset: 0,
-});
-```
-
-### Read-Only Restrictions
-
-GitRegistry is read-only. These operations throw errors:
-
-```typescript
-// All of these throw RegistryError
-await registry.add(resource);
-// "GitRegistry is read-only - use LocalRegistry.link()"
-
-await registry.delete("deepractice.dev/hello.text@1.0.0");
-// "GitRegistry is read-only - use LocalRegistry.delete()"
-
-await registry.publish(resource, options);
-// "GitRegistry is read-only - use LocalRegistry.publish()"
-```
-
-## Caching Behavior
-
-### Repository Cache Location
-
-Cloned repositories are cached at:
-
-```
-~/.resourcex/.git-cache/{normalized-repo-name}/
-```
-
-For example:
-
-- `git@github.com:Deepractice/Registry.git`
-- Cached at: `~/.resourcex/.git-cache/github.com-Deepractice-Registry/`
-
-### Automatic Updates
-
-Every access operation triggers:
-
-1. `git fetch origin` - Get latest changes
-2. `git reset --hard origin/{branch}` - Update to latest
-
-This ensures you always get the most recent resources.
-
-### Branch Detection
-
-GitRegistry auto-detects the default branch:
-
-1. Tries `origin/main` first
-2. Falls back to `origin/master` if main doesn't exist
-3. Uses user-specified `ref` if provided
-
-## Common Use Cases
-
-### Publishing Workflow
-
-1. Create resources locally using LocalRegistry
-2. Export resources to git repository structure
-3. Commit and push to Git
-4. Users access via GitRegistry + well-known discovery
-
-### Team Resource Sharing
-
-```typescript
-// Team's well-known file: https://myteam.internal/.well-known/resourcex
-// { "version": "1.0", "registries": ["git@github.internal:team/resources.git"] }
-
-const discovery = await discoverRegistry("myteam.internal");
 const registry = createRegistry({
-  type: "git",
-  url: discovery.registries[0],
-  domain: discovery.domain,
+  mirror: "https://registry.deepractice.dev/v1",
 });
 
-// Access team resources
-const tool = await registry.resolve("myteam.internal/shared-tool.text@1.0.0");
+// Tries mirror first, then falls back to well-known discovery
+const resolved = await registry.resolve("deepractice.dev/hello.text@1.0.0");
 ```
 
-### Development with Local Repository
+## Domain Binding (Security)
+
+Domain binding ensures resources from a registry can only claim their authorized domain.
+
+### Why Domain Binding Matters
+
+Without domain binding, a malicious registry could:
+
+- Claim to provide resources for any domain
+- Impersonate trusted sources
+- Deliver malicious content under a trusted namespace
+
+### How It Works
+
+The well-known discovery automatically binds the domain:
 
 ```typescript
-// Point to local git repo for development (no domain required)
-const devRegistry = createRegistry({
-  type: "git",
-  url: "./my-resources-repo",
+import { discoverRegistry } from "resourcexjs";
+
+const discovery = await discoverRegistry("deepractice.dev");
+// discovery.domain is bound to "deepractice.dev"
+
+// When fetching resources, the domain in the manifest
+// must match the domain from discovery
+```
+
+### DomainValidation Middleware
+
+For server implementations, use the DomainValidation middleware:
+
+```typescript
+import { createRegistry, withDomainValidation, LocalStorage } from "resourcexjs";
+
+const baseRegistry = createRegistry({
+  storage: new LocalStorage({ path: "./resources" }),
 });
 
-// Resources can claim any domain in dev mode
-await devRegistry.get("any-domain.com/test.text@1.0.0");
+// Wrap with domain validation
+const registry = withDomainValidation(baseRegistry, "deepractice.dev");
+
+// Resources with mismatched domains will throw RegistryError
+try {
+  await registry.get("evil.com/resource.text@1.0.0");
+} catch (error) {
+  // "Untrusted domain: resource claims 'evil.com' but registry only trusts 'deepractice.dev'"
+}
+```
+
+## Publishing Workflow
+
+### 1. Create Resource Locally
+
+```typescript
+import { createRegistry, createRXM, createRXA, parseRXL } from "resourcexjs";
+
+const registry = createRegistry({ path: "./my-registry/.resourcex" });
+
+const manifest = createRXM({
+  domain: "deepractice.dev",
+  name: "my-tool",
+  type: "text",
+  version: "1.0.0",
+});
+
+const archive = await createRXA({
+  content: "Tool content here",
+});
+
+await registry.add({
+  locator: parseRXL(manifest.toLocator()),
+  manifest,
+  archive,
+});
+```
+
+### 2. Commit and Push
+
+```bash
+cd my-registry
+git add .
+git commit -m "Add my-tool.text@1.0.0"
+git push origin main
+```
+
+### 3. Deploy Registry Server
+
+Your registry server should automatically pick up the new resources when the Git repository is updated.
+
+## Development Workflow
+
+### Local Development
+
+For local development, point to a local directory:
+
+```typescript
+import { createRegistry, LocalStorage } from "resourcexjs";
+
+// Point to local git repo clone
+const registry = createRegistry({
+  storage: new LocalStorage({ path: "./my-registry/.resourcex" }),
+});
+
+// Resources are available immediately
+const resolved = await registry.resolve("deepractice.dev/my-tool.text@1.0.0");
+```
+
+### Testing Before Publishing
+
+```typescript
+// Create a test resource
+const manifest = createRXM({
+  domain: "localhost", // Use localhost for testing
+  name: "test-tool",
+  type: "text",
+  version: "1.0.0",
+});
+
+await registry.add({
+  locator: parseRXL(manifest.toLocator()),
+  manifest,
+  archive: await createRXA({ content: "Test content" }),
+});
+
+// Test it works
+const resolved = await registry.resolve("localhost/test-tool.text@1.0.0");
 ```
 
 ## Error Handling
 
-### Registry Creation Errors
-
-```typescript
-try {
-  createRegistry({
-    type: "git",
-    url: "git@github.com:Org/Repo.git",
-    // Missing domain!
-  });
-} catch (error) {
-  // RegistryError: "Remote git registry requires a trusted domain"
-}
-```
-
-### Domain Validation Errors
-
-```typescript
-const registry = createRegistry({
-  type: "git",
-  url: "git@github.com:Org/Repo.git",
-  domain: "trusted.com",
-});
-
-try {
-  await registry.get("untrusted.com/resource.text@1.0.0");
-} catch (error) {
-  // RegistryError: "Untrusted domain: resource claims 'untrusted.com'
-  //                but registry only trusts 'trusted.com'"
-}
-```
-
 ### Resource Not Found
 
 ```typescript
+import { RegistryError } from "resourcexjs";
+
 try {
-  await registry.get("trusted.com/missing.text@1.0.0");
+  await registry.get("deepractice.dev/missing.text@1.0.0");
 } catch (error) {
-  // RegistryError: "Resource not found: trusted.com/missing.text@1.0.0"
+  if (error instanceof RegistryError) {
+    console.log(error.message); // "Resource not found: deepractice.dev/missing.text@1.0.0"
+  }
 }
 ```
 
-### Network/Git Errors
+### Well-Known Discovery Failed
 
 ```typescript
 try {
-  await registry.get("trusted.com/resource.text@1.0.0");
+  await registry.resolve("unknown-domain.com/resource.text@1.0.0");
 } catch (error) {
-  // Various git-related errors (auth, network, etc.)
+  if (error instanceof RegistryError) {
+    console.log(error.message); // "Well-known discovery failed for unknown-domain.com: ..."
+  }
 }
 ```
 
 ## Complete Example
 
+### Server Side
+
 ```typescript
-import { createRegistry, discoverRegistry } from "@resourcexjs/registry";
+// server.ts
+import express from "express";
+import { createRegistry, LocalStorage, withDomainValidation } from "resourcexjs";
+import { exec } from "node:child_process";
+import { promisify } from "node:util";
 
-async function accessRemoteResource(domain: string, locator: string) {
-  // Step 1: Discover registry for domain
-  console.log(`Discovering registry for ${domain}...`);
-  const discovery = await discoverRegistry(domain);
-  console.log(`Found registry: ${discovery.registries[0]}`);
+const execAsync = promisify(exec);
 
-  // Step 2: Create registry with domain binding
-  const registry = createRegistry({
-    type: "git",
-    url: discovery.registries[0],
-    domain: discovery.domain,
-  });
+const app = express();
+const REPO_PATH = "./git-repo";
+const DOMAIN = "deepractice.dev";
 
-  // Step 3: Check if resource exists
-  const exists = await registry.exists(locator);
-  if (!exists) {
-    throw new Error(`Resource not found: ${locator}`);
+// Update repo on startup
+async function updateRepo() {
+  try {
+    await execAsync("git fetch origin && git reset --hard origin/main", {
+      cwd: REPO_PATH,
+    });
+    console.log("Repository updated");
+  } catch (error) {
+    console.error("Failed to update repo:", error);
   }
-
-  // Step 4: Resolve and execute
-  const resolved = await registry.resolve(locator);
-  const content = await resolved.execute();
-
-  console.log(`Resource content: ${content}`);
-  return content;
 }
 
-// Usage
-accessRemoteResource("deepractice.dev", "deepractice.dev/hello.text@1.0.0").catch(console.error);
+// Create registry with domain validation
+const baseRegistry = createRegistry({
+  storage: new LocalStorage({ path: `${REPO_PATH}/.resourcex` }),
+});
+const registry = withDomainValidation(baseRegistry, DOMAIN);
+
+app.get("/resource", async (req, res) => {
+  await updateRepo(); // Keep fresh
+  const { locator } = req.query;
+  try {
+    const rxr = await registry.get(locator as string);
+    res.json(rxr.manifest.toJSON());
+  } catch (error) {
+    res.status(404).json({ error: "Resource not found" });
+  }
+});
+
+app.get("/content", async (req, res) => {
+  await updateRepo();
+  const { locator } = req.query;
+  try {
+    const rxr = await registry.get(locator as string);
+    const buffer = await rxr.archive.buffer();
+    res.type("application/gzip").send(buffer);
+  } catch (error) {
+    res.status(404).json({ error: "Resource not found" });
+  }
+});
+
+app.listen(3000, () => {
+  console.log("Registry server running on port 3000");
+});
+```
+
+### Client Side
+
+```typescript
+// client.ts
+import { createRegistry, discoverRegistry, RegistryError } from "resourcexjs";
+
+async function main() {
+  // Option 1: Automatic discovery
+  const registry = createRegistry();
+
+  // Option 2: Explicit mirror
+  const registryWithMirror = createRegistry({
+    mirror: "https://registry.deepractice.dev/v1",
+  });
+
+  // Resolve resource
+  try {
+    const resolved = await registry.resolve("deepractice.dev/hello.text@1.0.0");
+    const content = await resolved.execute();
+    console.log("Content:", content);
+
+    // Access metadata
+    console.log("Name:", resolved.resource.manifest.name);
+    console.log("Version:", resolved.resource.manifest.version);
+  } catch (error) {
+    if (error instanceof RegistryError) {
+      console.error("Registry error:", error.message);
+    } else {
+      throw error;
+    }
+  }
+}
+
+main();
+```
+
+## Best Practices
+
+### 1. Use Semantic Versioning
+
+Follow semver for resource versions:
+
+```
+1.0.0 - Initial release
+1.0.1 - Bug fixes
+1.1.0 - New features (backward compatible)
+2.0.0 - Breaking changes
+```
+
+### 2. Keep Resources Small
+
+Git repositories work best with smaller files. Consider:
+
+- Splitting large resources into multiple smaller ones
+- Using external storage for binary assets
+- Compressing content before archiving
+
+### 3. Use Branch-Based Development
+
+```bash
+# Create feature branch
+git checkout -b add-new-tool
+
+# Add resources
+# ... make changes ...
+
+# Create PR for review
+git push origin add-new-tool
+# Create PR on GitHub/GitLab
+
+# After review, merge to main
+```
+
+### 4. Automate Updates
+
+Set up CI/CD to automatically update the registry server when the repository changes:
+
+```yaml
+# .github/workflows/deploy.yml
+name: Deploy Registry
+on:
+  push:
+    branches: [main]
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy to server
+        run: |
+          # Trigger server update
+          curl -X POST https://registry.example.com/webhook/update
 ```

@@ -42,14 +42,15 @@ AI Agents need to manage various resources: **prompts**, **tools**, **agents**, 
 ┌─────────────────────────────────────────────────────────────┐
 │                     Registry Layer                          │
 │                                                             │
-│  Local / Git / Remote    →  Storage & Discovery             │
-│  link / resolve / search →  Resource Operations             │
+│  Local / Remote          →  Storage & Discovery             │
+│  add / resolve / search  →  Resource Operations             │
 ├─────────────────────────────────────────────────────────────┤
 │                    ResourceX Layer                          │
 │                                                             │
 │  RXL (Locator)   →  deepractice.ai/assistant.prompt@1.0.0  │
 │  RXM (Manifest)  →  Resource metadata                       │
-│  RXA (Archive)   →  Archive for storage/transfer (tar.gz)          │
+│  RXA (Archive)   →  tar.gz for storage/transfer             │
+│  RXP (Package)   →  Extracted files for runtime access      │
 │  Type System     →  text / json / binary / custom           │
 ├─────────────────────────────────────────────────────────────┤
 │                       ARP Layer                             │
@@ -63,12 +64,14 @@ AI Agents need to manage various resources: **prompts**, **tools**, **agents**, 
 
 ```bash
 npm install resourcexjs
+# or
+bun add resourcexjs
 ```
 
 ```typescript
 import { createRegistry, parseRXL, createRXM, createRXA } from "resourcexjs";
 
-// 1. Create a resource
+// 1. Create a resource (RXR = Locator + Manifest + Archive)
 const manifest = createRXM({
   domain: "localhost",
   name: "my-prompt",
@@ -82,13 +85,16 @@ const rxr = {
   archive: await createRXA({ content: "You are a helpful assistant." }),
 };
 
-// 2. Link to local registry (~/.resourcex)
+// 2. Add to local registry (~/.resourcex)
 const registry = createRegistry();
 await registry.add(rxr);
 
-// 3. Resolve anywhere
-const resource = await registry.resolve("localhost/my-prompt.text@1.0.0");
-const text = await resource.execute(); // "You are a helpful assistant."
+// 3. Resolve and execute
+const resolved = await registry.resolve("localhost/my-prompt.text@1.0.0");
+const text = await resolved.execute(); // "You are a helpful assistant."
+
+// Access the original resource
+console.log(resolved.resource.manifest.name); // "my-prompt"
 ```
 
 ## [Documentation](./docs/README.md)

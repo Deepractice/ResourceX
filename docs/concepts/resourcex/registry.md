@@ -1,21 +1,20 @@
 # Registry
 
-The Registry is the central hub for storing, retrieving, and managing resources. It provides a unified interface with multiple implementations for different storage backends.
+The Registry is the central hub for storing, retrieving, and managing resources. It provides a unified interface that combines storage operations with type resolution.
 
 ## Registry Interface
 
 ```typescript
 interface Registry {
   // Type support
-  supportType(type: ResourceType): void;
+  supportType(type: BundledType): void;
 
   // Write operations
-  link(resource: RXR): Promise<void>;
-  pull(locator: string, options?: PullOptions): Promise<void>;
-  publish(resource: RXR, options: PublishOptions): Promise<void>;
+  link(path: string): Promise<void>; // Symlink dev directory
+  add(source: string | RXR): Promise<void>; // Copy to local storage
 
   // Read operations
-  get(locator: string): Promise<RXR>;
+  get(locator: string): Promise<RXR>; // Raw resource
   resolve<TArgs, TResult>(locator: string): Promise<ResolvedResource<TArgs, TResult>>;
   exists(locator: string): Promise<boolean>;
   search(options?: SearchOptions): Promise<RXL[]>;
@@ -27,7 +26,9 @@ interface Registry {
 
 ## Creating a Registry
 
-### Local Registry (Default)
+### Client Mode (Default)
+
+Uses local filesystem storage with optional remote fetch:
 
 ```typescript
 import { createRegistry } from "resourcexjs";
@@ -35,40 +36,59 @@ import { createRegistry } from "resourcexjs";
 // Default: uses ~/.resourcex
 const registry = createRegistry();
 
-// Custom path
+// Custom local path
 const registry = createRegistry({ path: "./my-registry" });
 
 // With custom types
 const registry = createRegistry({
   types: [promptType, toolType],
 });
-```
 
-### Git Registry
-
-```typescript
+// With mirror for remote fetch
 const registry = createRegistry({
-  type: "git",
-  url: "git@github.com:Deepractice/Registry.git",
-  domain: "deepractice.dev", // Required for security
+  mirror: "https://registry.deepractice.ai/v1",
+});
+
+// With sandbox isolation
+const registry = createRegistry({
+  isolator: "srt", // or "none", "cloudflare", "e2b"
 });
 ```
 
-### Remote Registry
+### Server Mode
+
+Uses custom storage implementation:
 
 ```typescript
+import { createRegistry, LocalStorage } from "resourcexjs";
+
 const registry = createRegistry({
-  endpoint: "https://registry.deepractice.ai/v1",
+  storage: new LocalStorage({ path: "./data" }),
+  types: [promptType],
+  isolator: "cloudflare",
 });
 ```
 
 ## Operations
 
-### link() - Store Resource Locally
+### link() - Symlink Development Directory
 
-Store a resource in the local registry for development or caching:
+Create a symlink to a development directory so changes are reflected immediately:
 
 ```typescript
+// Directory must contain resource.json with manifest info
+await registry.link("./my-resource");
+```
+
+### add() - Copy Resource to Storage
+
+Copy a resource to local storage:
+
+```typescript
+// From directory path
+await registry.add("./my-resource");
+
+// From RXR object
 const resource = {
   locator: parseRXL("localhost/my-tool.text@1.0.0"),
   manifest: createRXM({
@@ -85,15 +105,22 @@ await registry.add(resource);
 
 ### get() - Retrieve Raw Resource
 
-Get the raw RXR without resolving:
+Get the raw RXR without resolving. For non-localhost domains, fetches from remote if not cached locally:
 
 ```typescript
 const rxr = await registry.get("my-tool.text@1.0.0");
 
 // Access raw data
 console.log(rxr.manifest.version);
-const files = await rxr.archive.extract().then(pkg => pkg.files();
+const pkg = await rxr.archive.extract();
+const files = await pkg.files();
 ```
+
+**Resolution flow:**
+
+1. Check local storage first
+2. For `localhost` domain: local only, never fetch remote
+3. For other domains: try mirror (if configured) -> well-known discovery
 
 ### resolve() - Get Executable Resource
 
@@ -157,32 +184,23 @@ registry.supportType({
 
 ## Storage Structure
 
-### Local Registry
-
-The local registry uses a two-directory structure:
+LocalStorage uses a flat structure based on domain, path, name, type, and version:
 
 ```
 ~/.resourcex/
-├── local/                              # Development resources
-│   └── {name}.{type}/
-│       └── {version}/
-│           ├── manifest.json
-│           └── archive.tar.gz
-│
-└── cache/                              # Cached remote resources
-    └── {domain}/
-        └── {path}/
-            └── {name}.{type}/
-                └── {version}/
-                    ├── manifest.json
-                    └── archive.tar.gz
+└── {domain}/
+    └── {path}/
+        └── {name}.{type}/
+            └── {version}/
+                ├── manifest.json
+                └── archive.tar.gz
 ```
 
-**Example:**
+**Examples:**
 
 ```
 ~/.resourcex/
-├── local/
+├── localhost/
 │   ├── my-prompt.text/
 │   │   └── 1.0.0/
 │   │       ├── manifest.json
@@ -192,121 +210,76 @@ The local registry uses a two-directory structure:
 │           ├── manifest.json
 │           └── archive.tar.gz
 │
-└── cache/
-    └── deepractice.ai/
-        └── prompts/
-            └── nuwa.text/
-                └── 1.0.0/
-                    ├── manifest.json
-                    └── archive.tar.gz
+└── deepractice.ai/
+    └── prompts/
+        └── nuwa.text/
+            └── 1.0.0/
+                ├── manifest.json
+                └── archive.tar.gz
 ```
 
-### Git Registry
-
-Git registries clone to a cache directory:
-
-```
-~/.resourcex/.git-cache/
-└── github.com-Deepractice-Registry/
-    └── .resourcex/
-        └── {domain}/
-            └── {path}/
-                └── {name}.{type}/
-                    └── {version}/
-                        ├── manifest.json
-                        └── archive.tar.gz
-```
+For linked development directories, a symlink is created instead of the version directory.
 
 ## Resolution Flow
 
-### Local Registry Resolution
-
 ```
-registry.resolve("my-tool.text@1.0.0")
+registry.get("deepractice.ai/prompts/nuwa.text@1.0.0")
          │
-         ├──► Check local/my-tool.text/1.0.0/
-         │    Found? → Read and return
+         ├──► Check local storage
+         │    Found? → Return RXR
          │
-         └──► Check cache/.../my-tool.text/1.0.0/
-              Found? → Read and return
-              Not found? → Throw RegistryError
-```
-
-### With Domain
-
-```
-registry.resolve("deepractice.ai/prompts/nuwa.text@1.0.0")
+         ├──► localhost domain?
+         │    Yes → Throw "Resource not found"
          │
-         ├──► Check local/nuwa.text/1.0.0/
-         │    Found? → Read and return
+         ├──► Try mirror (if configured)
+         │    Found? → Cache locally → Return RXR
          │
-         └──► Check cache/deepractice.ai/prompts/nuwa.text/1.0.0/
-              Found? → Read and return
-              Not found? → Throw RegistryError
+         └──► Discover via well-known
+              GET https://deepractice.ai/.well-known/resourcex
+              → Get registry endpoint
+              → Fetch from endpoint
+              → Cache locally → Return RXR
 ```
 
 **Key behavior:**
 
-- Local always checked first (for development overrides)
-- Domain in locator determines cache path
-- No domain = local-only resource
+- Local storage always checked first
+- `localhost` domain: local only, never fetch remote
+- Other domains: mirror (if configured) -> well-known discovery
+- Remote resources are cached locally after first fetch
 
-## Registry Implementations
+## Storage Interface
 
-### LocalRegistry
-
-File-system based, supports all operations:
+The Registry uses a Storage interface for persistence:
 
 ```typescript
-import { LocalRegistry } from "@resourcexjs/registry";
+interface Storage {
+  readonly type: string;
+  get(locator: string): Promise<RXR>;
+  put(rxr: RXR): Promise<void>;
+  exists(locator: string): Promise<boolean>;
+  delete(locator: string): Promise<void>;
+  search(options?: SearchOptions): Promise<RXL[]>;
+}
+```
 
-const registry = new LocalRegistry({
+### LocalStorage
+
+Filesystem-based storage using ARP for I/O:
+
+```typescript
+import { LocalStorage } from "@resourcexjs/registry";
+
+const storage = new LocalStorage({
   path: "~/.resourcex",
 });
 ```
 
-**Capabilities:**
+**Features:**
 
-- link, get, resolve, exists, delete, search
-- pull, publish (planned)
-
-### GitRegistry
-
-Git-based, read-only:
-
-```typescript
-import { GitRegistry } from "@resourcexjs/registry";
-
-const registry = new GitRegistry({
-  type: "git",
-  url: "git@github.com:Deepractice/Registry.git",
-  domain: "deepractice.dev",
-});
-```
-
-**Capabilities:**
-
-- get, resolve, exists, search
-- Clones on first access
-- `git fetch` on every access to stay current
-- link, delete, pull, publish throw errors (read-only)
-
-### RemoteRegistry
-
-HTTP-based, read-only:
-
-```typescript
-import { RemoteRegistry } from "@resourcexjs/registry";
-
-const registry = new RemoteRegistry({
-  endpoint: "https://registry.deepractice.ai/v1",
-});
-```
-
-**Capabilities:**
-
-- get, resolve, exists, search (via HTTP API)
-- link, delete, pull, publish throw errors (read-only)
+- Uses ARP file transport for I/O operations
+- Supports symlinks for development directories
+- Scans recursively for search operations
 
 ## Well-Known Discovery
 
@@ -332,41 +305,22 @@ const result = await discoverRegistry("deepractice.dev");
 }
 ```
 
-## Security
+## Isolation Levels
 
-### Domain Validation
-
-Remote registries require domain binding to prevent impersonation:
+Registry supports configurable sandbox isolation for resolver execution:
 
 ```typescript
-// Secure: domain explicitly bound
-const registry = createRegistry({
-  type: "git",
-  url: "git@github.com:Deepractice/Registry.git",
-  domain: "deepractice.dev", // Only resources with this domain allowed
-});
+// No isolation (fastest, for development)
+const registry = createRegistry({ isolator: "none" });
 
-// Local paths don't require domain (development use)
-const devRegistry = createRegistry({
-  type: "git",
-  url: "./local-repo", // No domain needed
-});
-```
+// OS-level isolation (secure local dev)
+const registry = createRegistry({ isolator: "srt" });
 
-### Domain Middleware
+// Container isolation (edge/Docker)
+const registry = createRegistry({ isolator: "cloudflare" });
 
-Apply domain validation as middleware:
-
-```typescript
-import { withDomainValidation, GitRegistry } from "@resourcexjs/registry";
-
-const baseRegistry = new GitRegistry({
-  type: "git",
-  url: "git@github.com:Deepractice/Registry.git",
-});
-
-const secureRegistry = withDomainValidation(baseRegistry, "deepractice.dev");
-// Only resources with domain "deepractice.dev" will be returned
+// MicroVM isolation (production, planned)
+const registry = createRegistry({ isolator: "e2b" });
 ```
 
 ## Error Handling
@@ -399,19 +353,14 @@ try {
 }
 ```
 
-### Read-Only Registry
+### Storage Doesn't Support Operation
 
 ```typescript
-const gitRegistry = createRegistry({
-  type: "git",
-  url: "...",
-  domain: "example.com",
-});
-
+// link() is only supported by LocalStorage
 try {
-  await gitRegistry.link(resource);
+  await registry.link("./my-resource");
 } catch (error) {
-  console.log(error.message); // "GitRegistry is read-only"
+  console.log(error.message); // "storage does not support link"
 }
 ```
 
@@ -502,35 +451,26 @@ while (true) {
 ```typescript
 import {
   createRegistry,
-  LocalRegistry,
-  RemoteRegistry,
-  GitRegistry,
-  discoverRegistry,
+  LocalStorage,
   RegistryError,
 } from "@resourcexjs/registry";
 // or
 import { createRegistry, RegistryError } from "resourcexjs";
 
-// Create registry
-const registry: Registry = createRegistry(config?: RegistryConfig);
+// Create registry (client mode)
+const registry = createRegistry({
+  path?: string;              // Storage path (default: ~/.resourcex)
+  mirror?: string;            // Mirror URL for remote fetch
+  types?: BundledType[];      // Custom types
+  isolator?: IsolatorType;    // Sandbox isolation level
+});
 
-// Config types
-interface LocalRegistryConfig {
-  path?: string;              // Storage path
-  types?: ResourceType[];     // Custom types
-}
-
-interface RemoteRegistryConfig {
-  endpoint: string;           // HTTP endpoint
-}
-
-interface GitRegistryConfig {
-  type: "git";
-  url: string;                // Git URL
-  ref?: string;               // Branch/tag (default: "main")
-  basePath?: string;          // Path in repo (default: ".resourcex")
-  domain?: string;            // Required for remote URLs
-}
+// Create registry (server mode)
+const registry = createRegistry({
+  storage: Storage;           // Custom storage implementation
+  types?: BundledType[];      // Custom types
+  isolator?: IsolatorType;    // Sandbox isolation level
+});
 
 // Search options
 interface SearchOptions {
@@ -538,6 +478,9 @@ interface SearchOptions {
   limit?: number;             // Max results
   offset?: number;            // Skip count
 }
+
+// Isolator types
+type IsolatorType = "none" | "srt" | "cloudflare" | "e2b";
 ```
 
 ## See Also

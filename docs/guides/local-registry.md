@@ -9,7 +9,7 @@ The LocalRegistry provides filesystem-based storage for ResourceX resources. It'
 The simplest way to create a local registry uses the default storage path (`~/.resourcex`):
 
 ```typescript
-import { createRegistry } from "@resourcexjs/registry";
+import { createRegistry } from "resourcexjs";
 
 const registry = createRegistry();
 ```
@@ -27,11 +27,10 @@ const registry = createRegistry({ path: "./my-resources" });
 If you need to handle custom resource types beyond the built-in ones (text, json, binary):
 
 ```typescript
-import { createRegistry } from "@resourcexjs/registry";
+import { createRegistry } from "resourcexjs";
 import { myCustomType } from "./my-custom-type";
 
 const registry = createRegistry({
-  path: "./resources",
   types: [myCustomType],
 });
 
@@ -39,39 +38,108 @@ const registry = createRegistry({
 registry.supportType(anotherCustomType);
 ```
 
+### With Isolator (SandboX)
+
+Configure resolver execution isolation for security:
+
+```typescript
+import { createRegistry } from "resourcexjs";
+
+const registry = createRegistry({
+  isolator: "srt", // OS-level isolation
+});
+```
+
+Available isolator types:
+
+- `"none"` - No isolation, fastest (~10ms), for development
+- `"srt"` - OS-level isolation (~50ms), secure local dev
+- `"cloudflare"` - Container isolation (~100ms), local Docker or edge
+- `"e2b"` - MicroVM isolation (~150ms), production (planned)
+
 ## Storage Structure
 
-LocalRegistry organizes resources into two areas:
+LocalStorage organizes resources by domain and path:
 
 ```
 ~/.resourcex/
-├── local/                              # Development resources (no domain)
-│   └── {name}.{type}/
-│       └── {version}/
-│           ├── manifest.json
-│           └── archive.tar.gz
-│
-└── cache/                              # Remote cached resources (with domain)
-    └── {domain}/
-        └── {path}/
-            └── {name}.{type}/
-                └── {version}/
-                    ├── manifest.json
-                    └── archive.tar.gz
+└── {domain}/
+    └── {path}/
+        └── {name}.{type}/
+            └── {version}/
+                ├── manifest.json
+                └── archive.tar.gz
 ```
 
-- **local/**: Resources without a domain (or with `localhost` domain) are stored here. Used primarily for local development.
-- **cache/**: Resources with a domain are stored here. This area caches resources pulled from remote registries.
+For resources without a domain (or with `localhost` domain):
 
-## Linking Resources
+```
+~/.resourcex/
+└── localhost/
+    └── {name}.{type}/
+        └── {version}/
+            ├── manifest.json
+            └── archive.tar.gz
+```
 
-Use `link()` to add resources to the local registry. This is the primary way to store resources during development.
+## Linking Resources (Development Mode)
 
-### Basic Text Resource
+Use `link()` to symlink a development directory. Changes in the source directory are immediately reflected when resolving.
+
+### Resource Directory Structure
+
+Your development directory must have a `resource.json` file:
+
+```
+my-prompt/
+├── resource.json    # Manifest file
+└── content          # Content file(s)
+```
+
+Example `resource.json`:
+
+```json
+{
+  "domain": "localhost",
+  "name": "my-prompt",
+  "type": "text",
+  "version": "1.0.0"
+}
+```
+
+### Linking
 
 ```typescript
-import { createRegistry } from "@resourcexjs/registry";
-import { createRXM, createRXA, parseRXL } from "@resourcexjs/core";
+import { createRegistry } from "resourcexjs";
+
+const registry = createRegistry();
+
+// Link development directory - changes reflect immediately
+await registry.link("./my-prompt");
+
+// Now you can resolve it
+const resolved = await registry.resolve("localhost/my-prompt.text@1.0.0");
+```
+
+## Adding Resources
+
+Use `add()` to copy resources to the registry. Unlike `link()`, this creates a snapshot that doesn't reflect changes to the source.
+
+### Adding from Directory
+
+```typescript
+import { createRegistry } from "resourcexjs";
+
+const registry = createRegistry();
+
+// Add from directory path (must have resource.json)
+await registry.add("./my-prompt");
+```
+
+### Adding from RXR Object
+
+```typescript
+import { createRegistry, createRXM, createRXA, parseRXL } from "resourcexjs";
 
 const registry = createRegistry();
 
@@ -83,18 +151,15 @@ const manifest = createRXM({
   version: "1.0.0",
 });
 
-// Create content
-const content = await createRXA({ content: "Hello, {{name}}!" });
+// Create archive with content
+const archive = await createRXA({ content: "Hello, {{name}}!" });
 
-// Create resource object (RXR)
-const resource = {
+// Add to registry
+await registry.add({
   locator: parseRXL(manifest.toLocator()),
   manifest,
-  content,
-};
-
-// Link to registry
-await registry.add(resource);
+  archive,
+});
 ```
 
 ### Multi-File Resource
@@ -102,7 +167,7 @@ await registry.add(resource);
 Resources can contain multiple files:
 
 ```typescript
-const content = await createRXA({
+const archive = await createRXA({
   "src/index.ts": 'console.log("Hello");',
   "src/utils.ts": "export const helper = () => {};",
   "README.md": "# My Project",
@@ -118,13 +183,13 @@ const manifest = createRXM({
 await registry.add({
   locator: parseRXL(manifest.toLocator()),
   manifest,
-  content,
+  archive,
 });
 ```
 
 ### Resource with Domain (for caching)
 
-When linking resources with a domain (other than localhost), they're stored in the cache area:
+Resources with a domain (other than localhost) are stored in the cache:
 
 ```typescript
 const manifest = createRXM({
@@ -135,14 +200,14 @@ const manifest = createRXM({
   version: "2.0.0",
 });
 
-const content = await createRXA({ content: "You are an assistant" });
+const archive = await createRXA({ content: "You are an assistant" });
 
 await registry.add({
   locator: parseRXL(manifest.toLocator()),
   manifest,
-  content,
+  archive,
 });
-// Stored at: ~/.resourcex/cache/deepractice.ai/sean/assistant.text/2.0.0/
+// Stored at: ~/.resourcex/deepractice.ai/sean/assistant.text/2.0.0/
 ```
 
 ## Resolving Resources
@@ -161,6 +226,9 @@ console.log(content); // "Hello, World!"
 // Access original resource metadata
 console.log(resolved.resource.manifest.name); // "hello"
 console.log(resolved.resource.manifest.version); // "1.0.0"
+
+// Check schema (undefined for builtin types)
+console.log(resolved.schema); // undefined
 ```
 
 The `execute()` function is lazy - content is only read when called, not when resolved.
@@ -172,13 +240,16 @@ Use `get()` when you need access to the raw RXR object without resolving:
 ```typescript
 const rxr = await registry.get("localhost/project.text@1.0.0");
 
-// Access raw content
-const files = await rxr.archive.extract().then(pkg => pkg.files();
+// Extract package and read files
+const pkg = await rxr.archive.extract();
+
+// Get all files
+const files = await pkg.files();
 const indexFile = files.get("src/index.ts");
 console.log(indexFile.toString()); // Raw file content
 
 // Or read a single file
-const readme = await rxr.archive.extract().then(pkg => pkg.file("README.md");
+const readme = await pkg.file("README.md");
 ```
 
 ### Locator Formats
@@ -270,7 +341,7 @@ LocalRegistry supports three built-in types by default:
 
 - **text** (aliases: txt, plaintext) - Returns string content
 - **json** (aliases: config, manifest) - Returns parsed JSON
-- **binary** (aliases: bin, blob, raw) - Returns Buffer
+- **binary** (aliases: bin, blob, raw) - Returns Uint8Array
 
 ```typescript
 // Text resource
@@ -283,7 +354,7 @@ const data: unknown = await jsonResolved.execute();
 
 // Binary resource
 const binaryResolved = await registry.resolve("image.binary@1.0.0");
-const buffer: Buffer = await binaryResolved.execute();
+const buffer: Uint8Array = await binaryResolved.execute();
 ```
 
 ### Type Aliases
@@ -297,11 +368,33 @@ await registry.resolve("file.txt@1.0.0");
 await registry.resolve("file.plaintext@1.0.0");
 ```
 
+## Remote Fetch Behavior
+
+For resources with a domain other than `localhost`, the registry will:
+
+1. Check local storage first
+2. If not found and mirror is configured, try fetching from mirror
+3. If still not found, discover endpoint via well-known (`https://{domain}/.well-known/resourcex`)
+4. Fetch from discovered endpoint
+5. Cache to local storage
+
+```typescript
+// Configure mirror for faster remote fetch
+const registry = createRegistry({
+  mirror: "https://mirror.example.com/v1",
+});
+
+// This will check local, then mirror, then well-known
+const resolved = await registry.resolve("deepractice.ai/hello.text@1.0.0");
+```
+
 ## Common Issues and Solutions
 
 ### Resource Not Found
 
 ```typescript
+import { RegistryError } from "resourcexjs";
+
 try {
   await registry.resolve("not-exist.text@1.0.0");
 } catch (error) {
@@ -313,10 +406,10 @@ try {
 
 ### Unsupported Type
 
-When trying to link a resource with an unsupported type:
+When trying to add a resource with an unsupported type:
 
 ```typescript
-import { ResourceTypeError } from "@resourcexjs/type";
+import { ResourceTypeError } from "resourcexjs";
 
 try {
   // Assuming "custom" type is not registered
@@ -344,14 +437,13 @@ const registry = createRegistry({ path: "./local-resources" });
 ## Complete Example
 
 ```typescript
-import { createRegistry } from "@resourcexjs/registry";
-import { createRXM, createRXA, parseRXL } from "@resourcexjs/core";
+import { createRegistry, createRXM, createRXA, parseRXL } from "resourcexjs";
 
 async function main() {
   // Create registry
   const registry = createRegistry();
 
-  // Create and link a resource
+  // Create and add a resource
   const manifest = createRXM({
     domain: "localhost",
     name: "greeting",
@@ -359,12 +451,12 @@ async function main() {
     version: "1.0.0",
   });
 
-  const content = await createRXA({ content: "Hello, ResourceX!" });
+  const archive = await createRXA({ content: "Hello, ResourceX!" });
 
   await registry.add({
     locator: parseRXL(manifest.toLocator()),
     manifest,
-    content,
+    archive,
   });
 
   // Check it exists
