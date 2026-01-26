@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "test": "NODE_OPTIONS='--import tsx' cucumber-js",
-    "test:tags": "NODE_OPTIONS='--import tsx' cucumber-js --tags"
+    "test:tags": "NODE_OPTIONS='--import tsx' cucumber-js --tags",
+    "test:server": "bun run test-server.ts"
   },
   "devDependencies": {
     "resourcexjs": "workspace:*",
