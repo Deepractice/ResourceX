@@ -63,15 +63,15 @@ async function main(): Promise<void> {
   const port = await findAvailablePort(8787);
   console.log(`Using port ${port}`);
 
-  // Initialize D1
-  console.log("Initializing D1 database...");
+  // Apply migrations to local D1
+  console.log("Applying D1 migrations...");
   try {
-    execSync("wrangler d1 execute registry --local --file schema.sql", {
+    execSync("wrangler d1 migrations apply resourcex-registry --local", {
       cwd: REGISTRY_API,
       stdio: "ignore",
     });
   } catch {
-    // Schema might already exist
+    // Migrations might already be applied
   }
 
   // Start wrangler dev

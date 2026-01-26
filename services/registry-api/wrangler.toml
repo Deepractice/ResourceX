@@ -9,13 +9,14 @@ compatibility_date = "2024-12-01"
 # D1 Database for manifest and index
 [[d1_databases]]
 binding = "DB"
-database_name = "registry"
-database_id = "placeholder-create-with-wrangler-d1-create"
+database_name = "resourcex-registry"
+database_id = "d72f2042-e507-4e1b-afb7-7f766f74998c"
+migrations_dir = "drizzle"
 
 # R2 Bucket for archive storage
 [[r2_buckets]]
 binding = "BUCKET"
-bucket_name = "registry-archives"
+bucket_name = "resourcex-registry-archives"
 
 # Environment variables
 [vars]

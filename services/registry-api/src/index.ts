@@ -1,6 +1,9 @@
 /* eslint-disable no-undef */
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { drizzle } from "drizzle-orm/d1";
+import { eq, like, desc } from "drizzle-orm";
+import { resources } from "./db/schema.js";
 
 type Bindings = {
   DB: D1Database;
@@ -23,11 +26,18 @@ app.get("/v1/resource", async (c) => {
     return c.json({ error: "locator is required" }, 400);
   }
 
-  const db = c.env.DB;
+  const db = drizzle(c.env.DB);
   const result = await db
-    .prepare("SELECT domain, path, name, type, version FROM resources WHERE locator = ?")
-    .bind(locator)
-    .first();
+    .select({
+      domain: resources.domain,
+      path: resources.path,
+      name: resources.name,
+      type: resources.type,
+      version: resources.version,
+    })
+    .from(resources)
+    .where(eq(resources.locator, locator))
+    .get();
 
   if (!result) {
     return c.json({ error: "not found" }, 404);
@@ -46,11 +56,12 @@ app.on("HEAD", "/v1/resource", async (c) => {
     return c.body(null, 400);
   }
 
-  const db = c.env.DB;
+  const db = drizzle(c.env.DB);
   const result = await db
-    .prepare("SELECT 1 FROM resources WHERE locator = ?")
-    .bind(locator)
-    .first();
+    .select({ locator: resources.locator })
+    .from(resources)
+    .where(eq(resources.locator, locator))
+    .get();
 
   return c.body(null, result ? 200 : 404);
 });
@@ -90,25 +101,22 @@ app.get("/v1/search", async (c) => {
   const limit = parseInt(c.req.query("limit") || "100", 10);
   const offset = parseInt(c.req.query("offset") || "0", 10);
 
-  const db = c.env.DB;
+  const db = drizzle(c.env.DB);
 
-  let sql = "SELECT locator FROM resources";
-  const params: string[] = [];
+  let queryBuilder = db
+    .select({ locator: resources.locator })
+    .from(resources)
+    .orderBy(desc(resources.createdAt))
+    .limit(limit)
+    .offset(offset);
 
   if (query) {
-    sql += " WHERE locator LIKE ?";
-    params.push(`%${query}%`);
+    queryBuilder = queryBuilder.where(like(resources.locator, `%${query}%`)) as typeof queryBuilder;
   }
 
-  sql += " ORDER BY created_at DESC LIMIT ? OFFSET ?";
-  params.push(String(limit), String(offset));
+  const results = await queryBuilder.all();
 
-  const results = await db
-    .prepare(sql)
-    .bind(...params)
-    .all();
-
-  return c.json(results.results?.map((r) => r.locator) || []);
+  return c.json(results.map((r) => r.locator));
 });
 
 // ============================================
@@ -158,17 +166,31 @@ app.post("/v1/publish", async (c) => {
   }
   locator += `${name}.${type}@${version}`;
 
-  const db = c.env.DB;
+  const db = drizzle(c.env.DB);
   const bucket = c.env.BUCKET;
 
   // Store manifest in D1
   await db
-    .prepare(
-      `INSERT OR REPLACE INTO resources (locator, domain, path, name, type, version, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, datetime('now'))`
-    )
-    .bind(locator, domain, path, name, type, version)
-    .run();
+    .insert(resources)
+    .values({
+      locator,
+      domain,
+      path,
+      name,
+      type,
+      version,
+    })
+    .onConflictDoUpdate({
+      target: resources.locator,
+      set: {
+        domain,
+        path,
+        name,
+        type,
+        version,
+        createdAt: new Date().toISOString(),
+      },
+    });
 
   // Store archive in R2
   const key = `${locator}/archive.tar.gz`;
@@ -187,21 +209,22 @@ app.delete("/v1/resource", async (c) => {
     return c.json({ error: "locator is required" }, 400);
   }
 
-  const db = c.env.DB;
+  const db = drizzle(c.env.DB);
   const bucket = c.env.BUCKET;
 
   // Check if exists
   const result = await db
-    .prepare("SELECT 1 FROM resources WHERE locator = ?")
-    .bind(locator)
-    .first();
+    .select({ locator: resources.locator })
+    .from(resources)
+    .where(eq(resources.locator, locator))
+    .get();
 
   if (!result) {
     return c.json({ error: "not found" }, 404);
   }
 
   // Delete from D1
-  await db.prepare("DELETE FROM resources WHERE locator = ?").bind(locator).run();
+  await db.delete(resources).where(eq(resources.locator, locator));
 
   // Delete from R2
   const key = `${locator}/archive.tar.gz`;
