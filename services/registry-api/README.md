@@ -4,7 +4,7 @@ ResourceX Registry HTTP API service, deployed on Cloudflare Workers.
 
 ## Deployment
 
-- **Production URL**: `https://registry-api.jshansince93.workers.dev`
+- **Production URL**: `https://resourcex-registry-api.jshansince93.workers.dev`
 - **Custom Domain**: `https://registry.deepractice.dev` (pending configuration)
 - **Infrastructure**:
   - D1 Database: `resourcex-registry`

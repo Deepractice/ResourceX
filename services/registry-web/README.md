@@ -69,9 +69,9 @@ src/
 
 ## Environment Variables
 
-| Variable           | Description           | Default                                         |
-| ------------------ | --------------------- | ----------------------------------------------- |
-| `REGISTRY_API_URL` | Registry API base URL | `https://registry-api.jshansince93.workers.dev` |
+| Variable           | Description           | Default                                                   |
+| ------------------ | --------------------- | --------------------------------------------------------- |
+| `REGISTRY_API_URL` | Registry API base URL | `https://resourcex-registry-api.jshansince93.workers.dev` |
 
 ## API Integration
 

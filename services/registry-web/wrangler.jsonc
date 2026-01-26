@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "registry-web",
+  "name": "resourcex-registry-web",
   "compatibility_date": "2024-12-01",
   "compatibility_flags": ["nodejs_compat"],
   "assets": {
