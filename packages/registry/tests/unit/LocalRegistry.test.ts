@@ -1,11 +1,24 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { join } from "node:path";
 import { rm, mkdir } from "node:fs/promises";
+import { execSync } from "node:child_process";
 import { createRegistry, RegistryError } from "../../src/index.js";
 import { createRXM, createRXA, parseRXL } from "@resourcexjs/core";
 import type { RXR } from "@resourcexjs/core";
 
 const TEST_DIR = join(process.cwd(), ".test-registry");
+
+// Check if srt is available in the environment
+function isSrtAvailable(): boolean {
+  try {
+    execSync("which srt", { stdio: "ignore" });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+const SRT_AVAILABLE = isSrtAvailable();
 
 async function createTestRXR(name: string, content: string): Promise<RXR> {
   const manifest = createRXM({
@@ -217,7 +230,7 @@ describe("LocalRegistry", () => {
   });
 
   describe("isolator", () => {
-    it("executes with srt isolator", async () => {
+    it.skipIf(!SRT_AVAILABLE)("executes with srt isolator", async () => {
       const registry = createRegistry({ path: TEST_DIR, isolator: "srt" });
       const rxr = await createTestRXR("srt-test", "SRT Sandbox Test");
 
@@ -228,7 +241,7 @@ describe("LocalRegistry", () => {
       expect(content).toBe("SRT Sandbox Test");
     });
 
-    it("executes json type with srt isolator", async () => {
+    it.skipIf(!SRT_AVAILABLE)("executes json type with srt isolator", async () => {
       const registry = createRegistry({ path: TEST_DIR, isolator: "srt" });
       const manifest = createRXM({
         domain: "localhost",
@@ -251,7 +264,7 @@ describe("LocalRegistry", () => {
       expect(json.message).toBe("hello from srt");
     });
 
-    it("executes custom type with srt isolator", async () => {
+    it.skipIf(!SRT_AVAILABLE)("executes custom type with srt isolator", async () => {
       const registry = createRegistry({ path: TEST_DIR, isolator: "srt" });
 
       // Register custom type
