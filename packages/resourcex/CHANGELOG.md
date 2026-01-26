@@ -1,5 +1,63 @@
 # resourcexjs
 
+## 2.4.0
+
+### Minor Changes
+
+- 8669eb7: feat: introduce BundledType for sandbox-compatible execution
+
+  Breaking changes:
+  - `ResourceType.resolver` closure replaced with `BundledType.code` string
+  - `textType`, `jsonType`, `binaryType` are now BundledType (pre-bundled)
+  - `Registry.supportType()` now accepts BundledType instead of ResourceType
+  - `TypeHandlerChain.register()` now accepts BundledType
+
+  New exports:
+  - `BundledType` interface - pre-bundled type with code string
+  - `SandboxType` - "none" | "isolated" | "container"
+  - `bundleResourceType()` - bundle custom types from source files
+
+  Migration:
+
+  ```typescript
+  // Before (closure-based)
+  const customType: ResourceType = {
+    name: "custom",
+    resolver: {
+      schema: undefined,
+      async resolve(rxr) { ... }
+    }
+  };
+
+  // After (code string)
+  const customType: BundledType = {
+    name: "custom",
+    description: "Custom type",
+    code: `({ async resolve(rxr) { ... } })`,
+    sandbox: "none"
+  };
+  ```
+
+- f9e6bdf: feat: implement sandbox execution architecture
+  - Add ResolverExecutor for executing bundled code in SandboX
+  - Add ResolveContext type for sandbox-safe data passing
+  - Update TypeHandlerChain to only manage types (no execution)
+  - Bundle builtin types with real ESM code via Bun.build
+  - Support both ESM bundled and legacy object literal code formats
+  - Add srt isolator support with configurable isolation levels
+  - Add isolator tests for text, json, and custom types
+
+### Patch Changes
+
+- Updated dependencies [8669eb7]
+- Updated dependencies [7a46fbf]
+- Updated dependencies [f9e6bdf]
+  - @resourcexjs/type@2.4.0
+  - @resourcexjs/registry@2.4.0
+  - @resourcexjs/core@2.4.0
+  - @resourcexjs/loader@2.4.0
+  - @resourcexjs/arp@2.4.0
+
 ## 2.3.0
 
 ### Minor Changes
