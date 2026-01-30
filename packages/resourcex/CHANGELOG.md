@@ -1,5 +1,15 @@
 # resourcexjs
 
+## 2.4.1
+
+### Patch Changes
+
+- @resourcexjs/core@2.4.1
+- @resourcexjs/type@2.4.1
+- @resourcexjs/loader@2.4.1
+- @resourcexjs/arp@2.4.1
+- @resourcexjs/registry@2.4.1
+
 ## 2.4.0
 
 ### Minor Changes
