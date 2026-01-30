@@ -1,6 +1,6 @@
 # @resourcexjs/protocol
 
-## 1.1.0
+## 2.4.0
 
 ### Minor Changes
 

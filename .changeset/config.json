@@ -9,7 +9,8 @@
       "@resourcexjs/type",
       "@resourcexjs/loader",
       "@resourcexjs/arp",
-      "@resourcexjs/registry"
+      "@resourcexjs/registry",
+      "@resourcexjs/protocol"
     ]
   ],
   "linked": [],

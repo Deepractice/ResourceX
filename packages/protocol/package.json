@@ -1,6 +1,6 @@
 {
   "name": "@resourcexjs/protocol",
-  "version": "1.1.0",
+  "version": "2.4.0",
   "description": "ResourceX HTTP API Protocol - Schema definitions for Registry API",
   "keywords": [
     "resourcex",
