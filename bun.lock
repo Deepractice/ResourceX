@@ -52,6 +52,10 @@
         "@resourcexjs/core": "workspace:*",
       },
     },
+    "packages/protocol": {
+      "name": "@resourcexjs/protocol",
+      "version": "1.0.0",
+    },
     "packages/registry": {
       "name": "@resourcexjs/registry",
       "version": "2.3.0",
@@ -351,6 +355,8 @@
     "@resourcexjs/core": ["@resourcexjs/core@workspace:packages/core"],
 
     "@resourcexjs/loader": ["@resourcexjs/loader@workspace:packages/loader"],
+
+    "@resourcexjs/protocol": ["@resourcexjs/protocol@workspace:packages/protocol"],
 
     "@resourcexjs/registry": ["@resourcexjs/registry@workspace:packages/registry"],
 
