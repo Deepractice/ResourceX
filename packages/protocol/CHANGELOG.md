@@ -1,5 +1,13 @@
 # @resourcexjs/protocol
 
+## 2.4.1
+
+### Patch Changes
+
+- 3f21f39: Sync @resourcexjs/protocol version to 2.4.0 with other packages
+  - Add @resourcexjs/protocol to fixed version group in changeset config
+  - Ensures all core packages maintain version parity
+
 ## 2.4.0
 
 ### Minor Changes
