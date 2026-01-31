@@ -2,8 +2,7 @@
  * CLI configuration management
  */
 
-import { homedir } from "node:os";
-import { join } from "node:path";
+import { RX_HOME, PATHS } from "./paths.js";
 
 export interface Config {
   path: string;
@@ -11,9 +10,6 @@ export interface Config {
   registry?: string;
 }
 
-// Support RX_HOME environment variable for testing
-const RX_HOME = process.env.RX_HOME || join(homedir(), ".resourcex");
-const CONFIG_PATH = join(RX_HOME, "config.json");
 const DEFAULT_CONFIG: Config = {
   path: RX_HOME,
   domain: "localhost",
@@ -22,7 +18,7 @@ const DEFAULT_CONFIG: Config = {
 
 export async function getConfig(): Promise<Config> {
   try {
-    const file = Bun.file(CONFIG_PATH);
+    const file = Bun.file(PATHS.config);
     if (await file.exists()) {
       const data = await file.json();
       return { ...DEFAULT_CONFIG, ...data };
@@ -38,10 +34,9 @@ export async function setConfig(key: keyof Config, value: string): Promise<void>
   (config as Record<string, string>)[key] = value;
 
   // Ensure directory exists
-  const dir = join(homedir(), ".resourcex");
-  await Bun.$`mkdir -p ${dir}`.quiet();
+  await Bun.$`mkdir -p ${RX_HOME}`.quiet();
 
-  await Bun.write(CONFIG_PATH, JSON.stringify(config, null, 2));
+  await Bun.write(PATHS.config, JSON.stringify(config, null, 2));
 }
 
 export async function listConfig(): Promise<Config> {

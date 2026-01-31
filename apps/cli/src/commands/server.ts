@@ -4,6 +4,7 @@
 
 import { defineCommand } from "citty";
 import consola from "consola";
+import { PATHS } from "../lib/paths.js";
 
 export const server = defineCommand({
   meta: {
@@ -19,12 +20,11 @@ export const server = defineCommand({
     storage: {
       type: "string",
       description: "Storage path for resources",
-      default: "./data",
     },
   },
   async run({ args }) {
     const port = parseInt(args.port, 10);
-    const storagePath = args.storage;
+    const storagePath = args.storage || PATHS.server;
 
     const { createRegistryServer } = await import("@resourcexjs/server");
     const { serve } = await import("@hono/node-server");
