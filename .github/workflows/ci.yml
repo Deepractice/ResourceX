@@ -8,6 +8,9 @@ on:
     branches:
       - main
 
+env:
+  TURBO_CACHE_DIR: .turbo
+
 jobs:
   lint:
     name: Lint
@@ -20,6 +23,15 @@ jobs:
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
+
+      - name: Cache Turbo
+        uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-lint-${{ runner.os }}-${{ hashFiles('**/bun.lock') }}-${{ github.sha }}
+          restore-keys: |
+            turbo-lint-${{ runner.os }}-${{ hashFiles('**/bun.lock') }}-
+            turbo-lint-${{ runner.os }}-
 
       - name: Install Dependencies
         run: bun install --frozen-lockfile
@@ -42,6 +54,15 @@ jobs:
         with:
           bun-version: latest
 
+      - name: Cache Turbo
+        uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-typecheck-${{ runner.os }}-${{ hashFiles('**/bun.lock') }}-${{ github.sha }}
+          restore-keys: |
+            turbo-typecheck-${{ runner.os }}-${{ hashFiles('**/bun.lock') }}-
+            turbo-typecheck-${{ runner.os }}-
+
       - name: Install Dependencies
         run: bun install --frozen-lockfile
 
@@ -59,6 +80,15 @@ jobs:
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
+
+      - name: Cache Turbo
+        uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-build-${{ runner.os }}-${{ hashFiles('**/bun.lock') }}-${{ github.sha }}
+          restore-keys: |
+            turbo-build-${{ runner.os }}-${{ hashFiles('**/bun.lock') }}-
+            turbo-build-${{ runner.os }}-
 
       - name: Install Dependencies
         run: bun install --frozen-lockfile
@@ -88,6 +118,15 @@ jobs:
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
+
+      - name: Cache Turbo
+        uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-test-${{ runner.os }}-${{ hashFiles('**/bun.lock') }}-${{ github.sha }}
+          restore-keys: |
+            turbo-test-${{ runner.os }}-${{ hashFiles('**/bun.lock') }}-
+            turbo-test-${{ runner.os }}-
 
       - name: Install Dependencies
         run: bun install --frozen-lockfile
