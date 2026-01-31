@@ -5,11 +5,16 @@
  *
  * @example
  * ```typescript
- * import { parse, manifest, createRegistry } from "resourcexjs";
+ * import { createResourceX, parse, manifest } from "resourcexjs";
  *
- * const rxl = parse("deepractice.ai/sean/assistant.prompt@1.0.0");
- * const rxm = manifest({ domain: "deepractice.ai", name: "assistant", type: "prompt", version: "1.0.0" });
- * const registry = createRegistry();
+ * const rx = createResourceX();
+ *
+ * // Link for development
+ * await rx.link("./my-prompt");
+ *
+ * // Resolve and execute
+ * const resource = await rx.resolve("localhost/my-prompt.text@1.0.0");
+ * const result = await resource.execute();
  * ```
  *
  * For low-level ARP protocol access:
@@ -72,6 +77,25 @@ export { TypeHandlerChain, bundleResourceType } from "@resourcexjs/type";
 export { textType, jsonType, binaryType, builtinTypes } from "@resourcexjs/type";
 
 // ============================================
+// Storage Layer
+// ============================================
+export type { Storage } from "@resourcexjs/storage";
+export { StorageError, FileSystemStorage, MemoryStorage } from "@resourcexjs/storage";
+
+// ============================================
+// Registry Layer
+// ============================================
+export type { Registry, SearchOptions } from "@resourcexjs/registry";
+export { HostedRegistry, MirrorRegistry, LinkedRegistry } from "@resourcexjs/registry";
+
+// Discovery
+export { discoverRegistry } from "@resourcexjs/registry";
+export type { DiscoveryResult, WellKnownResponse } from "@resourcexjs/registry";
+
+// Middleware
+export { RegistryMiddleware, DomainValidation, withDomainValidation } from "@resourcexjs/registry";
+
+// ============================================
 // Resource Loading
 // ============================================
 export type { ResourceLoader } from "@resourcexjs/loader";
@@ -79,30 +103,10 @@ export { loadResource, FolderLoader } from "@resourcexjs/loader";
 export type { LoadResourceConfig } from "@resourcexjs/loader";
 
 // ============================================
-// Registry
+// ResourceX API
 // ============================================
-export type {
-  Registry,
-  RegistryConfig,
-  ClientRegistryConfig,
-  ServerRegistryConfig,
-  CreateRegistryConfig,
-  DiscoveryResult,
-  WellKnownResponse,
-  Storage,
-  SearchOptions,
-} from "@resourcexjs/registry";
-export {
-  DefaultRegistry,
-  createRegistry,
-  discoverRegistry,
-  LocalStorage,
-} from "@resourcexjs/registry";
-
-// ============================================
-// Registry Middleware
-// ============================================
-export { RegistryMiddleware, DomainValidation, withDomainValidation } from "@resourcexjs/registry";
+export { createResourceX } from "./ResourceX.js";
+export type { ResourceX, ResourceXConfig } from "./ResourceX.js";
 
 // ============================================
 // Version

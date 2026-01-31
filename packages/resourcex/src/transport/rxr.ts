@@ -5,7 +5,7 @@
  *
  * This is a read-only transport - set and delete operations are not supported.
  *
- * The transport uses a single Registry instance that handles:
+ * The transport uses a ResourceX instance that handles:
  * - localhost: Local storage only
  * - Other domains: Local cache -> [Mirror] -> Source (well-known)
  */
@@ -14,8 +14,8 @@ import { TransportError } from "@resourcexjs/arp";
 import type { TransportHandler, TransportResult, TransportParams } from "@resourcexjs/arp";
 import { extract } from "@resourcexjs/core";
 import type { RXA } from "@resourcexjs/core";
-import { createRegistry } from "@resourcexjs/registry";
-import type { Registry } from "@resourcexjs/registry";
+import { createResourceX } from "../ResourceX.js";
+import type { ResourceX } from "../ResourceX.js";
 
 /**
  * Minimal registry interface required by RxrTransport.
@@ -27,8 +27,8 @@ export interface RxrTransportRegistry {
   }>;
 }
 
-// Singleton registry instance
-let defaultRegistry: Registry | null = null;
+// Singleton ResourceX instance
+let defaultRx: ResourceX | null = null;
 
 /**
  * RXR Transport - Access files inside a resource.
@@ -102,10 +102,10 @@ export class RxrTransport implements TransportHandler {
       return this.registry;
     }
 
-    if (!defaultRegistry) {
-      defaultRegistry = createRegistry();
+    if (!defaultRx) {
+      defaultRx = createResourceX();
     }
-    return defaultRegistry;
+    return defaultRx;
   }
 
   /**
@@ -140,5 +140,5 @@ export class RxrTransport implements TransportHandler {
  * Clear the default registry. Useful for testing.
  */
 export function clearRegistryCache(): void {
-  defaultRegistry = null;
+  defaultRx = null;
 }
