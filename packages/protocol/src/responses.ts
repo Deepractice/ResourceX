@@ -1,5 +1,5 @@
 /**
- * Registry HTTP API Response Types
+ * ResourceX Registry HTTP API - Response Types
  */
 
 import type { ManifestData } from "./requests.js";
@@ -10,123 +10,26 @@ import type { ManifestData } from "./requests.js";
 
 /**
  * GET /resource response
- */
-export interface GetResourceResponse extends ManifestData {
-  /**
-   * Full resource locator
-   */
-  locator: string;
-
-  /**
-   * Download count
-   */
-  downloads?: number;
-
-  /**
-   * Creation timestamp (ISO 8601)
-   */
-  createdAt?: string;
-
-  /**
-   * Last update timestamp (ISO 8601)
-   */
-  updatedAt?: string;
-}
-
-// ============================================
-// GET /content
-// ============================================
-
-/**
- * GET /content response
  *
- * Returns binary tar.gz stream with headers:
- * - Content-Type: application/gzip
- * - Content-Disposition: attachment; filename="archive.tar.gz"
+ * Returns manifest data
  */
-export type GetContentResponse = ReadableStream<Uint8Array> | ArrayBuffer;
+export type GetResourceResponse = ManifestData;
 
 // ============================================
-// POST /publish
+// POST /resource
 // ============================================
 
 /**
- * POST /publish response
+ * POST /resource response
+ *
+ * Returns created/updated manifest with locator
  */
-export interface PublishResponse {
-  /**
-   * Published resource locator
-   */
+export interface PostResourceResponse {
+  /** Full resource locator */
   locator: string;
 
-  /**
-   * Whether this is a new version of existing resource
-   */
-  isNewVersion?: boolean;
-}
-
-// ============================================
-// GET /search
-// ============================================
-
-/**
- * Search result item
- */
-export interface SearchResultItem {
-  /**
-   * Resource locator
-   */
-  locator: string;
-
-  /**
-   * Resource domain
-   */
-  domain: string;
-
-  /**
-   * Resource path
-   */
-  path?: string;
-
-  /**
-   * Resource name
-   */
-  name: string;
-
-  /**
-   * Resource type
-   */
-  type: string;
-
-  /**
-   * Resource version
-   */
-  version: string;
-
-  /**
-   * Resource description
-   */
-  description?: string;
-
-  /**
-   * Download count
-   */
-  downloads?: number;
-}
-
-/**
- * GET /search response
- */
-export interface SearchResponse {
-  /**
-   * Search results
-   */
-  results: SearchResultItem[];
-
-  /**
-   * Total count (for pagination)
-   */
-  total?: number;
+  /** Manifest data */
+  manifest: ManifestData;
 }
 
 // ============================================
@@ -136,8 +39,10 @@ export interface SearchResponse {
 /**
  * HEAD /resource response
  *
- * Returns 200 if exists, 404 if not
- * No body, just status code
+ * - 200: Resource exists
+ * - 404: Resource not found
+ *
+ * No body
  */
 export type HeadResourceResponse = void;
 
@@ -148,37 +53,80 @@ export type HeadResourceResponse = void;
 /**
  * DELETE /resource response
  *
- * Returns 204 No Content on success
+ * - 204: Deleted successfully
+ * - 404: Resource not found
+ *
+ * No body
  */
 export type DeleteResourceResponse = void;
 
 // ============================================
-// POST /resolve (Phase 3)
+// GET /content
 // ============================================
 
 /**
- * POST /resolve response
+ * GET /content response
+ *
+ * Returns binary archive (tar.gz)
+ *
+ * Headers:
+ * - Content-Type: application/octet-stream
  */
-export interface ResolveResponse<TResult = unknown> {
-  /**
-   * Execution result
-   */
-  result: TResult;
+export type GetContentResponse = ArrayBuffer;
 
-  /**
-   * Execution metadata
-   */
-  meta?: {
-    /**
-     * Execution time in milliseconds
-     */
-    executionTimeMs?: number;
+// ============================================
+// POST /content
+// ============================================
 
-    /**
-     * Resource locator that was resolved
-     */
-    locator?: string;
-  };
+/**
+ * POST /content response
+ *
+ * - 201: Uploaded successfully
+ * - 404: Resource manifest not found
+ *
+ * No body (or optional confirmation)
+ */
+export interface PostContentResponse {
+  /** Resource locator */
+  locator: string;
+}
+
+// ============================================
+// GET /search
+// ============================================
+
+/**
+ * Search result item
+ */
+export interface SearchResultItem {
+  /** Full resource locator */
+  locator: string;
+
+  /** Resource domain */
+  domain: string;
+
+  /** Resource path (optional) */
+  path?: string;
+
+  /** Resource name */
+  name: string;
+
+  /** Resource type */
+  type: string;
+
+  /** Resource version */
+  version: string;
+}
+
+/**
+ * GET /search response
+ */
+export interface SearchResponse {
+  /** Search results */
+  results: SearchResultItem[];
+
+  /** Total count (for pagination) */
+  total: number;
 }
 
 // ============================================
@@ -187,20 +135,13 @@ export interface ResolveResponse<TResult = unknown> {
 
 /**
  * Error response format
+ *
+ * Returned for 4xx/5xx status codes
  */
 export interface ErrorResponse {
-  /**
-   * Error message
-   */
+  /** Error message */
   error: string;
 
-  /**
-   * Error code (for programmatic handling)
-   */
+  /** Error code (for programmatic handling) */
   code?: string;
-
-  /**
-   * Additional error details
-   */
-  details?: Record<string, unknown>;
 }

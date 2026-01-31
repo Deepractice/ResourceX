@@ -1,7 +1,7 @@
 /**
- * Registry HTTP API Endpoints
+ * ResourceX Registry HTTP API Endpoints
  *
- * All endpoints are relative to the API base path (e.g., /api/v1)
+ * Based on ResourceX client implementation.
  */
 
 /**
@@ -14,72 +14,72 @@ export const API_VERSION = "v1";
  */
 export const ENDPOINTS = {
   /**
-   * GET /resource?locator=xxx
-   * Get resource manifest by locator
+   * Resource manifest operations
+   *
+   * GET  /resource?locator=xxx  - Get manifest
+   * POST /resource              - Create/update manifest
+   * HEAD /resource?locator=xxx  - Check existence
+   * DELETE /resource?locator=xxx - Delete resource
    */
   resource: "/resource",
 
   /**
-   * GET /content?locator=xxx
-   * Get resource archive (tar.gz) by locator
+   * Resource content (archive) operations
+   *
+   * GET  /content?locator=xxx - Get archive
+   * POST /content?locator=xxx - Upload archive
    */
   content: "/content",
 
   /**
-   * POST /publish
-   * Publish a new resource (multipart/form-data)
-   */
-  publish: "/publish",
-
-  /**
-   * GET /search?q=xxx&limit=100&offset=0
    * Search resources
+   *
+   * GET /search?q=xxx&limit=100&offset=0
    */
   search: "/search",
-
-  /**
-   * POST /resolve
-   * Resolve and execute resource in cloud (Phase 3)
-   */
-  resolve: "/resolve",
 } as const;
 
 /**
  * HTTP methods for each endpoint
  */
-export const ENDPOINT_METHODS = {
+export const METHODS = {
   resource: {
-    GET: "Get manifest",
-    HEAD: "Check existence",
+    GET: "Get manifest by locator",
+    POST: "Create or update manifest",
+    HEAD: "Check if resource exists",
     DELETE: "Delete resource",
   },
   content: {
-    GET: "Get archive",
-  },
-  publish: {
-    POST: "Publish resource",
+    GET: "Get archive by locator",
+    POST: "Upload archive",
   },
   search: {
     GET: "Search resources",
   },
-  resolve: {
-    POST: "Resolve and execute",
-  },
 } as const;
 
 /**
- * Build full endpoint URL
+ * Content types
  */
-export function buildEndpointUrl(
+export const CONTENT_TYPES = {
+  json: "application/json",
+  binary: "application/octet-stream",
+  gzip: "application/gzip",
+} as const;
+
+/**
+ * Build endpoint URL with query parameters
+ */
+export function buildUrl(
   baseUrl: string,
   endpoint: keyof typeof ENDPOINTS,
   params?: Record<string, string>
 ): string {
-  const url = new URL(`${baseUrl}${ENDPOINTS[endpoint]}`);
+  const url = new URL(`${baseUrl.replace(/\/$/, "")}${ENDPOINTS[endpoint]}`);
   if (params) {
-    Object.entries(params).forEach(([key, value]) => {
+    for (const [key, value] of Object.entries(params)) {
       url.searchParams.set(key, value);
-    });
+    }
   }
   return url.toString();
 }
