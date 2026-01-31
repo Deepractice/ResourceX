@@ -4,7 +4,9 @@ import { LocatorError } from "~/errors.js";
 /**
  * Parse locator string to RXL.
  *
- * Format: domain/[path/]name.type@version
+ * Two formats supported:
+ * - Local:  name.type@version (no domain)
+ * - Remote: domain/[path/]name.type@version (with domain)
  *
  * @param locator - Locator string
  * @returns RXL object
@@ -44,10 +46,23 @@ export function parse(locator: string): RXL {
   // Split by / to get domain, path, name
   const parts = beforeType.split("/");
 
-  if (parts.length < 2) {
-    throw new LocatorError("locator must contain domain", locator);
+  // Check if has domain (contains /)
+  if (parts.length === 1) {
+    // Local format: name.type@version (no domain)
+    const name = parts[0];
+    if (!name) {
+      throw new LocatorError("name is required", locator);
+    }
+    return {
+      domain: undefined,
+      path: undefined,
+      name,
+      type,
+      version,
+    };
   }
 
+  // Remote format: domain/[path/]name.type@version
   const domain = parts[0];
   const name = parts[parts.length - 1];
   const path = parts.length > 2 ? parts.slice(1, -1).join("/") : undefined;

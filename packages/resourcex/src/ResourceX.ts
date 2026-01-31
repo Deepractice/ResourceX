@@ -15,12 +15,17 @@ import type { BundledType, IsolatorType } from "@resourcexjs/type";
 import { TypeHandlerChain } from "@resourcexjs/type";
 import { FileSystemStorage } from "@resourcexjs/storage";
 import {
-  HostedRegistry,
+  LocalRegistry,
   MirrorRegistry,
   LinkedRegistry,
   RegistryError,
+  RegistryAccessChain,
+  LinkedAccessor,
+  LocalAccessor,
+  CacheAccessor,
+  RemoteAccessor,
 } from "@resourcexjs/registry";
-import type { SearchOptions } from "@resourcexjs/registry";
+import type { SearchOptions, RemoteFetcher } from "@resourcexjs/registry";
 import { loadResource } from "@resourcexjs/loader";
 
 const DEFAULT_BASE_PATH = `${homedir()}/.resourcex`;
@@ -185,20 +190,21 @@ export interface ResourceX {
  */
 class DefaultResourceX implements ResourceX {
   private readonly basePath: string;
-  private readonly domain: string;
-  private readonly registry?: string;
+  private readonly registryUrl?: string;
   private readonly typeHandler: TypeHandlerChain;
   private readonly isolator: IsolatorType;
 
-  // Three registries
-  private readonly local: HostedRegistry;
+  // Registries for write operations
+  private readonly local: LocalRegistry;
   private readonly cache: MirrorRegistry;
   private readonly linked: LinkedRegistry;
 
+  // Access chain for read operations
+  private readonly chain: RegistryAccessChain;
+
   constructor(config?: ResourceXConfig) {
     this.basePath = config?.path ?? DEFAULT_BASE_PATH;
-    this.domain = config?.domain ?? DEFAULT_DOMAIN;
-    this.registry = config?.registry;
+    this.registryUrl = config?.registry;
     this.isolator = config?.isolator ?? "none";
 
     // Initialize type handler
@@ -213,26 +219,34 @@ class DefaultResourceX implements ResourceX {
     const localStorage = new FileSystemStorage(join(this.basePath, "local"));
     const cacheStorage = new FileSystemStorage(join(this.basePath, "cache"));
 
-    this.local = new HostedRegistry(localStorage);
+    this.local = new LocalRegistry(localStorage);
     this.cache = new MirrorRegistry(cacheStorage);
     this.linked = new LinkedRegistry(join(this.basePath, "linked"));
+
+    // Build access chain
+    const accessors = [
+      new LinkedAccessor(this.linked),
+      new LocalAccessor(this.local),
+      new CacheAccessor(this.cache),
+    ];
+
+    // Add remote accessor if registry configured
+    if (this.registryUrl) {
+      const fetcher = this.createRemoteFetcher();
+      accessors.push(new RemoteAccessor(fetcher, this.cache));
+    }
+
+    this.chain = new RegistryAccessChain(accessors);
   }
 
   /**
-   * Normalize locator by adding default domain if missing.
+   * Create remote fetcher for the configured registry.
    */
-  private normalizeLocator(locator: string): string {
-    // If locator already has domain (contains / before @), return as-is
-    const atIndex = locator.indexOf("@");
-    const slashIndex = locator.indexOf("/");
-
-    if (slashIndex !== -1 && (atIndex === -1 || slashIndex < atIndex)) {
-      // Has domain already
-      return locator;
-    }
-
-    // Add default domain
-    return `${this.domain}/${locator}`;
+  private createRemoteFetcher(): RemoteFetcher {
+    const registryUrl = this.registryUrl!;
+    return {
+      fetch: async (rxl) => this.fetchFromRegistry(format(rxl), registryUrl),
+    };
   }
 
   /**
@@ -241,7 +255,7 @@ class DefaultResourceX implements ResourceX {
   private toResource(rxr: RXR): Resource {
     return {
       locator: format(rxr.locator),
-      domain: rxr.manifest.domain,
+      domain: rxr.manifest.domain ?? "",
       path: rxr.manifest.path,
       name: rxr.manifest.name,
       type: rxr.manifest.type,
@@ -255,13 +269,13 @@ class DefaultResourceX implements ResourceX {
   async add(path: string): Promise<Resource> {
     const rxr = await loadResource(path);
 
-    // Override domain with configured default if not set
-    if (!rxr.manifest.domain || rxr.manifest.domain === "localhost") {
-      // Update manifest domain
+    // Local resources should not have domain
+    // Clear domain if it was set (e.g., from manifest.json)
+    if (rxr.manifest.domain) {
       const { manifest: createManifest, resource: createResource } =
         await import("@resourcexjs/core");
       const newManifest = createManifest({
-        domain: this.domain,
+        domain: undefined,
         path: rxr.manifest.path,
         name: rxr.manifest.name,
         type: rxr.manifest.type,
@@ -270,10 +284,10 @@ class DefaultResourceX implements ResourceX {
       const newRxr = createResource(newManifest, rxr.archive);
       await this.local.put(newRxr);
       return this.toResource(newRxr);
-    } else {
-      await this.local.put(rxr);
-      return this.toResource(rxr);
     }
+
+    await this.local.put(rxr);
+    return this.toResource(rxr);
   }
 
   async link(path: string): Promise<void> {
@@ -281,17 +295,13 @@ class DefaultResourceX implements ResourceX {
   }
 
   async has(locator: string): Promise<boolean> {
-    const normalizedLocator = this.normalizeLocator(locator);
-    const rxl = parse(normalizedLocator);
-
-    return (
-      (await this.linked.has(rxl)) || (await this.local.has(rxl)) || (await this.cache.has(rxl))
-    );
+    const rxl = parse(locator);
+    return this.chain.has(rxl);
   }
 
   async info(locator: string): Promise<Resource> {
-    const normalizedLocator = this.normalizeLocator(locator);
-    const rxr = await this.getRxr(normalizedLocator);
+    const rxl = parse(locator);
+    const rxr = await this.chain.get(rxl);
 
     // Extract file list from archive
     const filesRecord = await extract(rxr.archive);
@@ -299,7 +309,7 @@ class DefaultResourceX implements ResourceX {
 
     return {
       locator: format(rxr.locator),
-      domain: rxr.manifest.domain,
+      domain: rxr.manifest.domain ?? "",
       path: rxr.manifest.path,
       name: rxr.manifest.name,
       type: rxr.manifest.type,
@@ -309,26 +319,28 @@ class DefaultResourceX implements ResourceX {
   }
 
   async remove(locator: string): Promise<void> {
-    const normalizedLocator = this.normalizeLocator(locator);
-    const rxl = parse(normalizedLocator);
+    const rxl = parse(locator);
 
     // Remove from all registries
     if (await this.linked.has(rxl)) {
       await this.linked.remove(rxl);
     }
-    if (await this.local.has(rxl)) {
+    if (!rxl.domain && (await this.local.has(rxl))) {
       await this.local.remove(rxl);
     }
-    if (await this.cache.has(rxl)) {
+    if (rxl.domain && (await this.cache.has(rxl))) {
       await this.cache.remove(rxl);
     }
+
+    // Invalidate cache
+    this.chain.invalidate(rxl);
   }
 
   // ===== Resolve =====
 
   async resolve<T = unknown>(locator: string): Promise<Executable<T>> {
-    const normalizedLocator = this.normalizeLocator(locator);
-    const rxr = await this.getRxr(normalizedLocator);
+    const rxl = parse(locator);
+    const rxr = await this.chain.get(rxl);
     const handler = this.typeHandler.getHandler(rxr.manifest.type);
 
     return {
@@ -369,23 +381,22 @@ class DefaultResourceX implements ResourceX {
   // ===== Remote operations =====
 
   async push(locator: string): Promise<void> {
-    if (!this.registry) {
+    if (!this.registryUrl) {
       throw new RegistryError("Registry URL not configured. Set 'registry' in config.");
     }
 
-    const normalizedLocator = this.normalizeLocator(locator);
-    const rxr = await this.getRxr(normalizedLocator);
+    const rxl = parse(locator);
+    const rxr = await this.chain.get(rxl);
 
     await this.publishToRegistry(rxr);
   }
 
   async pull(locator: string): Promise<void> {
-    if (!this.registry) {
+    if (!this.registryUrl) {
       throw new RegistryError("Registry URL not configured. Set 'registry' in config.");
     }
 
-    const normalizedLocator = this.normalizeLocator(locator);
-    const rxr = await this.fetchFromRegistry(normalizedLocator);
+    const rxr = await this.fetchFromRegistry(locator, this.registryUrl);
     await this.cache.put(rxr);
   }
 
@@ -398,41 +409,10 @@ class DefaultResourceX implements ResourceX {
   // ===== Private methods =====
 
   /**
-   * Get RXR from local or remote.
-   */
-  private async getRxr(locator: string): Promise<RXR> {
-    const rxl = parse(locator);
-
-    // 1. Check linked (development priority)
-    if (await this.linked.has(rxl)) {
-      return this.linked.get(rxl);
-    }
-
-    // 2. Check local
-    if (await this.local.has(rxl)) {
-      return this.local.get(rxl);
-    }
-
-    // 3. Check cache
-    if (await this.cache.has(rxl)) {
-      return this.cache.get(rxl);
-    }
-
-    // 4. Try remote if registry configured
-    if (this.registry) {
-      const rxr = await this.fetchFromRegistry(locator);
-      await this.cache.put(rxr);
-      return rxr;
-    }
-
-    throw new RegistryError(`Resource not found: ${locator}`);
-  }
-
-  /**
    * Publish RXR to remote registry via POST /publish.
    */
   private async publishToRegistry(rxr: RXR): Promise<void> {
-    const baseUrl = this.registry!.replace(/\/$/, "");
+    const baseUrl = this.registryUrl!.replace(/\/$/, "");
     const publishUrl = `${baseUrl}/publish`;
 
     // Create multipart form data
@@ -473,8 +453,8 @@ class DefaultResourceX implements ResourceX {
   /**
    * Fetch resource from registry via GET /resource/{locator} and GET /content/{locator}.
    */
-  private async fetchFromRegistry(locator: string): Promise<RXR> {
-    const baseUrl = this.registry!.replace(/\/$/, "");
+  private async fetchFromRegistry(locator: string, registryUrl: string): Promise<RXR> {
+    const baseUrl = registryUrl.replace(/\/$/, "");
 
     // Fetch manifest
     const manifestUrl = `${baseUrl}/resource/${encodeURIComponent(locator)}`;

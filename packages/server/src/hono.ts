@@ -7,7 +7,7 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { FileSystemStorage } from "@resourcexjs/storage";
-import { HostedRegistry } from "@resourcexjs/registry";
+import { LocalRegistry } from "@resourcexjs/registry";
 import {
   handlePublish,
   handleGetResource,
@@ -47,7 +47,7 @@ export function createRegistryServer(config?: RegistryServerConfig): Hono {
   const enableCors = config?.cors ?? true;
 
   const storage = new FileSystemStorage(storagePath);
-  const registry = new HostedRegistry(storage);
+  const registry = new LocalRegistry(storage);
 
   const app = new Hono().basePath(basePath);
 

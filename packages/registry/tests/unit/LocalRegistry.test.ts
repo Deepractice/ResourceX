@@ -1,12 +1,12 @@
 import { describe, it, expect, beforeEach } from "bun:test";
 import { MemoryStorage } from "@resourcexjs/storage";
-import { HostedRegistry, RegistryError } from "../../src/index.js";
+import { LocalRegistry, RegistryError } from "../../src/index.js";
 import { manifest, archive, resource, parse } from "@resourcexjs/core";
 import type { RXR, RXD } from "@resourcexjs/core";
 
 async function createTestRXR(name: string, content: string): Promise<RXR> {
   const rxd: RXD = {
-    domain: "localhost",
+    // Local resources have no domain
     name,
     type: "text",
     version: "1.0.0",
@@ -16,13 +16,13 @@ async function createTestRXR(name: string, content: string): Promise<RXR> {
   return resource(rxm, rxa);
 }
 
-describe("HostedRegistry", () => {
+describe("LocalRegistry", () => {
   let storage: MemoryStorage;
-  let registry: HostedRegistry;
+  let registry: LocalRegistry;
 
   beforeEach(() => {
     storage = new MemoryStorage();
-    registry = new HostedRegistry(storage);
+    registry = new LocalRegistry(storage);
   });
 
   describe("put and get", () => {
@@ -38,7 +38,7 @@ describe("HostedRegistry", () => {
     });
 
     it("throws error for non-existent resource", async () => {
-      const rxl = parse("localhost/not-exist.text@1.0.0");
+      const rxl = parse("not-exist.text@1.0.0");
 
       await expect(registry.get(rxl)).rejects.toThrow(RegistryError);
       await expect(registry.get(rxl)).rejects.toThrow("not found");
@@ -55,7 +55,7 @@ describe("HostedRegistry", () => {
     });
 
     it("returns false for non-existing resource", async () => {
-      const rxl = parse("localhost/not-exist.text@1.0.0");
+      const rxl = parse("not-exist.text@1.0.0");
 
       const exists = await registry.has(rxl);
       expect(exists).toBe(false);
@@ -108,7 +108,7 @@ describe("HostedRegistry", () => {
   describe("resources with path", () => {
     it("stores resource with path", async () => {
       const rxd: RXD = {
-        domain: "example.com",
+        // Local resources can still have path
         path: "tools/ai",
         name: "helper",
         type: "text",
@@ -121,7 +121,7 @@ describe("HostedRegistry", () => {
       await registry.put(rxr);
 
       const retrieved = await registry.get(rxr.locator);
-      expect(retrieved.manifest.domain).toBe("example.com");
+      expect(retrieved.manifest.domain).toBeUndefined();
       expect(retrieved.manifest.path).toBe("tools/ai");
       expect(retrieved.manifest.name).toBe("helper");
     });

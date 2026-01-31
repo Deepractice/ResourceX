@@ -13,7 +13,7 @@ import type { TransportHandler, TransportResult, TransportParams } from "@resour
 import { extract, parse } from "@resourcexjs/core";
 import type { RXR } from "@resourcexjs/core";
 import { FileSystemStorage } from "@resourcexjs/storage";
-import { HostedRegistry, MirrorRegistry, LinkedRegistry } from "@resourcexjs/registry";
+import { LocalRegistry, MirrorRegistry, LinkedRegistry } from "@resourcexjs/registry";
 
 const DEFAULT_BASE_PATH = `${homedir()}/.resourcex`;
 
@@ -22,15 +22,15 @@ const DEFAULT_BASE_PATH = `${homedir()}/.resourcex`;
  * Uses the same registry structure as ResourceX.
  */
 class InternalRegistryAccess {
-  private readonly hosted: HostedRegistry;
+  private readonly local: LocalRegistry;
   private readonly cache: MirrorRegistry;
   private readonly linked: LinkedRegistry;
 
   constructor(basePath: string = DEFAULT_BASE_PATH) {
-    const hostedStorage = new FileSystemStorage(join(basePath, "hosted"));
+    const localStorage = new FileSystemStorage(join(basePath, "local"));
     const cacheStorage = new FileSystemStorage(join(basePath, "cache"));
 
-    this.hosted = new HostedRegistry(hostedStorage);
+    this.local = new LocalRegistry(localStorage);
     this.cache = new MirrorRegistry(cacheStorage);
     this.linked = new LinkedRegistry(join(basePath, "linked"));
   }
@@ -43,13 +43,13 @@ class InternalRegistryAccess {
       return this.linked.get(rxl);
     }
 
-    // Check hosted
-    if (await this.hosted.has(rxl)) {
-      return this.hosted.get(rxl);
+    // Check local (no domain)
+    if (!rxl.domain && (await this.local.has(rxl))) {
+      return this.local.get(rxl);
     }
 
-    // Check cache
-    if (await this.cache.has(rxl)) {
+    // Check cache (has domain)
+    if (rxl.domain && (await this.cache.has(rxl))) {
       return this.cache.get(rxl);
     }
 

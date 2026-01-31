@@ -5,30 +5,33 @@ import type { Registry, SearchOptions } from "./Registry.js";
 import { RegistryError } from "../errors.js";
 
 /**
- * HostedRegistry - Registry for resources you own (authoritative data).
+ * LocalRegistry - Registry for local/owned resources (no domain in path).
  *
  * Uses Storage layer for persistence.
- * Storage structure:
- *   {domain}/{path}/{name}.{type}/{version}/
+ * Storage structure (no domain):
+ *   {name}.{type}/{version}/
  *     - manifest.json
  *     - archive.tar.gz
+ *
+ * Use cases:
+ * - Client local storage (~/.resourcex/local/)
+ * - Server authoritative storage (./data/)
  */
-export class HostedRegistry implements Registry {
+export class LocalRegistry implements Registry {
   constructor(private readonly storage: Storage) {}
 
   /**
-   * Build storage key prefix for a resource.
+   * Build storage key prefix for a resource (no domain).
    */
   private buildKeyPrefix(rxl: RXL): string {
-    const domain = rxl.domain ?? "localhost";
     const resourceName = rxl.type ? `${rxl.name}.${rxl.type}` : rxl.name;
     const version = rxl.version ?? "latest";
 
-    let key = domain;
+    let key = resourceName;
     if (rxl.path) {
-      key += `/${rxl.path}`;
+      key = `${rxl.path}/${key}`;
     }
-    key += `/${resourceName}/${version}`;
+    key += `/${version}`;
 
     return key;
   }
@@ -134,16 +137,16 @@ export class HostedRegistry implements Registry {
   }
 
   /**
-   * Parse storage key to RXL.
-   * Key format: {domain}/{path}/{name}.{type}/{version}/manifest.json
+   * Parse storage key to RXL (no domain).
+   * Key format: {path/}{name}.{type}/{version}/manifest.json
    */
   private parseKeyToRXL(key: string): RXL | null {
     // Remove /manifest.json suffix
     const dirPath = key.replace(/\/manifest\.json$/, "");
     const parts = dirPath.split("/");
 
-    if (parts.length < 3) {
-      // Need at least: domain, name.type, version
+    if (parts.length < 2) {
+      // Need at least: name.type, version
       return null;
     }
 
@@ -151,8 +154,6 @@ export class HostedRegistry implements Registry {
     const version = parts.pop()!;
     // Second to last is {name}.{type}
     const nameTypePart = parts.pop()!;
-    // First part is domain
-    const domain = parts.shift()!;
     // Remaining parts are path (if any)
     const path = parts.length > 0 ? parts.join("/") : undefined;
 
@@ -169,10 +170,10 @@ export class HostedRegistry implements Registry {
       type = undefined;
     }
 
-    // Construct locator string and parse
-    let locatorStr = domain;
-    if (path) locatorStr += `/${path}`;
-    locatorStr += `/${name}`;
+    // Construct locator string (no domain)
+    let locatorStr = "";
+    if (path) locatorStr += `${path}/`;
+    locatorStr += name;
     if (type) locatorStr += `.${type}`;
     locatorStr += `@${version}`;
 
