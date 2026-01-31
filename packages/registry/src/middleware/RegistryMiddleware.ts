@@ -7,9 +7,7 @@
  */
 
 import type { RXR, RXL } from "@resourcexjs/core";
-import type { BundledType, ResolvedResource } from "@resourcexjs/type";
-import type { Registry } from "../Registry.js";
-import type { SearchOptions } from "../storage/Storage.js";
+import type { Registry, SearchOptions } from "../registries/index.js";
 
 /**
  * Base class for Registry middleware.
@@ -19,37 +17,23 @@ import type { SearchOptions } from "../storage/Storage.js";
 export abstract class RegistryMiddleware implements Registry {
   constructor(protected readonly inner: Registry) {}
 
-  supportType(type: BundledType): void {
-    this.inner.supportType(type);
+  get(rxl: RXL): Promise<RXR> {
+    return this.inner.get(rxl);
   }
 
-  link(path: string): Promise<void> {
-    return this.inner.link(path);
+  put(rxr: RXR): Promise<void> {
+    return this.inner.put(rxr);
   }
 
-  add(source: string | RXR): Promise<void> {
-    return this.inner.add(source);
+  has(rxl: RXL): Promise<boolean> {
+    return this.inner.has(rxl);
   }
 
-  get(locator: string): Promise<RXR> {
-    return this.inner.get(locator);
+  remove(rxl: RXL): Promise<void> {
+    return this.inner.remove(rxl);
   }
 
-  resolve<TArgs = void, TResult = unknown>(
-    locator: string
-  ): Promise<ResolvedResource<TArgs, TResult>> {
-    return this.inner.resolve<TArgs, TResult>(locator);
-  }
-
-  exists(locator: string): Promise<boolean> {
-    return this.inner.exists(locator);
-  }
-
-  delete(locator: string): Promise<void> {
-    return this.inner.delete(locator);
-  }
-
-  search(options?: SearchOptions): Promise<RXL[]> {
-    return this.inner.search(options);
+  list(options?: SearchOptions): Promise<RXL[]> {
+    return this.inner.list(options);
   }
 }

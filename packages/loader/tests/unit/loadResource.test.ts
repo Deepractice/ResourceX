@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { join } from "node:path";
 import { mkdir, writeFile, rm } from "node:fs/promises";
 import { loadResource, FolderLoader, type ResourceLoader } from "../../src/index.js";
-import { ResourceXError } from "@resourcexjs/core";
+import { ResourceXError, extract, manifest, archive, resource, parse } from "@resourcexjs/core";
 import type { RXR } from "@resourcexjs/core";
 
 const TEST_DIR = join(process.cwd(), ".test-load-resource");
@@ -40,9 +40,9 @@ describe("loadResource", () => {
       expect(rxr.manifest.name).toBe("test-resource");
       expect(rxr.manifest.type).toBe("text");
       expect(rxr.manifest.version).toBe("1.0.0");
-      expect(rxr.locator.toString()).toBe("localhost/test-resource.text@1.0.0");
-      const contentBuffer = await rxr.archive.extract().then((pkg) => pkg.file("content"));
-      expect(contentBuffer.toString()).toBe("Hello, World!");
+
+      const files = await extract(rxr.archive);
+      expect(files["content"].toString()).toBe("Hello, World!");
     });
 
     it("loads resource with custom domain", async () => {
@@ -64,7 +64,6 @@ describe("loadResource", () => {
       const rxr = await loadResource(resourceDir);
 
       expect(rxr.manifest.domain).toBe("example.com");
-      expect(rxr.locator.toString()).toBe("example.com/resource.json@2.0.0");
     });
 
     it("loads resource with path", async () => {
@@ -87,7 +86,6 @@ describe("loadResource", () => {
       const rxr = await loadResource(resourceDir);
 
       expect(rxr.manifest.path).toBe("utils/helpers");
-      expect(rxr.locator.toString()).toBe("localhost/utils/helpers/formatter.text@1.0.0");
     });
 
     it("throws error if resource.json is missing", async () => {
@@ -138,7 +136,7 @@ describe("loadResource", () => {
       await writeFile(join(resourceDir, "content"), "content");
 
       await expect(loadResource(resourceDir)).rejects.toThrow(ResourceXError);
-      await expect(loadResource(resourceDir)).rejects.toThrow("missing required field 'name'");
+      await expect(loadResource(resourceDir)).rejects.toThrow("name is required");
     });
 
     it("throws error if resource.json is missing required field: type", async () => {
@@ -154,7 +152,7 @@ describe("loadResource", () => {
       await writeFile(join(resourceDir, "content"), "content");
 
       await expect(loadResource(resourceDir)).rejects.toThrow(ResourceXError);
-      await expect(loadResource(resourceDir)).rejects.toThrow("missing required field 'type'");
+      await expect(loadResource(resourceDir)).rejects.toThrow("type is required");
     });
 
     it("throws error if resource.json is missing required field: version", async () => {
@@ -170,7 +168,7 @@ describe("loadResource", () => {
       await writeFile(join(resourceDir, "content"), "content");
 
       await expect(loadResource(resourceDir)).rejects.toThrow(ResourceXError);
-      await expect(loadResource(resourceDir)).rejects.toThrow("missing required field 'version'");
+      await expect(loadResource(resourceDir)).rejects.toThrow("version is required");
     });
 
     it("throws error for non-existent path", async () => {
@@ -204,10 +202,10 @@ describe("loadResource", () => {
 
       const rxr = await loadResource(resourceDir);
 
-      const files = await rxr.archive.extract().then((pkg) => pkg.files());
-      expect(files.size).toBe(2);
-      expect(files.get("index.ts")?.toString()).toBe("export default 1");
-      expect(files.get("styles.css")?.toString()).toBe("body {}");
+      const files = await extract(rxr.archive);
+      expect(Object.keys(files).length).toBe(2);
+      expect(files["index.ts"].toString()).toBe("export default 1");
+      expect(files["styles.css"].toString()).toBe("body {}");
     });
 
     it("loads resource with nested directory", async () => {
@@ -228,10 +226,10 @@ describe("loadResource", () => {
 
       const rxr = await loadResource(resourceDir);
 
-      const files = await rxr.archive.extract().then((pkg) => pkg.files());
-      expect(files.size).toBe(2);
-      expect(files.get("src/index.ts")?.toString()).toBe("main");
-      expect(files.get("src/utils/helper.ts")?.toString()).toBe("helper");
+      const files = await extract(rxr.archive);
+      expect(Object.keys(files).length).toBe(2);
+      expect(files["src/index.ts"].toString()).toBe("main");
+      expect(files["src/utils/helper.ts"].toString()).toBe("helper");
     });
   });
 
@@ -243,19 +241,14 @@ describe("loadResource", () => {
         }
 
         async load(source: string): Promise<RXR> {
-          const { createRXM, createRXA, parseRXL } = await import("@resourcexjs/core");
-          const manifest = createRXM({
+          const rxm = manifest({
             domain: "mock.com",
             name: source,
             type: "text",
             version: "1.0.0",
           });
-
-          return {
-            locator: parseRXL(manifest.toLocator()),
-            manifest,
-            archive: await createRXA({ content: "mocked content" }),
-          };
+          const rxa = await archive({ content: Buffer.from("mocked content") });
+          return resource(rxm, rxa);
         }
       }
 
@@ -263,8 +256,8 @@ describe("loadResource", () => {
 
       expect(rxr.manifest.domain).toBe("mock.com");
       expect(rxr.manifest.name).toBe("any-source");
-      const contentBuffer = await rxr.archive.extract().then((pkg) => pkg.file("content"));
-      expect(contentBuffer.toString()).toBe("mocked content");
+      const files = await extract(rxr.archive);
+      expect(files["content"].toString()).toBe("mocked content");
     });
 
     it("throws error if custom loader cannot load source", async () => {
@@ -361,8 +354,8 @@ describe("FolderLoader", () => {
       const loader = new FolderLoader();
       const rxr = await loader.load(resourceDir);
 
-      const contentBuffer = await rxr.archive.extract().then((pkg) => pkg.file("content"));
-      expect(contentBuffer).toEqual(binaryData);
+      const files = await extract(rxr.archive);
+      expect(Buffer.from(files["content"])).toEqual(binaryData);
     });
   });
 });

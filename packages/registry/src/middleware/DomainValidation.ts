@@ -5,9 +5,8 @@
  * Prevents untrusted registries from impersonating other domains.
  */
 
-import type { RXR } from "@resourcexjs/core";
-import type { ResolvedResource } from "@resourcexjs/type";
-import type { Registry } from "../Registry.js";
+import type { RXR, RXL } from "@resourcexjs/core";
+import type { Registry } from "../registries/index.js";
 import { RegistryMiddleware } from "./RegistryMiddleware.js";
 import { RegistryError } from "../errors.js";
 
@@ -37,22 +36,10 @@ export class DomainValidation extends RegistryMiddleware {
   /**
    * Get resource and validate domain.
    */
-  override async get(locator: string): Promise<RXR> {
-    const rxr = await this.inner.get(locator);
+  override async get(rxl: RXL): Promise<RXR> {
+    const rxr = await this.inner.get(rxl);
     this.validateDomain(rxr);
     return rxr;
-  }
-
-  /**
-   * Resolve resource and validate domain.
-   */
-  override async resolve<TArgs = void, TResult = unknown>(
-    locator: string
-  ): Promise<ResolvedResource<TArgs, TResult>> {
-    // Get first to validate domain before resolving
-    const rxr = await this.inner.get(locator);
-    this.validateDomain(rxr);
-    return this.inner.resolve<TArgs, TResult>(locator);
   }
 }
 
@@ -60,7 +47,7 @@ export class DomainValidation extends RegistryMiddleware {
  * Factory function to create domain validation middleware.
  *
  * @example
- * const registry = withDomainValidation(gitRegistry, "deepractice.ai");
+ * const registry = withDomainValidation(hostedRegistry, "deepractice.ai");
  */
 export function withDomainValidation(registry: Registry, trustedDomain: string): Registry {
   return new DomainValidation(registry, trustedDomain);

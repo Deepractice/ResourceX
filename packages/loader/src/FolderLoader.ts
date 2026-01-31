@@ -2,7 +2,7 @@ import { join, relative } from "node:path";
 import { stat, readFile, readdir } from "node:fs/promises";
 import type { ResourceLoader } from "./types.js";
 import type { RXR } from "@resourcexjs/core";
-import { createRXM, createRXA, parseRXL, ResourceXError } from "@resourcexjs/core";
+import { define, manifest, archive, resource, ResourceXError } from "@resourcexjs/core";
 
 /**
  * Default ResourceLoader implementation for loading resources from folders.
@@ -47,64 +47,41 @@ export class FolderLoader implements ResourceLoader {
 
   async load(folderPath: string): Promise<RXR> {
     // 1. Read resource.json
-    const manifestPath = join(folderPath, "resource.json");
-    let manifestJson: string;
+    const resourceJsonPath = join(folderPath, "resource.json");
+    let resourceJson: string;
     try {
-      manifestJson = await readFile(manifestPath, "utf-8");
+      resourceJson = await readFile(resourceJsonPath, "utf-8");
     } catch (error) {
       throw new ResourceXError(
         `Failed to read resource.json: ${error instanceof Error ? error.message : String(error)}`
       );
     }
 
-    // 2. Parse JSON
-    let manifestData: Record<string, unknown>;
+    // 2. Parse JSON and create RXD
+    let json: unknown;
     try {
-      manifestData = JSON.parse(manifestJson);
+      json = JSON.parse(resourceJson);
     } catch (error) {
       throw new ResourceXError(
         `Invalid JSON in resource.json: ${error instanceof Error ? error.message : String(error)}`
       );
     }
 
-    // 3. Validate required fields
-    if (!manifestData.name) {
-      throw new ResourceXError("Invalid resource.json: missing required field 'name'");
-    }
-    if (!manifestData.type) {
-      throw new ResourceXError("Invalid resource.json: missing required field 'type'");
-    }
-    if (!manifestData.version) {
-      throw new ResourceXError("Invalid resource.json: missing required field 'version'");
-    }
+    const rxd = define(json);
 
-    // 4. Create RXM with defaults
-    const manifest = createRXM({
-      domain: (manifestData.domain as string) ?? "localhost",
-      path: manifestData.path as string | undefined,
-      name: manifestData.name as string,
-      type: manifestData.type as string,
-      version: manifestData.version as string,
-    });
-
-    // 5. Read all files in folder (except resource.json)
+    // 3. Read all files in folder (except resource.json)
     const files = await this.readFolderFiles(folderPath);
 
     if (Object.keys(files).length === 0) {
       throw new ResourceXError("No content files found in resource folder");
     }
 
-    // 6. Create RXA
-    const archive = await createRXA(files);
+    // 4. Create RXM and RXA using primitives
+    const rxm = manifest(rxd);
+    const rxa = await archive(files);
 
-    // 7. Assemble RXR
-    const locator = parseRXL(manifest.toLocator());
-
-    return {
-      locator,
-      manifest,
-      archive,
-    };
+    // 5. Assemble RXR using resource primitive
+    return resource(rxm, rxa);
   }
 
   /**

@@ -1,23 +1,30 @@
 /**
  * @resourcexjs/core
  *
- * ResourceX Core - Resource management layer
+ * ResourceX Core - Resource primitives and types
  */
 
 // Errors
-export { ResourceXError, LocatorError, ManifestError, ContentError } from "~/errors.js";
+export {
+  ResourceXError,
+  LocatorError,
+  ManifestError,
+  ContentError,
+  DefinitionError,
+} from "~/errors.js";
 
-// Locator (RXL)
-export type { RXL } from "~/locator/index.js";
-export { parseRXL } from "~/locator/index.js";
+// Types
+export type { RXD, RXL, RXM, RXA, RXR } from "~/types/index.js";
 
-// Manifest (RXM)
-export type { RXM, ManifestData } from "~/manifest/index.js";
-export { createRXM } from "~/manifest/index.js";
-
-// Archive (RXA) and Package (RXP)
-export type { RXA, RXP, RXAInput, PathNode } from "~/archive/index.js";
-export { createRXA } from "~/archive/index.js";
-
-// Resource (RXR)
-export type { RXR } from "~/resource/index.js";
+// Primitives
+export {
+  define,
+  manifest,
+  archive,
+  locate,
+  resource,
+  extract,
+  format,
+  parse,
+  wrap,
+} from "~/primitives/index.js";

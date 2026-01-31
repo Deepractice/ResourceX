@@ -5,101 +5,44 @@
  *
  * @example
  * ```typescript
- * import { parseRXL, createRXM, createRegistry } from "resourcexjs";
+ * import { createResourceX } from "resourcexjs";
  *
- * const rxl = parseRXL("deepractice.ai/sean/assistant.prompt@1.0.0");
- * const rxm = createRXM({ domain: "deepractice.ai", name: "assistant", type: "prompt", version: "1.0.0" });
- * const registry = createRegistry();
- * ```
+ * const rx = createResourceX({
+ *   domain: "mycompany.com",
+ *   registry: "https://registry.mycompany.com"
+ * });
  *
- * For low-level ARP protocol access:
- * ```typescript
- * import { createARP } from "resourcexjs/arp";
+ * // Add from directory
+ * await rx.add("./my-prompt");
+ *
+ * // Resolve and execute
+ * const result = await rx.resolve("my-prompt.text@1.0.0");
+ * await result.execute();
+ *
+ * // Publish to registry
+ * await rx.publish("./my-prompt");
  * ```
  *
  * @packageDocumentation
  */
 
 // ============================================
+// Main API
+// ============================================
+export { createResourceX } from "./ResourceX.js";
+export type { ResourceX, ResourceXConfig, Executable } from "./ResourceX.js";
+
+// ============================================
 // Errors
 // ============================================
-export { ResourceXError, LocatorError, ManifestError, ContentError } from "@resourcexjs/core";
-
-export { ResourceTypeError } from "@resourcexjs/type";
 export { RegistryError } from "@resourcexjs/registry";
+export { ResourceTypeError } from "@resourcexjs/type";
 
 // ============================================
-// RXL - ResourceX Locator
+// Extension - Custom Types
 // ============================================
-export type { RXL } from "@resourcexjs/core";
-export { parseRXL } from "@resourcexjs/core";
-
-// ============================================
-// RXM - ResourceX Manifest
-// ============================================
-export type { RXM, ManifestData } from "@resourcexjs/core";
-export { createRXM } from "@resourcexjs/core";
-
-// ============================================
-// RXA/RXP - ResourceX Archive and Package
-// ============================================
-export type { RXA, RXP, RXAInput, PathNode } from "@resourcexjs/core";
-export { createRXA } from "@resourcexjs/core";
-
-// ============================================
-// RXR - ResourceX Resource
-// ============================================
-export type { RXR } from "@resourcexjs/core";
-
-// ============================================
-// Resource Type System
-// ============================================
-export type {
-  ResourceType,
-  ResourceResolver,
-  ResolvedResource,
-  JSONSchema,
-  BundledType,
-  IsolatorType,
-} from "@resourcexjs/type";
-
-export { TypeHandlerChain, bundleResourceType } from "@resourcexjs/type";
-
-// Built-in types
-export { textType, jsonType, binaryType, builtinTypes } from "@resourcexjs/type";
-
-// ============================================
-// Resource Loading
-// ============================================
-export type { ResourceLoader } from "@resourcexjs/loader";
-export { loadResource, FolderLoader } from "@resourcexjs/loader";
-export type { LoadResourceConfig } from "@resourcexjs/loader";
-
-// ============================================
-// Registry
-// ============================================
-export type {
-  Registry,
-  RegistryConfig,
-  ClientRegistryConfig,
-  ServerRegistryConfig,
-  CreateRegistryConfig,
-  DiscoveryResult,
-  WellKnownResponse,
-  Storage,
-  SearchOptions,
-} from "@resourcexjs/registry";
-export {
-  DefaultRegistry,
-  createRegistry,
-  discoverRegistry,
-  LocalStorage,
-} from "@resourcexjs/registry";
-
-// ============================================
-// Registry Middleware
-// ============================================
-export { RegistryMiddleware, DomainValidation, withDomainValidation } from "@resourcexjs/registry";
+export type { BundledType, IsolatorType } from "@resourcexjs/type";
+export { bundleResourceType } from "@resourcexjs/type";
 
 // ============================================
 // Version

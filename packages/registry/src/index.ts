@@ -1,23 +1,19 @@
 /**
  * @resourcexjs/registry
  *
- * ResourceX Registry - Resource storage and retrieval
+ * Registry layer - business logic for RXR operations.
+ *
+ * Three registry types:
+ * - HostedRegistry: Resources you own (authoritative data)
+ * - MirrorRegistry: Cached/mirrored remote resources
+ * - LinkedRegistry: Development symlinks
+ *
+ * All registries use @resourcexjs/storage for persistence.
  */
 
-// Registry
-export type { Registry, RegistryConfig } from "./Registry.js";
-export { DefaultRegistry } from "./Registry.js";
-export { createRegistry } from "./createRegistry.js";
-export type {
-  ClientRegistryConfig,
-  ServerRegistryConfig,
-  CreateRegistryConfig,
-} from "./createRegistry.js";
-
-// Storage
-export type { Storage, SearchOptions } from "./storage/index.js";
-export { LocalStorage } from "./storage/index.js";
-export type { LocalStorageConfig } from "./storage/index.js";
+// Registry layer
+export type { Registry, SearchOptions } from "./registries/index.js";
+export { HostedRegistry, MirrorRegistry, LinkedRegistry } from "./registries/index.js";
 
 // Discovery
 export { discoverRegistry } from "./discovery.js";

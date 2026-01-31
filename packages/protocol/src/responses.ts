@@ -1,50 +1,8 @@
 /**
- * Registry HTTP API Response Types
+ * ResourceX Registry HTTP API - Response Types
  */
 
 import type { ManifestData } from "./requests.js";
-
-// ============================================
-// GET /resource
-// ============================================
-
-/**
- * GET /resource response
- */
-export interface GetResourceResponse extends ManifestData {
-  /**
-   * Full resource locator
-   */
-  locator: string;
-
-  /**
-   * Download count
-   */
-  downloads?: number;
-
-  /**
-   * Creation timestamp (ISO 8601)
-   */
-  createdAt?: string;
-
-  /**
-   * Last update timestamp (ISO 8601)
-   */
-  updatedAt?: string;
-}
-
-// ============================================
-// GET /content
-// ============================================
-
-/**
- * GET /content response
- *
- * Returns binary tar.gz stream with headers:
- * - Content-Type: application/gzip
- * - Content-Disposition: attachment; filename="archive.tar.gz"
- */
-export type GetContentResponse = ReadableStream<Uint8Array> | ArrayBuffer;
 
 // ============================================
 // POST /publish
@@ -54,16 +12,62 @@ export type GetContentResponse = ReadableStream<Uint8Array> | ArrayBuffer;
  * POST /publish response
  */
 export interface PublishResponse {
-  /**
-   * Published resource locator
-   */
+  /** Published resource locator */
   locator: string;
-
-  /**
-   * Whether this is a new version of existing resource
-   */
-  isNewVersion?: boolean;
 }
+
+// ============================================
+// GET /resource/{locator}
+// ============================================
+
+/**
+ * GET /resource/{locator} response
+ *
+ * Returns manifest data
+ */
+export type GetResourceResponse = ManifestData;
+
+// ============================================
+// HEAD /resource/{locator}
+// ============================================
+
+/**
+ * HEAD /resource/{locator} response
+ *
+ * - 200: Resource exists
+ * - 404: Resource not found
+ *
+ * No body
+ */
+export type HeadResourceResponse = void;
+
+// ============================================
+// DELETE /resource/{locator}
+// ============================================
+
+/**
+ * DELETE /resource/{locator} response
+ *
+ * - 204: Deleted successfully
+ * - 404: Resource not found
+ *
+ * No body
+ */
+export type DeleteResourceResponse = void;
+
+// ============================================
+// GET /content/{locator}
+// ============================================
+
+/**
+ * GET /content/{locator} response
+ *
+ * Returns binary archive
+ *
+ * Headers:
+ * - Content-Type: application/octet-stream
+ */
+export type GetContentResponse = ArrayBuffer;
 
 // ============================================
 // GET /search
@@ -73,112 +77,34 @@ export interface PublishResponse {
  * Search result item
  */
 export interface SearchResultItem {
-  /**
-   * Resource locator
-   */
+  /** Full resource locator */
   locator: string;
 
-  /**
-   * Resource domain
-   */
+  /** Resource domain */
   domain: string;
 
-  /**
-   * Resource path
-   */
+  /** Resource path (optional) */
   path?: string;
 
-  /**
-   * Resource name
-   */
+  /** Resource name */
   name: string;
 
-  /**
-   * Resource type
-   */
+  /** Resource type */
   type: string;
 
-  /**
-   * Resource version
-   */
+  /** Resource version */
   version: string;
-
-  /**
-   * Resource description
-   */
-  description?: string;
-
-  /**
-   * Download count
-   */
-  downloads?: number;
 }
 
 /**
  * GET /search response
  */
 export interface SearchResponse {
-  /**
-   * Search results
-   */
+  /** Search results */
   results: SearchResultItem[];
 
-  /**
-   * Total count (for pagination)
-   */
-  total?: number;
-}
-
-// ============================================
-// HEAD /resource
-// ============================================
-
-/**
- * HEAD /resource response
- *
- * Returns 200 if exists, 404 if not
- * No body, just status code
- */
-export type HeadResourceResponse = void;
-
-// ============================================
-// DELETE /resource
-// ============================================
-
-/**
- * DELETE /resource response
- *
- * Returns 204 No Content on success
- */
-export type DeleteResourceResponse = void;
-
-// ============================================
-// POST /resolve (Phase 3)
-// ============================================
-
-/**
- * POST /resolve response
- */
-export interface ResolveResponse<TResult = unknown> {
-  /**
-   * Execution result
-   */
-  result: TResult;
-
-  /**
-   * Execution metadata
-   */
-  meta?: {
-    /**
-     * Execution time in milliseconds
-     */
-    executionTimeMs?: number;
-
-    /**
-     * Resource locator that was resolved
-     */
-    locator?: string;
-  };
+  /** Total count (for pagination) */
+  total: number;
 }
 
 // ============================================
@@ -187,20 +113,13 @@ export interface ResolveResponse<TResult = unknown> {
 
 /**
  * Error response format
+ *
+ * Returned for 4xx/5xx status codes
  */
 export interface ErrorResponse {
-  /**
-   * Error message
-   */
+  /** Error message */
   error: string;
 
-  /**
-   * Error code (for programmatic handling)
-   */
+  /** Error code (for programmatic handling) */
   code?: string;
-
-  /**
-   * Additional error details
-   */
-  details?: Record<string, unknown>;
 }

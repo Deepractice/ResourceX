@@ -32,3 +32,10 @@ export class ContentError extends ResourceXError {
     this.name = "ContentError";
   }
 }
+
+export class DefinitionError extends ResourceXError {
+  constructor(message: string) {
+    super(message);
+    this.name = "DefinitionError";
+  }
+}

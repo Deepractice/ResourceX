@@ -47,7 +47,9 @@
     "@resourcexjs/core": "workspace:*",
     "@resourcexjs/loader": "workspace:*",
     "@resourcexjs/registry": "workspace:*",
-    "@resourcexjs/type": "workspace:*"
+    "@resourcexjs/storage": "workspace:*",
+    "@resourcexjs/type": "workspace:*",
+    "sandboxxjs": "^0.5.1"
   },
   "devDependencies": {},
   "publishConfig": {

@@ -1,7 +1,5 @@
 /**
- * Registry HTTP API Endpoints
- *
- * All endpoints are relative to the API base path (e.g., /api/v1)
+ * ResourceX Registry HTTP API Endpoints
  */
 
 /**
@@ -14,72 +12,95 @@ export const API_VERSION = "v1";
  */
 export const ENDPOINTS = {
   /**
-   * GET /resource?locator=xxx
-   * Get resource manifest by locator
-   */
-  resource: "/resource",
-
-  /**
-   * GET /content?locator=xxx
-   * Get resource archive (tar.gz) by locator
-   */
-  content: "/content",
-
-  /**
-   * POST /publish
-   * Publish a new resource (multipart/form-data)
+   * POST /publish - Publish a resource (multipart form data)
+   *
+   * Form fields:
+   * - locator: Resource locator string
+   * - manifest: JSON blob with manifest data
+   * - content: Binary blob with archive content
    */
   publish: "/publish",
 
   /**
-   * GET /search?q=xxx&limit=100&offset=0
-   * Search resources
+   * Resource operations by locator
+   *
+   * GET    /resource/{locator} - Get manifest
+   * HEAD   /resource/{locator} - Check existence
+   * DELETE /resource/{locator} - Delete resource
    */
-  search: "/search",
+  resource: "/resource",
 
   /**
-   * POST /resolve
-   * Resolve and execute resource in cloud (Phase 3)
+   * GET /content/{locator} - Get resource content (archive)
    */
-  resolve: "/resolve",
+  content: "/content",
+
+  /**
+   * GET /search?q=xxx&limit=100&offset=0 - Search resources
+   */
+  search: "/search",
 } as const;
 
 /**
  * HTTP methods for each endpoint
  */
-export const ENDPOINT_METHODS = {
+export const METHODS = {
+  publish: {
+    POST: "Publish resource",
+  },
   resource: {
-    GET: "Get manifest",
-    HEAD: "Check existence",
+    GET: "Get manifest by locator",
+    HEAD: "Check if resource exists",
     DELETE: "Delete resource",
   },
   content: {
-    GET: "Get archive",
-  },
-  publish: {
-    POST: "Publish resource",
+    GET: "Get content by locator",
   },
   search: {
     GET: "Search resources",
   },
-  resolve: {
-    POST: "Resolve and execute",
-  },
 } as const;
 
 /**
- * Build full endpoint URL
+ * Content types
  */
-export function buildEndpointUrl(
+export const CONTENT_TYPES = {
+  json: "application/json",
+  binary: "application/octet-stream",
+  formData: "multipart/form-data",
+} as const;
+
+/**
+ * Build endpoint URL with path parameter
+ */
+export function buildResourceUrl(baseUrl: string, locator: string): string {
+  return `${baseUrl.replace(/\/$/, "")}${ENDPOINTS.resource}/${encodeURIComponent(locator)}`;
+}
+
+/**
+ * Build content URL with path parameter
+ */
+export function buildContentUrl(baseUrl: string, locator: string): string {
+  return `${baseUrl.replace(/\/$/, "")}${ENDPOINTS.content}/${encodeURIComponent(locator)}`;
+}
+
+/**
+ * Build publish URL
+ */
+export function buildPublishUrl(baseUrl: string): string {
+  return `${baseUrl.replace(/\/$/, "")}${ENDPOINTS.publish}`;
+}
+
+/**
+ * Build search URL with query parameters
+ */
+export function buildSearchUrl(
   baseUrl: string,
-  endpoint: keyof typeof ENDPOINTS,
-  params?: Record<string, string>
+  params?: { q?: string; limit?: number; offset?: number }
 ): string {
-  const url = new URL(`${baseUrl}${ENDPOINTS[endpoint]}`);
-  if (params) {
-    Object.entries(params).forEach(([key, value]) => {
-      url.searchParams.set(key, value);
-    });
-  }
+  const url = new URL(`${baseUrl.replace(/\/$/, "")}${ENDPOINTS.search}`);
+  if (params?.q) url.searchParams.set("q", params.q);
+  if (params?.limit) url.searchParams.set("limit", String(params.limit));
+  if (params?.offset) url.searchParams.set("offset", String(params.offset));
   return url.toString();
 }

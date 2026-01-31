@@ -1,80 +1,29 @@
 /**
- * Registry HTTP API Request Types
+ * ResourceX Registry HTTP API - Request Types
  */
 
-/* global Blob */
-
 // ============================================
-// Manifest (shared between request/response)
+// Manifest Data
 // ============================================
 
 /**
  * Resource manifest data
  */
 export interface ManifestData {
-  /**
-   * Resource domain (e.g., "deepractice.dev")
-   * Defaults to "localhost" if not specified
-   */
-  domain?: string;
+  /** Resource domain (e.g., "mycompany.com") */
+  domain: string;
 
-  /**
-   * Resource path within domain (e.g., "prompts/chat")
-   */
+  /** Resource path within domain (optional) */
   path?: string;
 
-  /**
-   * Resource name (required)
-   */
+  /** Resource name */
   name: string;
 
-  /**
-   * Resource type (e.g., "prompt", "tool", "agent")
-   */
+  /** Resource type (e.g., "text", "json", "prompt") */
   type: string;
 
-  /**
-   * Semantic version (e.g., "1.0.0")
-   */
+  /** Semantic version (e.g., "1.0.0") */
   version: string;
-
-  /**
-   * Optional description
-   */
-  description?: string;
-
-  /**
-   * Optional readme content (markdown)
-   */
-  readme?: string;
-}
-
-// ============================================
-// GET /resource
-// ============================================
-
-/**
- * GET /resource query parameters
- */
-export interface GetResourceRequest {
-  /**
-   * Resource locator (e.g., "deepractice.dev/assistant.prompt@1.0.0")
-   */
-  locator: string;
-}
-
-// ============================================
-// GET /content
-// ============================================
-
-/**
- * GET /content query parameters
- */
-export interface GetContentRequest {
-  /**
-   * Resource locator
-   */
-  locator: string;
 }
 
 // ============================================
@@ -82,98 +31,99 @@ export interface GetContentRequest {
 // ============================================
 
 /**
- * POST /publish request body (multipart/form-data)
+ * POST /publish - Publish a resource
  *
- * @example
- * ```typescript
- * const formData = new FormData();
- * formData.append("manifest", JSON.stringify(manifest));
- * formData.append("archive", archiveBlob, "archive.tar.gz");
- * ```
+ * Multipart form data fields:
+ * - locator: Resource locator string
+ * - manifest: JSON blob with ManifestData
+ * - content: Binary blob with archive content
  */
-export interface PublishRequest {
-  /**
-   * Resource manifest (JSON string in form data)
-   */
+export interface PublishFormFields {
+  /** Resource locator string */
+  locator: string;
+
+  /** Manifest data (JSON) */
   manifest: ManifestData;
 
-  /**
-   * Resource archive (tar.gz file)
-   */
-  archive: Blob | ArrayBuffer;
+  /** Archive content (binary) */
+  content: ArrayBuffer | Uint8Array;
 }
 
 /**
  * Form field names for publish request
  */
-export const PUBLISH_FORM_FIELDS = {
+export const PUBLISH_FIELDS = {
+  locator: "locator",
   manifest: "manifest",
-  archive: "archive",
+  content: "content",
 } as const;
+
+// ============================================
+// GET /resource/{locator}
+// ============================================
+
+/**
+ * GET /resource/{locator}
+ *
+ * Path parameter: locator (URL encoded)
+ */
+export interface GetResourceParams {
+  /** Resource locator (URL encoded in path) */
+  locator: string;
+}
+
+// ============================================
+// HEAD /resource/{locator}
+// ============================================
+
+/**
+ * HEAD /resource/{locator}
+ *
+ * Path parameter: locator (URL encoded)
+ */
+export type HeadResourceParams = GetResourceParams;
+
+// ============================================
+// DELETE /resource/{locator}
+// ============================================
+
+/**
+ * DELETE /resource/{locator}
+ *
+ * Path parameter: locator (URL encoded)
+ */
+export type DeleteResourceParams = GetResourceParams;
+
+// ============================================
+// GET /content/{locator}
+// ============================================
+
+/**
+ * GET /content/{locator}
+ *
+ * Path parameter: locator (URL encoded)
+ */
+export interface GetContentParams {
+  /** Resource locator (URL encoded in path) */
+  locator: string;
+}
 
 // ============================================
 // GET /search
 // ============================================
 
 /**
- * GET /search query parameters
+ * GET /search
+ *
+ * Query parameters
  */
-export interface SearchRequest {
-  /**
-   * Search query (matches locator, name, description)
-   */
+export interface SearchQuery {
+  /** Search query string (optional) */
   q?: string;
 
-  /**
-   * Filter by resource type
-   */
-  type?: string;
-
-  /**
-   * Filter by domain
-   */
-  domain?: string;
-
-  /**
-   * Maximum results to return (default: 100)
-   */
+  /** Maximum results (default: 100) */
   limit?: number;
 
-  /**
-   * Offset for pagination (default: 0)
-   */
+  /** Offset for pagination (default: 0) */
   offset?: number;
-}
-
-// ============================================
-// DELETE /resource
-// ============================================
-
-/**
- * DELETE /resource query parameters
- */
-export interface DeleteResourceRequest {
-  /**
-   * Resource locator
-   */
-  locator: string;
-}
-
-// ============================================
-// POST /resolve (Phase 3)
-// ============================================
-
-/**
- * POST /resolve request body
- */
-export interface ResolveRequest {
-  /**
-   * Resource locator
-   */
-  locator: string;
-
-  /**
-   * Arguments to pass to resolver
-   */
-  args?: unknown;
 }
