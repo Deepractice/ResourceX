@@ -1,0 +1,34 @@
+{
+  "name": "@resourcexjs/server",
+  "version": "0.1.0",
+  "description": "ResourceX Registry Server - Protocol, Handlers, and Hono Server",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "bun run build.ts",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@resourcexjs/core": "workspace:*",
+    "@resourcexjs/registry": "workspace:*",
+    "@resourcexjs/storage": "workspace:*",
+    "hono": "^4.7.10"
+  },
+  "devDependencies": {},
+  "publishConfig": {
+    "access": "public"
+  },
+  "license": "MIT"
+}

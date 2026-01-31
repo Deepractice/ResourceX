@@ -1,0 +1,19 @@
+version: "3.8"
+
+services:
+  portal:
+    build:
+      context: ../..
+      dockerfile: apps/portal/Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - registry-data:/app/data
+    environment:
+      - NODE_ENV=production
+      - STORAGE_PATH=/app/data
+      - NEXT_PUBLIC_API_URL=http://localhost:3000
+    restart: unless-stopped
+
+volumes:
+  registry-data:
