@@ -54,7 +54,7 @@ export class LocalRegistry implements Registry {
       path: manifestJson.path,
       name: manifestJson.name,
       type: manifestJson.type,
-      version: manifestJson.version,
+      tag: manifestJson.tag,
       files: manifestJson.files,
     };
 
@@ -76,7 +76,7 @@ export class LocalRegistry implements Registry {
       path: rxr.manifest.path,
       name: rxr.manifest.name,
       type: rxr.manifest.type,
-      version: rxr.manifest.version,
+      tag: rxr.manifest.tag,
       files: rxr.manifest.files,
     };
     const manifestData = Buffer.from(JSON.stringify(manifestJson, null, 2), "utf-8");

@@ -32,7 +32,7 @@ export interface ManifestData {
   path?: string;
   name: string;
   type: string;
-  version: string;
+  tag: string;
 }
 
 export const PUBLISH_FIELDS = {
@@ -63,7 +63,7 @@ export interface SearchResultItem {
   path?: string;
   name: string;
   type: string;
-  version: string;
+  tag: string;
 }
 
 export interface SearchResponse {

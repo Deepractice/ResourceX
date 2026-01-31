@@ -69,7 +69,7 @@ export async function handlePublish(request: Request, registry: Registry): Promi
       path: manifestData.path ?? rxl.path,
       name: manifestData.name ?? rxl.name,
       type: manifestData.type, // Type must come from manifest, not locator
-      version: manifestData.version ?? rxl.tag ?? "latest",
+      tag: manifestData.tag ?? rxl.tag ?? "latest",
       files: manifestData.files,
     });
 
@@ -100,7 +100,7 @@ export async function handleGetResource(locator: string, registry: Registry): Pr
       path: rxr.manifest.path,
       name: rxr.manifest.name,
       type: rxr.manifest.type,
-      version: rxr.manifest.version,
+      tag: rxr.manifest.tag,
     };
     return jsonResponse(response);
   } catch (error) {
@@ -194,7 +194,7 @@ export async function handleSearch(
         path: rxl.path,
         name: rxl.name,
         type: "", // Type not in RXL anymore, would need to read manifest
-        version: rxl.tag ?? "latest",
+        tag: rxl.tag ?? "latest",
       })),
       total: results.length,
     };

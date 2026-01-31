@@ -14,7 +14,7 @@ async function createDevResource(name: string, type: string, content: string): P
   const resourceJson = {
     name,
     type,
-    version: "1.0.0",
+    tag: "1.0.0",
   };
   await writeFile(join(resourceDir, "resource.json"), JSON.stringify(resourceJson, null, 2));
   await writeFile(join(resourceDir, "content"), content);
@@ -41,7 +41,7 @@ describe("ResourceX", () => {
       const devPath = await createDevResource("hello", "text", "Hello World!");
       await rx.add(devPath);
 
-      expect(await rx.has("hello.text@1.0.0")).toBe(true);
+      expect(await rx.has("hello:1.0.0")).toBe(true);
     });
 
     it("uses default domain", async () => {
@@ -54,7 +54,7 @@ describe("ResourceX", () => {
       await rxWithDomain.add(devPath);
 
       // Should be stored with mycompany.com domain
-      expect(await rxWithDomain.has("test.text@1.0.0")).toBe(true);
+      expect(await rxWithDomain.has("test:1.0.0")).toBe(true);
     });
   });
 
@@ -63,7 +63,7 @@ describe("ResourceX", () => {
       const devPath = await createDevResource("dev-prompt", "text", "Dev content");
       await rx.link(devPath);
 
-      expect(await rx.has("dev-prompt.text@1.0.0")).toBe(true);
+      expect(await rx.has("dev-prompt:1.0.0")).toBe(true);
     });
   });
 
@@ -72,11 +72,11 @@ describe("ResourceX", () => {
       const devPath = await createDevResource("exists", "text", "content");
       await rx.add(devPath);
 
-      expect(await rx.has("exists.text@1.0.0")).toBe(true);
+      expect(await rx.has("exists:1.0.0")).toBe(true);
     });
 
     it("returns false for non-existing resource", async () => {
-      expect(await rx.has("not-exist.text@1.0.0")).toBe(false);
+      expect(await rx.has("not-exist:1.0.0")).toBe(false);
     });
   });
 
@@ -84,10 +84,10 @@ describe("ResourceX", () => {
     it("removes a resource", async () => {
       const devPath = await createDevResource("to-remove", "text", "content");
       await rx.add(devPath);
-      expect(await rx.has("to-remove.text@1.0.0")).toBe(true);
+      expect(await rx.has("to-remove:1.0.0")).toBe(true);
 
-      await rx.remove("to-remove.text@1.0.0");
-      expect(await rx.has("to-remove.text@1.0.0")).toBe(false);
+      await rx.remove("to-remove:1.0.0");
+      expect(await rx.has("to-remove:1.0.0")).toBe(false);
     });
   });
 
@@ -96,7 +96,7 @@ describe("ResourceX", () => {
       const devPath = await createDevResource("greeting", "text", "Hello!");
       await rx.add(devPath);
 
-      const result = await rx.resolve("greeting.text@1.0.0");
+      const result = await rx.resolve("greeting:1.0.0");
       const content = await result.execute();
       expect(content).toBe("Hello!");
     });
@@ -105,14 +105,14 @@ describe("ResourceX", () => {
       const devPath = await createDevResource("config", "json", '{"key": "value"}');
       await rx.add(devPath);
 
-      const result = await rx.resolve<{ key: string }>("config.json@1.0.0");
+      const result = await rx.resolve<{ key: string }>("config:1.0.0");
       const content = await result.execute();
       expect(content.key).toBe("value");
     });
 
     it("throws error for non-existent resource", async () => {
-      await expect(rx.resolve("not-exist.text@1.0.0")).rejects.toThrow(RegistryError);
-      await expect(rx.resolve("not-exist.text@1.0.0")).rejects.toThrow("not found");
+      await expect(rx.resolve("not-exist:1.0.0")).rejects.toThrow(RegistryError);
+      await expect(rx.resolve("not-exist:1.0.0")).rejects.toThrow("not found");
     });
 
     it("linked resources take priority over added", async () => {
@@ -125,13 +125,13 @@ describe("ResourceX", () => {
       await mkdir(linkPath, { recursive: true });
       await writeFile(
         join(linkPath, "resource.json"),
-        JSON.stringify({ name: "priority", type: "text", version: "1.0.0" })
+        JSON.stringify({ name: "priority", type: "text", tag: "1.0.0" })
       );
       await writeFile(join(linkPath, "content"), "Linked content");
       await rx.link(linkPath);
 
       // Resolve should return linked version
-      const result = await rx.resolve("priority.text@1.0.0");
+      const result = await rx.resolve("priority:1.0.0");
       const content = await result.execute();
       expect(content).toBe("Linked content");
     });
@@ -173,12 +173,12 @@ describe("ResourceX", () => {
       await mkdir(devPath, { recursive: true });
       await writeFile(
         join(devPath, "resource.json"),
-        JSON.stringify({ name: "test", type: "uppercase", version: "1.0.0" })
+        JSON.stringify({ name: "test", type: "uppercase", tag: "1.0.0" })
       );
       await writeFile(join(devPath, "content"), "hello");
       await rx.add(devPath);
 
-      const result = await rx.resolve("test.uppercase@1.0.0");
+      const result = await rx.resolve("test:1.0.0");
       const content = await result.execute();
       expect(content).toBe("HELLO");
     });
@@ -192,7 +192,7 @@ describe("ResourceX", () => {
     });
 
     it("pull throws error without registry configured", async () => {
-      await expect(rx.pull("test.text@1.0.0")).rejects.toThrow("Registry URL not configured");
+      await expect(rx.pull("test:1.0.0")).rejects.toThrow("Registry URL not configured");
     });
   });
 
@@ -207,7 +207,7 @@ describe("ResourceX", () => {
       await rxWithDomain.add(devPath);
 
       // Short locator should work
-      expect(await rxWithDomain.has("test.text@1.0.0")).toBe(true);
+      expect(await rxWithDomain.has("test:1.0.0")).toBe(true);
     });
 
     it("preserves explicit domain in locator", async () => {
@@ -217,7 +217,7 @@ describe("ResourceX", () => {
       });
 
       // This would fail if we try to use explicit domain that doesn't exist
-      expect(await rxWithDomain.has("other.com/test.text@1.0.0")).toBe(false);
+      expect(await rxWithDomain.has("other.com/test:1.0.0")).toBe(false);
     });
   });
 });

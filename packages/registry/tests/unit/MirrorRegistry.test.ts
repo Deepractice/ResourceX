@@ -9,7 +9,7 @@ async function createTestRXR(registry: string, name: string, content: string): P
     registry,
     name,
     type: "text",
-    version: "1.0.0",
+    tag: "1.0.0",
   };
   const rxm = manifest(rxd);
   const rxa = await archive({ content: Buffer.from(content) });
@@ -37,7 +37,7 @@ describe("MirrorRegistry", () => {
     });
 
     it("throws error for cache miss", async () => {
-      const rxl = parse("deepractice.ai/not-cached.text@1.0.0");
+      const rxl = parse("deepractice.ai/not-cached:1.0.0");
 
       await expect(registry.get(rxl)).rejects.toThrow(RegistryError);
       await expect(registry.get(rxl)).rejects.toThrow("not found in cache");
@@ -61,11 +61,11 @@ describe("MirrorRegistry", () => {
       await registry.clear("domain1.com");
 
       // domain1.com should be cleared
-      const rxl1 = parse("domain1.com/a.text@1.0.0");
+      const rxl1 = parse("domain1.com/a:1.0.0");
       expect(await registry.has(rxl1)).toBe(false);
 
       // domain2.com should still exist
-      const rxl2 = parse("domain2.com/b.text@1.0.0");
+      const rxl2 = parse("domain2.com/b:1.0.0");
       expect(await registry.has(rxl2)).toBe(true);
     });
   });

@@ -8,7 +8,9 @@ export interface RXD {
   // Core fields (required)
   readonly name: string;
   readonly type: string;
-  readonly version: string;
+
+  // Tag (optional, defaults to "latest")
+  readonly tag?: string;
 
   // Core fields (optional)
   readonly registry?: string;

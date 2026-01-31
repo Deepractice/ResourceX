@@ -13,6 +13,6 @@ export function manifest(rxd: RXD): RXM {
     path: rxd.path,
     name: rxd.name,
     type: rxd.type,
-    version: rxd.version,
+    tag: rxd.tag ?? "latest",
   };
 }

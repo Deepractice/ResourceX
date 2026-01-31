@@ -122,8 +122,8 @@ export interface Resource {
   /** Resource type (e.g., "text", "json") */
   type: string;
 
-  /** Semantic version */
-  version: string;
+  /** Tag (e.g., "1.0.0", "latest", "stable") */
+  tag: string;
 
   /** File list in the resource archive */
   files?: string[];
@@ -301,7 +301,7 @@ class DefaultResourceX implements ResourceX {
       path: rxr.manifest.path,
       name: rxr.manifest.name,
       type: rxr.manifest.type,
-      version: rxr.manifest.version,
+      version: rxr.manifest.tag,
       files: rxr.manifest.files,
     };
   }
@@ -321,7 +321,7 @@ class DefaultResourceX implements ResourceX {
         path: rxr.manifest.path,
         name: rxr.manifest.name,
         type: rxr.manifest.type,
-        version: rxr.manifest.version,
+        version: rxr.manifest.tag,
       });
       const newRxr = createResource(newManifest, rxr.archive);
       await this.local.put(newRxr);
@@ -361,7 +361,7 @@ class DefaultResourceX implements ResourceX {
       path: rxr.manifest.path,
       name: rxr.manifest.name,
       type: rxr.manifest.type,
-      version: rxr.manifest.version,
+      version: rxr.manifest.tag,
       files,
     };
   }
@@ -393,8 +393,9 @@ class DefaultResourceX implements ResourceX {
     try {
       rxr = await this.chain.get(rxl);
     } catch (error) {
-      // Auto-pull: if locator has no registry and a registry is configured,
-      // try fetching from the configured registry
+      // Auto-pull: try fetching from remote registry if not found locally
+      // Case 1: locator has no registry -> use configured registry
+      // Case 2: locator has registry -> use that registry directly
       if (!rxl.registry && this.registryUrl) {
         const normalizedRegistry = normalizeRegistryUrl(this.registryUrl);
 
@@ -402,6 +403,19 @@ class DefaultResourceX implements ResourceX {
           // Fetch using original locator (without registry prefix)
           // The fetchFromRegistry will add the registry prefix to the manifest
           rxr = await this.fetchFromRegistry(format(rxl), this.registryUrl, normalizedRegistry);
+          // Cache the result
+          await this.cache.put(rxr);
+        } catch {
+          // Re-throw original error if remote fetch also fails
+          throw error;
+        }
+      } else if (rxl.registry) {
+        // Locator has registry - fetch from that registry directly
+        const registryUrl = `http://${rxl.registry}`;
+        const locatorWithoutRegistry = format({ ...rxl, registry: undefined });
+
+        try {
+          rxr = await this.fetchFromRegistry(locatorWithoutRegistry, registryUrl, rxl.registry);
           // Cache the result
           await this.cache.put(rxr);
         } catch {
@@ -508,7 +522,7 @@ class DefaultResourceX implements ResourceX {
             path: rxr.manifest.path,
             name: rxr.manifest.name,
             type: rxr.manifest.type,
-            version: rxr.manifest.version,
+            version: rxr.manifest.tag,
           }),
         ],
         { type: "application/json" }
@@ -559,7 +573,7 @@ class DefaultResourceX implements ResourceX {
       path?: string;
       name: string;
       type: string;
-      version: string;
+      tag: string;
     };
 
     const {
@@ -574,7 +588,7 @@ class DefaultResourceX implements ResourceX {
       path: manifestData.path,
       name: manifestData.name,
       type: manifestData.type,
-      version: manifestData.version,
+      tag: manifestData.tag,
     });
 
     // Fetch content
@@ -610,7 +624,7 @@ class DefaultResourceX implements ResourceX {
         path: rxr.manifest.path,
         name: rxr.manifest.name,
         type: rxr.manifest.type,
-        version: rxr.manifest.version,
+        version: rxr.manifest.tag,
       },
       files,
     };

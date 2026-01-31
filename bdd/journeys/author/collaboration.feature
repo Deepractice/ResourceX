@@ -125,9 +125,8 @@ Feature: Collaboration between authors
     Then the command should succeed
     And the output should contain "Pulled"
 
-  @pending @design-issue
   Scenario: Resolve auto-fetches from registry based on locator prefix
-    Given a remote resource "localhost:3099/autofetch:1.0.0" on the registry with content "Fetched content"
+    Given a remote resource "autofetch:1.0.0" on the registry with content "Fetched content"
     And a fresh local environment
     # Should auto-fetch from registry based on locator prefix
     When I run "rx resolve localhost:3099/autofetch:1.0.0"

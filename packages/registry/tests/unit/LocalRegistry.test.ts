@@ -9,7 +9,7 @@ async function createTestRXR(name: string, content: string): Promise<RXR> {
     // Local resources have no registry
     name,
     type: "text",
-    version: "1.0.0",
+    tag: "1.0.0",
   };
   const rxm = manifest(rxd);
   const rxa = await archive({ content: Buffer.from(content) });
@@ -34,11 +34,11 @@ describe("LocalRegistry", () => {
       const retrieved = await registry.get(rxr.locator);
       expect(retrieved.manifest.name).toBe("hello");
       expect(retrieved.manifest.type).toBe("text");
-      expect(retrieved.manifest.version).toBe("1.0.0");
+      expect(retrieved.manifest.tag).toBe("1.0.0");
     });
 
     it("throws error for non-existent resource", async () => {
-      const rxl = parse("not-exist.text@1.0.0");
+      const rxl = parse("not-exist:1.0.0");
 
       await expect(registry.get(rxl)).rejects.toThrow(RegistryError);
       await expect(registry.get(rxl)).rejects.toThrow("not found");
@@ -55,7 +55,7 @@ describe("LocalRegistry", () => {
     });
 
     it("returns false for non-existing resource", async () => {
-      const rxl = parse("not-exist.text@1.0.0");
+      const rxl = parse("not-exist:1.0.0");
 
       const exists = await registry.has(rxl);
       expect(exists).toBe(false);
@@ -112,7 +112,7 @@ describe("LocalRegistry", () => {
         path: "tools/ai",
         name: "helper",
         type: "text",
-        version: "1.0.0",
+        tag: "1.0.0",
       };
       const rxm = manifest(rxd);
       const rxa = await archive({ content: Buffer.from("helper content") });

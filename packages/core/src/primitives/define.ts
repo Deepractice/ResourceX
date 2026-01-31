@@ -23,8 +23,11 @@ export function define(input: unknown): RXD {
     throw new DefinitionError("type is required");
   }
 
-  if (!obj.version || typeof obj.version !== "string") {
-    throw new DefinitionError("version is required");
+  // tag is optional, defaults to "latest"
+  // Also accept "version" as alias for backward compatibility
+  const tagValue = obj.tag ?? obj.version;
+  if (tagValue !== undefined && typeof tagValue !== "string") {
+    throw new DefinitionError("tag must be a string");
   }
 
   // Build RXD with defaults
@@ -32,7 +35,7 @@ export function define(input: unknown): RXD {
     ...obj,
     name: obj.name,
     type: obj.type,
-    version: obj.version,
+    tag: typeof tagValue === "string" ? tagValue : undefined,
     registry: typeof obj.registry === "string" ? obj.registry : undefined,
     path: typeof obj.path === "string" ? obj.path : undefined,
     description: typeof obj.description === "string" ? obj.description : undefined,

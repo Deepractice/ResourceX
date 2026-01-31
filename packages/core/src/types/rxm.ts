@@ -8,6 +8,6 @@ export interface RXM {
   readonly path?: string;
   readonly name: string;
   readonly type: string;
-  readonly version: string;
+  readonly tag: string; // Defaults to "latest" if not specified in RXD
   readonly files?: string[]; // Package file structure
 }

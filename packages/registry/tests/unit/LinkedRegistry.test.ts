@@ -47,7 +47,7 @@ describe("LinkedRegistry", () => {
       const rxl = await registry.link(devPath);
 
       expect(rxl.name).toBe("my-prompt");
-      expect(rxl.type).toBe("text");
+      expect(rxl.tag).toBe("1.0.0");
       expect(await registry.has(rxl)).toBe(true);
     });
 
@@ -58,7 +58,7 @@ describe("LinkedRegistry", () => {
 
       expect(rxl.registry).toBe("localhost");
       expect(rxl.name).toBe("test-resource");
-      expect(rxl.version).toBe("1.0.0");
+      expect(rxl.tag).toBe("1.0.0");
     });
   });
 
@@ -67,7 +67,7 @@ describe("LinkedRegistry", () => {
       const devPath = await createDevResource("hello", "Hello World!");
       await registry.link(devPath);
 
-      const rxl = parse("localhost/hello.text@1.0.0");
+      const rxl = parse("localhost/hello:1.0.0");
       const rxr = await registry.get(rxl);
 
       expect(rxr.manifest.name).toBe("hello");
@@ -75,7 +75,7 @@ describe("LinkedRegistry", () => {
     });
 
     it("throws error for non-linked resource", async () => {
-      const rxl = parse("localhost/not-linked.text@1.0.0");
+      const rxl = parse("localhost/not-linked:1.0.0");
 
       await expect(registry.get(rxl)).rejects.toThrow(RegistryError);
       await expect(registry.get(rxl)).rejects.toThrow("not found");
@@ -86,7 +86,7 @@ describe("LinkedRegistry", () => {
     it("throws error - put not supported for LinkedRegistry", async () => {
       const devPath = await createDevResource("test", "content");
       await registry.link(devPath);
-      const rxl = parse("localhost/test.text@1.0.0");
+      const rxl = parse("localhost/test:1.0.0");
       const rxr = await registry.get(rxl);
 
       await expect(registry.put(rxr)).rejects.toThrow(RegistryError);

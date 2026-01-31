@@ -39,7 +39,7 @@ describe("loadResource", () => {
       expect(rxr.manifest.registry).toBeUndefined();
       expect(rxr.manifest.name).toBe("test-resource");
       expect(rxr.manifest.type).toBe("text");
-      expect(rxr.manifest.version).toBe("1.0.0");
+      expect(rxr.manifest.tag).toBe("1.0.0");
 
       const files = await extract(rxr.archive);
       expect(files["content"].toString()).toBe("Hello, World!");
@@ -154,8 +154,8 @@ describe("loadResource", () => {
       await expect(loadResource(resourceDir)).rejects.toThrow("type is required");
     });
 
-    it("throws error if resource.json is missing required field: version", async () => {
-      const resourceDir = join(TEST_DIR, "missing-version");
+    it("loads resource without tag (defaults to latest)", async () => {
+      const resourceDir = join(TEST_DIR, "no-tag");
       await mkdir(resourceDir, { recursive: true });
       await writeFile(
         join(resourceDir, "resource.json"),
@@ -166,8 +166,8 @@ describe("loadResource", () => {
       );
       await writeFile(join(resourceDir, "content"), "content");
 
-      await expect(loadResource(resourceDir)).rejects.toThrow(ResourceXError);
-      await expect(loadResource(resourceDir)).rejects.toThrow("version is required");
+      const rxr = await loadResource(resourceDir);
+      expect(rxr.manifest.tag).toBe("latest");
     });
 
     it("throws error for non-existent path", async () => {

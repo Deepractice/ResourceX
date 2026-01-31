@@ -14,7 +14,7 @@ describe("primitives", () => {
   const sampleRXD: RXD = {
     name: "my-prompt",
     type: "prompt",
-    version: "1.0.0",
+    tag: "1.0.0",
     registry: "deepractice.ai",
     path: "assistants",
   };
@@ -22,7 +22,7 @@ describe("primitives", () => {
   const minimalRXD: RXD = {
     name: "simple",
     type: "text",
-    version: "0.1.0",
+    tag: "0.1.0",
   };
 
   describe("manifest(rxd) → RXM", () => {
@@ -33,7 +33,7 @@ describe("primitives", () => {
       expect(rxm.path).toBe("assistants");
       expect(rxm.name).toBe("my-prompt");
       expect(rxm.type).toBe("prompt");
-      expect(rxm.version).toBe("1.0.0");
+      expect(rxm.tag).toBe("1.0.0");
     });
 
     it("creates RXM from minimal RXD", () => {
@@ -43,7 +43,7 @@ describe("primitives", () => {
       expect(rxm.path).toBeUndefined();
       expect(rxm.name).toBe("simple");
       expect(rxm.type).toBe("text");
-      expect(rxm.version).toBe("0.1.0");
+      expect(rxm.tag).toBe("0.1.0");
     });
 
     it("ignores extended fields from RXD", () => {
@@ -113,8 +113,7 @@ describe("primitives", () => {
       expect(rxl.registry).toBe("deepractice.ai");
       expect(rxl.path).toBe("assistants");
       expect(rxl.name).toBe("my-prompt");
-      expect(rxl.type).toBe("prompt");
-      expect(rxl.version).toBe("1.0.0");
+      expect(rxl.tag).toBe("1.0.0");
     });
 
     it("creates RXL from minimal RXM", () => {
@@ -124,8 +123,7 @@ describe("primitives", () => {
       expect(rxl.registry).toBeUndefined();
       expect(rxl.path).toBeUndefined();
       expect(rxl.name).toBe("simple");
-      expect(rxl.type).toBe("text");
-      expect(rxl.version).toBe("0.1.0");
+      expect(rxl.tag).toBe("0.1.0");
     });
   });
 
@@ -148,8 +146,7 @@ describe("primitives", () => {
 
       expect(rxr.locator.registry).toBe(rxr.manifest.registry);
       expect(rxr.locator.name).toBe(rxr.manifest.name);
-      expect(rxr.locator.type).toBe(rxr.manifest.type);
-      expect(rxr.locator.version).toBe(rxr.manifest.version);
+      expect(rxr.locator.tag).toBe(rxr.manifest.tag);
     });
   });
 
