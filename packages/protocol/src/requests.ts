@@ -7,7 +7,7 @@
 // ============================================
 
 /**
- * Resource manifest data (shared between request/response)
+ * Resource manifest data
  */
 export interface ManifestData {
   /** Resource domain (e.g., "mycompany.com") */
@@ -27,90 +27,86 @@ export interface ManifestData {
 }
 
 // ============================================
-// GET /resource
+// POST /publish
 // ============================================
 
 /**
- * GET /resource?locator=xxx
+ * POST /publish - Publish a resource
  *
- * Query parameters
+ * Multipart form data fields:
+ * - locator: Resource locator string
+ * - manifest: JSON blob with ManifestData
+ * - content: Binary blob with archive content
  */
-export interface GetResourceQuery {
-  /** Resource locator (e.g., "mycompany.com/hello.text@1.0.0") */
+export interface PublishFormFields {
+  /** Resource locator string */
   locator: string;
-}
 
-// ============================================
-// POST /resource
-// ============================================
-
-/**
- * POST /resource
- *
- * Request body (JSON)
- */
-export interface PostResourceBody {
-  /** Resource manifest */
+  /** Manifest data (JSON) */
   manifest: ManifestData;
+
+  /** Archive content (binary) */
+  content: ArrayBuffer | Uint8Array;
 }
 
+/**
+ * Form field names for publish request
+ */
+export const PUBLISH_FIELDS = {
+  locator: "locator",
+  manifest: "manifest",
+  content: "content",
+} as const;
+
 // ============================================
-// HEAD /resource
+// GET /resource/{locator}
 // ============================================
 
 /**
- * HEAD /resource?locator=xxx
+ * GET /resource/{locator}
  *
- * Query parameters (same as GET)
+ * Path parameter: locator (URL encoded)
  */
-export type HeadResourceQuery = GetResourceQuery;
-
-// ============================================
-// DELETE /resource
-// ============================================
-
-/**
- * DELETE /resource?locator=xxx
- *
- * Query parameters
- */
-export type DeleteResourceQuery = GetResourceQuery;
-
-// ============================================
-// GET /content
-// ============================================
-
-/**
- * GET /content?locator=xxx
- *
- * Query parameters
- */
-export interface GetContentQuery {
-  /** Resource locator */
+export interface GetResourceParams {
+  /** Resource locator (URL encoded in path) */
   locator: string;
 }
 
 // ============================================
-// POST /content
+// HEAD /resource/{locator}
 // ============================================
 
 /**
- * POST /content?locator=xxx
+ * HEAD /resource/{locator}
  *
- * Query parameters
+ * Path parameter: locator (URL encoded)
  */
-export interface PostContentQuery {
-  /** Resource locator */
-  locator: string;
-}
+export type HeadResourceParams = GetResourceParams;
+
+// ============================================
+// DELETE /resource/{locator}
+// ============================================
 
 /**
- * POST /content
+ * DELETE /resource/{locator}
  *
- * Request body: Binary (application/octet-stream)
- * The archive buffer (tar.gz)
+ * Path parameter: locator (URL encoded)
  */
-export type PostContentBody = ArrayBuffer | Uint8Array;
+export type DeleteResourceParams = GetResourceParams;
+
+// ============================================
+// GET /content/{locator}
+// ============================================
+
+/**
+ * GET /content/{locator}
+ *
+ * Path parameter: locator (URL encoded)
+ */
+export interface GetContentParams {
+  /** Resource locator (URL encoded in path) */
+  locator: string;
+}
 
 // ============================================
 // GET /search
@@ -130,10 +126,4 @@ export interface SearchQuery {
 
   /** Offset for pagination (default: 0) */
   offset?: number;
-
-  /** Filter by type */
-  type?: string;
-
-  /** Filter by domain */
-  domain?: string;
 }

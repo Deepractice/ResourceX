@@ -5,39 +5,34 @@
 import type { ManifestData } from "./requests.js";
 
 // ============================================
-// GET /resource
+// POST /publish
 // ============================================
 
 /**
- * GET /resource response
+ * POST /publish response
+ */
+export interface PublishResponse {
+  /** Published resource locator */
+  locator: string;
+}
+
+// ============================================
+// GET /resource/{locator}
+// ============================================
+
+/**
+ * GET /resource/{locator} response
  *
  * Returns manifest data
  */
 export type GetResourceResponse = ManifestData;
 
 // ============================================
-// POST /resource
+// HEAD /resource/{locator}
 // ============================================
 
 /**
- * POST /resource response
- *
- * Returns created/updated manifest with locator
- */
-export interface PostResourceResponse {
-  /** Full resource locator */
-  locator: string;
-
-  /** Manifest data */
-  manifest: ManifestData;
-}
-
-// ============================================
-// HEAD /resource
-// ============================================
-
-/**
- * HEAD /resource response
+ * HEAD /resource/{locator} response
  *
  * - 200: Resource exists
  * - 404: Resource not found
@@ -47,11 +42,11 @@ export interface PostResourceResponse {
 export type HeadResourceResponse = void;
 
 // ============================================
-// DELETE /resource
+// DELETE /resource/{locator}
 // ============================================
 
 /**
- * DELETE /resource response
+ * DELETE /resource/{locator} response
  *
  * - 204: Deleted successfully
  * - 404: Resource not found
@@ -61,35 +56,18 @@ export type HeadResourceResponse = void;
 export type DeleteResourceResponse = void;
 
 // ============================================
-// GET /content
+// GET /content/{locator}
 // ============================================
 
 /**
- * GET /content response
+ * GET /content/{locator} response
  *
- * Returns binary archive (tar.gz)
+ * Returns binary archive
  *
  * Headers:
  * - Content-Type: application/octet-stream
  */
 export type GetContentResponse = ArrayBuffer;
-
-// ============================================
-// POST /content
-// ============================================
-
-/**
- * POST /content response
- *
- * - 201: Uploaded successfully
- * - 404: Resource manifest not found
- *
- * No body (or optional confirmation)
- */
-export interface PostContentResponse {
-  /** Resource locator */
-  locator: string;
-}
 
 // ============================================
 // GET /search

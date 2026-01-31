@@ -45,7 +45,7 @@ export interface ResourceXConfig {
 
   /**
    * Central registry URL.
-   * Required for push/pull/publish operations.
+   * Required for push/pull operations.
    */
   registry?: string;
 
@@ -88,7 +88,7 @@ export interface Executable<T = unknown> {
  * - locator: resource identifier string (e.g., "hello.text@1.0.0")
  */
 export interface ResourceX {
-  // ===== Directory operations =====
+  // ===== Local operations =====
 
   /**
    * Add resource from directory to local storage.
@@ -96,26 +96,9 @@ export interface ResourceX {
   add(path: string): Promise<void>;
 
   /**
-   * Publish resource from directory to remote registry.
-   */
-  publish(path: string): Promise<void>;
-
-  /**
    * Link development directory (symlink for live editing).
    */
   link(path: string): Promise<void>;
-
-  // ===== Locator operations =====
-
-  /**
-   * Pull resource from remote to local cache.
-   */
-  pull(locator: string): Promise<void>;
-
-  /**
-   * Push local resource to remote registry.
-   */
-  push(locator: string): Promise<void>;
 
   /**
    * Check if resource exists locally.
@@ -127,21 +110,29 @@ export interface ResourceX {
    */
   remove(locator: string): Promise<void>;
 
-  // ===== Resolve =====
-
   /**
    * Resolve resource and return executable.
    * Checks: linked → hosted → cache → remote
    */
   resolve<T = unknown>(locator: string): Promise<Executable<T>>;
 
-  // ===== Search =====
-
   /**
    * Search local resources.
    * @returns Array of locator strings
    */
   search(query?: string): Promise<string[]>;
+
+  // ===== Remote operations =====
+
+  /**
+   * Push resource from directory to remote registry.
+   */
+  push(path: string): Promise<void>;
+
+  /**
+   * Pull resource from remote to local cache.
+   */
+  pull(locator: string): Promise<void>;
 
   // ===== Extension =====
 
@@ -230,52 +221,8 @@ class DefaultResourceX implements ResourceX {
     }
   }
 
-  async publish(path: string): Promise<void> {
-    if (!this.registry) {
-      throw new RegistryError("Registry URL not configured. Set 'registry' in config.");
-    }
-
-    const rxr = await loadResource(path);
-
-    // Override domain with configured default
-    const { manifest: createManifest, resource: createResource } =
-      await import("@resourcexjs/core");
-    const newManifest = createManifest({
-      domain: this.domain,
-      path: rxr.manifest.path,
-      name: rxr.manifest.name,
-      type: rxr.manifest.type,
-      version: rxr.manifest.version,
-    });
-    const newRxr = createResource(newManifest, rxr.archive);
-
-    await this.pushRxr(newRxr);
-  }
-
   async link(path: string): Promise<void> {
     await this.linked.link(path);
-  }
-
-  // ===== Locator operations =====
-
-  async pull(locator: string): Promise<void> {
-    if (!this.registry) {
-      throw new RegistryError("Registry URL not configured. Set 'registry' in config.");
-    }
-
-    const normalizedLocator = this.normalizeLocator(locator);
-    const rxr = await this.fetchFromRegistry(normalizedLocator);
-    await this.cache.put(rxr);
-  }
-
-  async push(locator: string): Promise<void> {
-    if (!this.registry) {
-      throw new RegistryError("Registry URL not configured. Set 'registry' in config.");
-    }
-
-    const normalizedLocator = this.normalizeLocator(locator);
-    const rxr = await this.getRxr(normalizedLocator);
-    await this.pushRxr(rxr);
   }
 
   async has(locator: string): Promise<boolean> {
@@ -345,6 +292,40 @@ class DefaultResourceX implements ResourceX {
     return results;
   }
 
+  // ===== Remote operations =====
+
+  async push(path: string): Promise<void> {
+    if (!this.registry) {
+      throw new RegistryError("Registry URL not configured. Set 'registry' in config.");
+    }
+
+    const rxr = await loadResource(path);
+
+    // Override domain with configured default
+    const { manifest: createManifest, resource: createResource } =
+      await import("@resourcexjs/core");
+    const newManifest = createManifest({
+      domain: this.domain,
+      path: rxr.manifest.path,
+      name: rxr.manifest.name,
+      type: rxr.manifest.type,
+      version: rxr.manifest.version,
+    });
+    const newRxr = createResource(newManifest, rxr.archive);
+
+    await this.publishToRegistry(newRxr);
+  }
+
+  async pull(locator: string): Promise<void> {
+    if (!this.registry) {
+      throw new RegistryError("Registry URL not configured. Set 'registry' in config.");
+    }
+
+    const normalizedLocator = this.normalizeLocator(locator);
+    const rxr = await this.fetchFromRegistry(normalizedLocator);
+    await this.cache.put(rxr);
+  }
+
   // ===== Extension =====
 
   supportType(type: BundledType): void {
@@ -385,53 +366,55 @@ class DefaultResourceX implements ResourceX {
   }
 
   /**
-   * Push RXR to remote registry.
+   * Publish RXR to remote registry via POST /publish.
    */
-  private async pushRxr(rxr: RXR): Promise<void> {
+  private async publishToRegistry(rxr: RXR): Promise<void> {
     const baseUrl = this.registry!.replace(/\/$/, "");
+    const publishUrl = `${baseUrl}/publish`;
 
-    // POST manifest
-    const manifestUrl = `${baseUrl}/resource`;
-    const manifestResponse = await fetch(manifestUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        manifest: {
-          domain: rxr.manifest.domain,
-          path: rxr.manifest.path,
-          name: rxr.manifest.name,
-          type: rxr.manifest.type,
-          version: rxr.manifest.version,
-        },
-      }),
-    });
+    // Create multipart form data
+    // eslint-disable-next-line no-undef
+    const formData = new FormData();
+    formData.append("locator", format(rxr.locator));
+    formData.append(
+      "manifest",
+      // eslint-disable-next-line no-undef
+      new Blob(
+        [
+          JSON.stringify({
+            domain: rxr.manifest.domain,
+            path: rxr.manifest.path,
+            name: rxr.manifest.name,
+            type: rxr.manifest.type,
+            version: rxr.manifest.version,
+          }),
+        ],
+        { type: "application/json" }
+      )
+    );
 
-    if (!manifestResponse.ok) {
-      throw new RegistryError(`Failed to push manifest: ${manifestResponse.statusText}`);
-    }
-
-    // POST content
-    const contentUrl = `${baseUrl}/content?locator=${encodeURIComponent(format(rxr.locator))}`;
     const archiveBuffer = await rxr.archive.buffer();
-    const contentResponse = await fetch(contentUrl, {
+    // eslint-disable-next-line no-undef
+    formData.append("content", new Blob([archiveBuffer], { type: "application/octet-stream" }));
+
+    const response = await fetch(publishUrl, {
       method: "POST",
-      headers: { "Content-Type": "application/octet-stream" },
-      body: archiveBuffer,
+      body: formData,
     });
 
-    if (!contentResponse.ok) {
-      throw new RegistryError(`Failed to push content: ${contentResponse.statusText}`);
+    if (!response.ok) {
+      throw new RegistryError(`Failed to publish: ${response.statusText}`);
     }
   }
 
   /**
-   * Fetch resource from registry.
+   * Fetch resource from registry via GET /resource/{locator} and GET /content/{locator}.
    */
   private async fetchFromRegistry(locator: string): Promise<RXR> {
     const baseUrl = this.registry!.replace(/\/$/, "");
 
     // Fetch manifest
-    const manifestUrl = `${baseUrl}/resource?locator=${encodeURIComponent(locator)}`;
+    const manifestUrl = `${baseUrl}/resource/${encodeURIComponent(locator)}`;
     const manifestResponse = await fetch(manifestUrl);
 
     if (!manifestResponse.ok) {
@@ -464,7 +447,7 @@ class DefaultResourceX implements ResourceX {
     });
 
     // Fetch content
-    const contentUrl = `${baseUrl}/content?locator=${encodeURIComponent(locator)}`;
+    const contentUrl = `${baseUrl}/content/${encodeURIComponent(locator)}`;
     const contentResponse = await fetch(contentUrl);
 
     if (!contentResponse.ok) {
@@ -561,15 +544,18 @@ class DefaultResourceX implements ResourceX {
  *   registry: "https://registry.mycompany.com"
  * });
  *
- * // Add from directory
+ * // Add from directory to local
  * await rx.add("./my-prompt");
  *
  * // Resolve and execute
  * const result = await rx.resolve("my-prompt.text@1.0.0");
  * await result.execute();
  *
- * // Publish to registry
- * await rx.publish("./my-prompt");
+ * // Push to remote registry
+ * await rx.push("./my-prompt");
+ *
+ * // Pull from remote registry
+ * await rx.pull("my-prompt.text@1.0.0");
  * ```
  */
 export function createResourceX(config?: ResourceXConfig): ResourceX {

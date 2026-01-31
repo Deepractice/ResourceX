@@ -184,14 +184,15 @@ describe("ResourceX", () => {
     });
   });
 
-  describe("push/pull/publish", () => {
-    it("throws error without registry configured", async () => {
+  describe("push/pull", () => {
+    it("push throws error without registry configured", async () => {
       const devPath = await createDevResource("test", "text", "content");
-      await rx.add(devPath);
 
-      await expect(rx.push("test.text@1.0.0")).rejects.toThrow("Registry URL not configured");
+      await expect(rx.push(devPath)).rejects.toThrow("Registry URL not configured");
+    });
+
+    it("pull throws error without registry configured", async () => {
       await expect(rx.pull("test.text@1.0.0")).rejects.toThrow("Registry URL not configured");
-      await expect(rx.publish(devPath)).rejects.toThrow("Registry URL not configured");
     });
   });
 
