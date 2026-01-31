@@ -1,0 +1,36 @@
+#!/usr/bin/env bun
+/**
+ * ResourceX CLI - rx command
+ */
+
+import { defineCommand, runMain } from "citty";
+import { add } from "./commands/add.js";
+import { link } from "./commands/link.js";
+import { list } from "./commands/list.js";
+import { remove } from "./commands/remove.js";
+import { push } from "./commands/push.js";
+import { pull } from "./commands/pull.js";
+import { search } from "./commands/search.js";
+import { run } from "./commands/run.js";
+import { config } from "./commands/config.js";
+
+const main = defineCommand({
+  meta: {
+    name: "rx",
+    version: "0.1.0",
+    description: "ResourceX CLI - Manage AI Agent resources",
+  },
+  subCommands: {
+    add,
+    link,
+    list,
+    remove,
+    push,
+    pull,
+    search,
+    run,
+    config,
+  },
+});
+
+runMain(main);

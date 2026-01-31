@@ -1,0 +1,30 @@
+{
+  "name": "@resourcexjs/cli",
+  "version": "0.1.0",
+  "description": "ResourceX CLI - rx command",
+  "type": "module",
+  "bin": {
+    "rx": "./dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "bun run build.ts",
+    "dev": "bun src/index.ts",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "resourcexjs": "workspace:*",
+    "@resourcexjs/server": "workspace:*",
+    "citty": "^0.1.6",
+    "consola": "^3.4.2"
+  },
+  "devDependencies": {},
+  "publishConfig": {
+    "access": "public"
+  },
+  "license": "MIT"
+}
