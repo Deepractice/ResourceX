@@ -5,108 +5,44 @@
  *
  * @example
  * ```typescript
- * import { createResourceX, parse, manifest } from "resourcexjs";
+ * import { createResourceX } from "resourcexjs";
  *
- * const rx = createResourceX();
+ * const rx = createResourceX({
+ *   domain: "mycompany.com",
+ *   registry: "https://registry.mycompany.com"
+ * });
  *
- * // Link for development
- * await rx.link("./my-prompt");
+ * // Add from directory
+ * await rx.add("./my-prompt");
  *
  * // Resolve and execute
- * const resource = await rx.resolve("localhost/my-prompt.text@1.0.0");
- * const result = await resource.execute();
- * ```
+ * const result = await rx.resolve("my-prompt.text@1.0.0");
+ * await result.execute();
  *
- * For low-level ARP protocol access:
- * ```typescript
- * import { createARP } from "resourcexjs/arp";
+ * // Publish to registry
+ * await rx.publish("./my-prompt");
  * ```
  *
  * @packageDocumentation
  */
 
 // ============================================
-// Errors
-// ============================================
-export {
-  ResourceXError,
-  LocatorError,
-  ManifestError,
-  ContentError,
-  DefinitionError,
-} from "@resourcexjs/core";
-
-export { ResourceTypeError } from "@resourcexjs/type";
-export { RegistryError } from "@resourcexjs/registry";
-
-// ============================================
-// Types
-// ============================================
-export type { RXD, RXL, RXM, RXA, RXR } from "@resourcexjs/core";
-
-// ============================================
-// Primitives
-// ============================================
-export {
-  define,
-  manifest,
-  archive,
-  locate,
-  resource,
-  extract,
-  format,
-  parse,
-  wrap,
-} from "@resourcexjs/core";
-
-// ============================================
-// Resource Type System
-// ============================================
-export type {
-  ResourceType,
-  ResourceResolver,
-  ResolvedResource,
-  JSONSchema,
-  BundledType,
-  IsolatorType,
-} from "@resourcexjs/type";
-
-export { TypeHandlerChain, bundleResourceType } from "@resourcexjs/type";
-
-// Built-in types
-export { textType, jsonType, binaryType, builtinTypes } from "@resourcexjs/type";
-
-// ============================================
-// Storage Layer
-// ============================================
-export type { Storage } from "@resourcexjs/storage";
-export { StorageError, FileSystemStorage, MemoryStorage } from "@resourcexjs/storage";
-
-// ============================================
-// Registry Layer
-// ============================================
-export type { Registry, SearchOptions } from "@resourcexjs/registry";
-export { HostedRegistry, MirrorRegistry, LinkedRegistry } from "@resourcexjs/registry";
-
-// Discovery
-export { discoverRegistry } from "@resourcexjs/registry";
-export type { DiscoveryResult, WellKnownResponse } from "@resourcexjs/registry";
-
-// Middleware
-export { RegistryMiddleware, DomainValidation, withDomainValidation } from "@resourcexjs/registry";
-
-// ============================================
-// Resource Loading
-// ============================================
-export type { ResourceLoader } from "@resourcexjs/loader";
-export { loadResource, FolderLoader } from "@resourcexjs/loader";
-export type { LoadResourceConfig } from "@resourcexjs/loader";
-
-// ============================================
-// ResourceX API
+// Main API
 // ============================================
 export { createResourceX } from "./ResourceX.js";
-export type { ResourceX, ResourceXConfig } from "./ResourceX.js";
+export type { ResourceX, ResourceXConfig, Executable } from "./ResourceX.js";
+
+// ============================================
+// Errors
+// ============================================
+export { RegistryError } from "@resourcexjs/registry";
+export { ResourceTypeError } from "@resourcexjs/type";
+
+// ============================================
+// Extension - Custom Types
+// ============================================
+export type { BundledType, IsolatorType } from "@resourcexjs/type";
+export { bundleResourceType } from "@resourcexjs/type";
 
 // ============================================
 // Version

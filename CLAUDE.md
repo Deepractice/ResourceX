@@ -146,32 +146,38 @@ LinkedRegistry; // Development symlinks (live editing)
 
 ### ResourceX API (`resourcexjs`)
 
-Unified client API combining all layers:
+Unified client API combining all layers. Users only interact with:
+
+- **path**: Local directory (for add, publish, link)
+- **locator**: Resource identifier string (e.g., `hello.text@1.0.0`)
 
 ```typescript
 import { createResourceX } from "resourcexjs";
 
-const rx = createResourceX(); // Default: ~/.resourcex
+const rx = createResourceX({
+  domain: "mycompany.com",
+  registry: "https://registry.mycompany.com",
+});
 
-// Level 1: Core
-await rx.save(rxr); // Save to local storage
-const rxr = await rx.get("locator"); // Get resource
-await rx.pull("locator"); // Pull from remote
-await rx.push(rxr); // Push to remote
-const resolved = await rx.resolve("locator"); // Resolve & execute
+// Directory operations
+await rx.add("./my-prompt"); // Add from directory to local
+await rx.publish("./my-prompt"); // Publish from directory to remote
+await rx.link("./dev-prompt"); // Link for live development
 
-// Level 2: CRUD
-await rx.has("locator"); // Check existence
-await rx.remove("locator"); // Remove resource
+// Locator operations
+await rx.pull("hello.text@1.0.0"); // Pull from remote to local cache
+await rx.push("hello.text@1.0.0"); // Push local to remote
+await rx.has("hello.text@1.0.0"); // Check if exists locally
+await rx.remove("hello.text@1.0.0"); // Remove from local
 
-// Level 3: Development
-await rx.link("./dev-path"); // Link dev directory
-const rxr = await rx.load("./path"); // Load without saving
+// Resolve & execute
+const result = await rx.resolve("hello.text@1.0.0");
+const content = await result.execute();
 
-// Level 4: Search
-const results = await rx.search({ query: "hello" });
+// Search
+const results = await rx.search("hello"); // Search local resources
 
-// Level 5: Extension
+// Extension
 rx.supportType(myCustomType); // Add custom type
 ```
 
@@ -179,12 +185,24 @@ rx.supportType(myCustomType); // Add custom type
 
 ```typescript
 const rx = createResourceX({
-  path: "~/.resourcex", // Storage path
-  mirror: "https://...", // Mirror for remote fetch
+  path: "~/.resourcex", // Storage path (default: ~/.resourcex)
+  domain: "mycompany.com", // Default domain (default: "localhost")
+  registry: "https://...", // Central registry URL (required for remote ops)
   types: [myType], // Custom types
-  isolator: "none", // Sandbox: none | srt | cloudflare
-  domains: ["localhost"], // Owned domains
+  isolator: "none", // Sandbox: none | srt | cloudflare | e2b
 });
+```
+
+### Locator Normalization
+
+Locators without explicit domain use the configured default domain:
+
+```typescript
+const rx = createResourceX({ domain: "mycompany.com" });
+
+// These are equivalent:
+await rx.resolve("hello.text@1.0.0");
+await rx.resolve("mycompany.com/hello.text@1.0.0");
 ```
 
 ### Storage Directory Structure
@@ -210,19 +228,18 @@ const rx = createResourceX({
 ### Resolution Flow
 
 ```
-rx.resolve("deepractice.ai/hello.text@1.0.0")
+rx.resolve("hello.text@1.0.0")
   ↓
-1. Check linked (development priority)
-2. Check hosted (owned resources)
-3. Check cache (mirror)
-4. If domain != localhost:
-   - Try mirror (if configured)
-   - Discover via well-known
-   - Fetch from remote
-   - Cache to mirror storage
-5. Get BundledType from TypeHandlerChain
-6. Execute resolver
-7. Return ResolvedResource { resource, execute, schema }
+1. Normalize locator (add default domain if missing)
+2. Check linked (development priority)
+3. Check hosted (local storage)
+4. Check cache (remote cache)
+5. If registry configured:
+   - Fetch from remote registry
+   - Cache locally
+6. Get BundledType from TypeHandlerChain
+7. Execute resolver
+8. Return Executable { execute, schema }
 ```
 
 ### Type System
@@ -334,5 +351,7 @@ ARPError (base)
 - [x] Registry layer - HostedRegistry, MirrorRegistry, LinkedRegistry
 - [x] ResourceX API - createResourceX with unified interface
 - [x] Core primitives - parse, manifest, archive, resource, extract
+- [x] Simplified API - Hide internal objects, users use path/locator only
 - [ ] ResourceX Server - HTTP API for hosting resources
 - [ ] S3Storage, R2Storage - Cloud storage backends
+- [ ] Update BDD tests to match new simplified API
