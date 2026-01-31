@@ -12,6 +12,8 @@
 
 import { TransportError } from "@resourcexjs/arp";
 import type { TransportHandler, TransportResult, TransportParams } from "@resourcexjs/arp";
+import { extract } from "@resourcexjs/core";
+import type { RXA } from "@resourcexjs/core";
 import { createRegistry } from "@resourcexjs/registry";
 import type { Registry } from "@resourcexjs/registry";
 
@@ -21,11 +23,7 @@ import type { Registry } from "@resourcexjs/registry";
  */
 export interface RxrTransportRegistry {
   get(locator: string): Promise<{
-    archive: {
-      extract(): Promise<{
-        files(): Promise<Map<string, Buffer>>;
-      }>;
-    };
+    archive: RXA;
   }>;
 }
 
@@ -53,9 +51,8 @@ export class RxrTransport implements TransportHandler {
 
     const registry = this.getRegistry();
     const rxr = await registry.get(rxl);
-    const pkg = await rxr.archive.extract();
-    const files = await pkg.files();
-    const file = files.get(internalPath);
+    const files = await extract(rxr.archive);
+    const file = files[internalPath];
 
     if (!file) {
       throw new TransportError(`File not found in resource: ${internalPath}`, this.name);
@@ -82,9 +79,8 @@ export class RxrTransport implements TransportHandler {
       const { rxl, internalPath } = this.parseLocation(location);
       const registry = this.getRegistry();
       const rxr = await registry.get(rxl);
-      const pkg = await rxr.archive.extract();
-      const files = await pkg.files();
-      return files.has(internalPath);
+      const files = await extract(rxr.archive);
+      return internalPath in files;
     } catch {
       return false;
     }

@@ -1,5 +1,7 @@
 /**
  * RXM - ResourceX Manifest
+ *
+ * Resource metadata stored within the resource (pure data object).
  */
 export interface RXM {
   readonly domain: string;
@@ -7,14 +9,5 @@ export interface RXM {
   readonly name: string;
   readonly type: string;
   readonly version: string;
-  toLocator(): string;
-  toJSON(): ManifestData;
-}
-
-export interface ManifestData {
-  domain?: string;
-  path?: string;
-  name?: string;
-  type?: string;
-  version?: string;
+  readonly files?: string[]; // Package file structure
 }

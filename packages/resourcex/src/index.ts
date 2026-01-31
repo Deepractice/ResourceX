@@ -5,10 +5,10 @@
  *
  * @example
  * ```typescript
- * import { parseRXL, createRXM, createRegistry } from "resourcexjs";
+ * import { parse, manifest, createRegistry } from "resourcexjs";
  *
- * const rxl = parseRXL("deepractice.ai/sean/assistant.prompt@1.0.0");
- * const rxm = createRXM({ domain: "deepractice.ai", name: "assistant", type: "prompt", version: "1.0.0" });
+ * const rxl = parse("deepractice.ai/sean/assistant.prompt@1.0.0");
+ * const rxm = manifest({ domain: "deepractice.ai", name: "assistant", type: "prompt", version: "1.0.0" });
  * const registry = createRegistry();
  * ```
  *
@@ -23,33 +23,36 @@
 // ============================================
 // Errors
 // ============================================
-export { ResourceXError, LocatorError, ManifestError, ContentError } from "@resourcexjs/core";
+export {
+  ResourceXError,
+  LocatorError,
+  ManifestError,
+  ContentError,
+  DefinitionError,
+} from "@resourcexjs/core";
 
 export { ResourceTypeError } from "@resourcexjs/type";
 export { RegistryError } from "@resourcexjs/registry";
 
 // ============================================
-// RXL - ResourceX Locator
+// Types
 // ============================================
-export type { RXL } from "@resourcexjs/core";
-export { parseRXL } from "@resourcexjs/core";
+export type { RXD, RXL, RXM, RXA, RXR } from "@resourcexjs/core";
 
 // ============================================
-// RXM - ResourceX Manifest
+// Primitives
 // ============================================
-export type { RXM, ManifestData } from "@resourcexjs/core";
-export { createRXM } from "@resourcexjs/core";
-
-// ============================================
-// RXA/RXP - ResourceX Archive and Package
-// ============================================
-export type { RXA, RXP, RXAInput, PathNode } from "@resourcexjs/core";
-export { createRXA } from "@resourcexjs/core";
-
-// ============================================
-// RXR - ResourceX Resource
-// ============================================
-export type { RXR } from "@resourcexjs/core";
+export {
+  define,
+  manifest,
+  archive,
+  locate,
+  resource,
+  extract,
+  format,
+  parse,
+  wrap,
+} from "@resourcexjs/core";
 
 // ============================================
 // Resource Type System

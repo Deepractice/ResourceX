@@ -39,7 +39,7 @@ export interface Storage {
    * Get resource by locator.
    * @throws RegistryError if not found
    */
-  get(locator: string): Promise<RXR>;
+  get(rxl: RXL): Promise<RXR>;
 
   /**
    * Store a resource.
@@ -50,13 +50,13 @@ export interface Storage {
   /**
    * Check if resource exists.
    */
-  exists(locator: string): Promise<boolean>;
+  exists(rxl: RXL): Promise<boolean>;
 
   /**
    * Delete a resource.
    * @throws RegistryError if storage is read-only
    */
-  delete(locator: string): Promise<void>;
+  delete(rxl: RXL): Promise<void>;
 
   /**
    * Search for resources.

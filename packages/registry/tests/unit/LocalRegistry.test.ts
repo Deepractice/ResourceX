@@ -3,8 +3,8 @@ import { join } from "node:path";
 import { rm, mkdir } from "node:fs/promises";
 import { execSync } from "node:child_process";
 import { createRegistry, RegistryError } from "../../src/index.js";
-import { createRXM, createRXA, parseRXL } from "@resourcexjs/core";
-import type { RXR } from "@resourcexjs/core";
+import { define, manifest, archive, resource, locate } from "@resourcexjs/core";
+import type { RXR, RXD } from "@resourcexjs/core";
 
 const TEST_DIR = join(process.cwd(), ".test-registry");
 
@@ -21,18 +21,16 @@ function isSrtAvailable(): boolean {
 const SRT_AVAILABLE = isSrtAvailable();
 
 async function createTestRXR(name: string, content: string): Promise<RXR> {
-  const manifest = createRXM({
+  const rxd: RXD = {
     domain: "localhost",
     name,
     type: "text",
     version: "1.0.0",
-  });
-
-  return {
-    locator: parseRXL(manifest.toLocator()),
-    manifest,
-    archive: await createRXA({ content }),
   };
+  const rxm = manifest(rxd);
+  const rxa = await archive({ content: Buffer.from(content) });
+
+  return resource(rxm, rxa);
 }
 
 describe("LocalRegistry", () => {
@@ -119,17 +117,15 @@ describe("LocalRegistry", () => {
   describe("type aliases", () => {
     it("supports txt as alias for text", async () => {
       const registry = createRegistry({ path: TEST_DIR });
-      const manifest = createRXM({
+      const rxd: RXD = {
         domain: "localhost",
         name: "alias-test",
         type: "txt", // Using alias
         version: "1.0.0",
-      });
-      const rxr: RXR = {
-        locator: parseRXL(manifest.toLocator()),
-        manifest,
-        archive: await createRXA({ content: "Hello via alias!" }),
       };
+      const rxm = manifest(rxd);
+      const rxa = await archive({ content: Buffer.from("Hello via alias!") });
+      const rxr = resource(rxm, rxa);
 
       await registry.add(rxr);
 
@@ -140,17 +136,15 @@ describe("LocalRegistry", () => {
 
     it("supports config as alias for json", async () => {
       const registry = createRegistry({ path: TEST_DIR });
-      const manifest = createRXM({
+      const rxd: RXD = {
         domain: "localhost",
         name: "config-test",
         type: "config", // Using alias
         version: "1.0.0",
-      });
-      const rxr: RXR = {
-        locator: parseRXL(manifest.toLocator()),
-        manifest,
-        archive: await createRXA({ content: '{"key": "value"}' }),
       };
+      const rxm = manifest(rxd);
+      const rxa = await archive({ content: Buffer.from('{"key": "value"}') });
+      const rxr = resource(rxm, rxa);
 
       await registry.add(rxr);
 
@@ -163,18 +157,16 @@ describe("LocalRegistry", () => {
 
     it("supports bin as alias for binary", async () => {
       const registry = createRegistry({ path: TEST_DIR });
-      const manifest = createRXM({
+      const rxd: RXD = {
         domain: "localhost",
         name: "binary-test",
         type: "bin", // Using alias
         version: "1.0.0",
-      });
-      const binaryData = Buffer.from([0x01, 0x02, 0x03, 0x04]);
-      const rxr: RXR = {
-        locator: parseRXL(manifest.toLocator()),
-        manifest,
-        archive: await createRXA({ content: binaryData }),
       };
+      const binaryData = Buffer.from([0x01, 0x02, 0x03, 0x04]);
+      const rxm = manifest(rxd);
+      const rxa = await archive({ content: binaryData });
+      const rxr = resource(rxm, rxa);
 
       await registry.add(rxr);
 
@@ -209,17 +201,15 @@ describe("LocalRegistry", () => {
 
       registry.supportType(customType);
 
-      const manifest = createRXM({
+      const rxd: RXD = {
         domain: "localhost",
         name: "greet",
         type: "prompt",
         version: "1.0.0",
-      });
-      const rxr: RXR = {
-        locator: parseRXL(manifest.toLocator()),
-        manifest,
-        archive: await createRXA({ content: "Hello, {{name}}!" }),
       };
+      const rxm = manifest(rxd);
+      const rxa = await archive({ content: Buffer.from("Hello, {{name}}!") });
+      const rxr = resource(rxm, rxa);
 
       await registry.add(rxr);
 
@@ -243,17 +233,15 @@ describe("LocalRegistry", () => {
 
     it.skipIf(!SRT_AVAILABLE)("executes json type with srt isolator", async () => {
       const registry = createRegistry({ path: TEST_DIR, isolator: "srt" });
-      const manifest = createRXM({
+      const rxd: RXD = {
         domain: "localhost",
         name: "srt-json",
         type: "json",
         version: "1.0.0",
-      });
-      const rxr: RXR = {
-        locator: parseRXL(manifest.toLocator()),
-        manifest,
-        archive: await createRXA({ content: '{"message": "hello from srt"}' }),
       };
+      const rxm = manifest(rxd);
+      const rxa = await archive({ content: Buffer.from('{"message": "hello from srt"}') });
+      const rxr = resource(rxm, rxa);
 
       await registry.add(rxr);
 
@@ -287,17 +275,15 @@ describe("LocalRegistry", () => {
         `,
       });
 
-      const manifest = createRXM({
+      const rxd: RXD = {
         domain: "localhost",
         name: "add",
         type: "calculator",
         version: "1.0.0",
-      });
-      const rxr: RXR = {
-        locator: parseRXL(manifest.toLocator()),
-        manifest,
-        archive: await createRXA({ content: "calculator" }),
       };
+      const rxm = manifest(rxd);
+      const rxa = await archive({ content: Buffer.from("calculator") });
+      const rxr = resource(rxm, rxa);
 
       await registry.add(rxr);
 

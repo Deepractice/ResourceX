@@ -1,4 +1,5 @@
 import type { RXR } from "@resourcexjs/core";
+import { extract } from "@resourcexjs/core";
 import type { IsolatorType, ResolveContext } from "@resourcexjs/type";
 
 /**
@@ -40,12 +41,11 @@ export function createResolverExecutor(isolator: IsolatorType): ResolverExecutor
  * Convert RXR to ResolveContext (pure data, serializable).
  */
 async function toResolveContext(rxr: RXR): Promise<ResolveContext> {
-  const pkg = await rxr.archive.extract();
-  const filesMap = await pkg.files();
+  const filesRecord = await extract(rxr.archive);
 
-  // Convert Map<string, Buffer> to Record<string, Uint8Array>
+  // Convert Record<string, Buffer> to Record<string, Uint8Array>
   const files: Record<string, Uint8Array> = {};
-  for (const [path, buffer] of filesMap) {
+  for (const [path, buffer] of Object.entries(filesRecord)) {
     files[path] = new Uint8Array(buffer);
   }
 

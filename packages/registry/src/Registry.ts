@@ -1,5 +1,5 @@
-import type { RXR, RXL, ManifestData } from "@resourcexjs/core";
-import { parseRXL, createRXM, createRXA } from "@resourcexjs/core";
+import type { RXR, RXL, RXM } from "@resourcexjs/core";
+import { parse, resource, wrap } from "@resourcexjs/core";
 import { TypeHandlerChain, ResourceTypeError } from "@resourcexjs/type";
 import type { BundledType, ResolvedResource, IsolatorType } from "@resourcexjs/type";
 import { loadResource } from "@resourcexjs/loader";
@@ -15,6 +15,17 @@ import type { ResolverExecutor } from "./executor/index.js";
 interface WellKnownResponse {
   version?: string;
   registries: string[];
+}
+
+/**
+ * Manifest data from remote API.
+ */
+interface ManifestData {
+  domain: string;
+  path?: string;
+  name: string;
+  type: string;
+  version: string;
 }
 
 /**
@@ -160,12 +171,12 @@ export class DefaultRegistry implements Registry {
   }
 
   async get(locator: string): Promise<RXR> {
-    const rxl = parseRXL(locator);
+    const rxl = parse(locator);
     const domain = rxl.domain ?? "localhost";
 
     // 1. Always check local storage first
-    if (await this.storage.exists(locator)) {
-      return this.storage.get(locator);
+    if (await this.storage.exists(rxl)) {
+      return this.storage.get(rxl);
     }
 
     // 2. localhost: Only local, never go remote
@@ -198,13 +209,14 @@ export class DefaultRegistry implements Registry {
   }
 
   async exists(locator: string): Promise<boolean> {
+    const rxl = parse(locator);
+
     // Check local storage
-    if (await this.storage.exists(locator)) {
+    if (await this.storage.exists(rxl)) {
       return true;
     }
 
     // For localhost, that's it
-    const rxl = parseRXL(locator);
     const domain = rxl.domain ?? "localhost";
     if (domain === "localhost") {
       return false;
@@ -216,7 +228,8 @@ export class DefaultRegistry implements Registry {
   }
 
   async delete(locator: string): Promise<void> {
-    return this.storage.delete(locator);
+    const rxl = parse(locator);
+    return this.storage.delete(rxl);
   }
 
   async search(options?: SearchOptions): Promise<RXL[]> {
@@ -298,7 +311,15 @@ export class DefaultRegistry implements Registry {
     }
 
     const manifestData = (await manifestResponse.json()) as ManifestData;
-    const manifest = createRXM(manifestData);
+
+    // Create RXM from manifest data (treat as RXD)
+    const rxm: RXM = {
+      domain: manifestData.domain,
+      path: manifestData.path,
+      name: manifestData.name,
+      type: manifestData.type,
+      version: manifestData.version,
+    };
 
     // Fetch content
     const contentUrl = `${baseUrl}/content?locator=${encodeURIComponent(locator)}`;
@@ -310,10 +331,9 @@ export class DefaultRegistry implements Registry {
 
     const contentBuffer = Buffer.from(await contentResponse.arrayBuffer());
 
-    return {
-      locator: parseRXL(manifest.toLocator()),
-      manifest,
-      archive: await createRXA({ buffer: contentBuffer }),
-    };
+    // Wrap buffer as RXA
+    const rxa = wrap(contentBuffer);
+
+    return resource(rxm, rxa);
   }
 }

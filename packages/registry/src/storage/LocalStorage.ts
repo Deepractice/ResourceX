@@ -1,8 +1,8 @@
 import { homedir } from "node:os";
 import { join, resolve as resolvePath } from "node:path";
 import { symlink, lstat, readlink } from "node:fs/promises";
-import type { RXR, RXL } from "@resourcexjs/core";
-import { parseRXL, createRXM, createRXA } from "@resourcexjs/core";
+import type { RXR, RXL, RXM } from "@resourcexjs/core";
+import { parse, format, resource, wrap } from "@resourcexjs/core";
 import { createARP, type ARP } from "@resourcexjs/arp";
 import { loadResource } from "@resourcexjs/loader";
 import { RegistryError } from "../errors.js";
@@ -53,8 +53,7 @@ export class LocalStorage implements Storage {
    * Build filesystem path for a resource.
    * Path: {basePath}/{domain}/{path}/{name}.{type}/{version}
    */
-  private buildPath(locator: string | RXL): string {
-    const rxl = typeof locator === "string" ? parseRXL(locator) : locator;
+  private buildPath(rxl: RXL): string {
     const domain = rxl.domain ?? "localhost";
     const resourceName = rxl.type ? `${rxl.name}.${rxl.type}` : rxl.name;
     const version = rxl.version ?? "latest";
@@ -115,7 +114,16 @@ export class LocalStorage implements Storage {
     const manifestResource = await manifestArl.resolve();
     const manifestContent = (manifestResource.content as Buffer).toString("utf-8");
     const manifestData = JSON.parse(manifestContent);
-    const manifest = createRXM(manifestData);
+
+    // Create RXM from manifest data
+    const rxm: RXM = {
+      domain: manifestData.domain,
+      path: manifestData.path,
+      name: manifestData.name,
+      type: manifestData.type,
+      version: manifestData.version,
+      files: manifestData.files,
+    };
 
     // Read archive
     const archivePath = join(resourcePath, "archive.tar.gz");
@@ -123,26 +131,24 @@ export class LocalStorage implements Storage {
     const archiveResource = await archiveArl.resolve();
     const data = archiveResource.content as Buffer;
 
-    return {
-      locator: parseRXL(manifest.toLocator()),
-      manifest,
-      archive: await createRXA({ buffer: data }),
-    };
+    // Wrap buffer as RXA and create RXR
+    const rxa = wrap(data);
+    return resource(rxm, rxa);
   }
 
-  async get(locator: string): Promise<RXR> {
-    const resourcePath = this.buildPath(locator);
+  async get(rxl: RXL): Promise<RXR> {
+    const resourcePath = this.buildPath(rxl);
+    const locatorStr = format(rxl);
 
     if (!(await this.existsAt(resourcePath))) {
-      throw new RegistryError(`Resource not found: ${locator}`);
+      throw new RegistryError(`Resource not found: ${locatorStr}`);
     }
 
     return this.loadFrom(resourcePath);
   }
 
   async put(rxr: RXR): Promise<void> {
-    const locator = rxr.manifest.toLocator();
-    const resourcePath = this.buildPath(locator);
+    const resourcePath = this.buildPath(rxr.locator);
 
     // Remove existing symlink if any
     if (await this.isSymlink(resourcePath)) {
@@ -154,10 +160,18 @@ export class LocalStorage implements Storage {
     const dirArl = this.arp.parse(this.toArpUrl(resourcePath));
     await dirArl.mkdir();
 
-    // Write manifest
+    // Write manifest as JSON
     const manifestPath = join(resourcePath, "manifest.json");
     const manifestArl = this.arp.parse(this.toArpUrl(manifestPath));
-    const manifestContent = Buffer.from(JSON.stringify(rxr.manifest.toJSON(), null, 2), "utf-8");
+    const manifestJson = {
+      domain: rxr.manifest.domain,
+      path: rxr.manifest.path,
+      name: rxr.manifest.name,
+      type: rxr.manifest.type,
+      version: rxr.manifest.version,
+      files: rxr.manifest.files,
+    };
+    const manifestContent = Buffer.from(JSON.stringify(manifestJson, null, 2), "utf-8");
     await manifestArl.deposit(manifestContent);
 
     // Write archive
@@ -167,13 +181,13 @@ export class LocalStorage implements Storage {
     await archiveArl.deposit(archiveBuffer);
   }
 
-  async exists(locator: string): Promise<boolean> {
-    const resourcePath = this.buildPath(locator);
+  async exists(rxl: RXL): Promise<boolean> {
+    const resourcePath = this.buildPath(rxl);
     return this.existsAt(resourcePath);
   }
 
-  async delete(locator: string): Promise<void> {
-    const resourcePath = this.buildPath(locator);
+  async delete(rxl: RXL): Promise<void> {
+    const resourcePath = this.buildPath(rxl);
 
     if (await this.existsAt(resourcePath)) {
       const arl = this.arp.parse(this.toArpUrl(resourcePath));
@@ -227,8 +241,7 @@ export class LocalStorage implements Storage {
   async link(path: string): Promise<void> {
     // Load resource from directory to get locator info
     const rxr = await loadResource(path);
-    const locator = rxr.manifest.toLocator();
-    const resourcePath = this.buildPath(locator);
+    const resourcePath = this.buildPath(rxr.locator);
 
     // Remove existing if any
     try {
@@ -286,7 +299,7 @@ export class LocalStorage implements Storage {
       type = undefined;
     }
 
-    // Construct locator string
+    // Construct locator string and parse
     let locatorStr = domain;
     if (path) locatorStr += `/${path}`;
     locatorStr += `/${name}`;
@@ -294,7 +307,7 @@ export class LocalStorage implements Storage {
     locatorStr += `@${version}`;
 
     try {
-      return parseRXL(locatorStr);
+      return parse(locatorStr);
     } catch {
       return null;
     }
