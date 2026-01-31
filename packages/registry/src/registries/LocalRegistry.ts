@@ -51,7 +51,7 @@ export class LocalRegistry implements Registry {
 
     const manifestJson = JSON.parse(manifestData.toString("utf-8"));
     const rxm: RXM = {
-      domain: manifestJson.domain,
+      registry: manifestJson.registry,
       path: manifestJson.path,
       name: manifestJson.name,
       type: manifestJson.type,
@@ -73,7 +73,7 @@ export class LocalRegistry implements Registry {
 
     // Write manifest
     const manifestJson = {
-      domain: rxr.manifest.domain,
+      registry: rxr.manifest.registry,
       path: rxr.manifest.path,
       name: rxr.manifest.name,
       type: rxr.manifest.type,
@@ -122,7 +122,7 @@ export class LocalRegistry implements Registry {
       const lowerQuery = query.toLowerCase();
       filtered = locators.filter((rxl) => {
         const searchText =
-          `${rxl.domain ?? ""} ${rxl.path ?? ""} ${rxl.name} ${rxl.type ?? ""}`.toLowerCase();
+          `${rxl.registry ?? ""} ${rxl.path ?? ""} ${rxl.name} ${rxl.type ?? ""}`.toLowerCase();
         return searchText.includes(lowerQuery);
       });
     }

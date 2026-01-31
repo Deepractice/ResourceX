@@ -33,7 +33,7 @@ export function define(input: unknown): RXD {
     name: obj.name,
     type: obj.type,
     version: obj.version,
-    domain: typeof obj.domain === "string" ? obj.domain : "localhost",
+    registry: typeof obj.registry === "string" ? obj.registry : undefined,
     path: typeof obj.path === "string" ? obj.path : undefined,
     description: typeof obj.description === "string" ? obj.description : undefined,
     author: typeof obj.author === "string" ? obj.author : undefined,

@@ -6,7 +6,7 @@ import type { RXR, RXD } from "@resourcexjs/core";
 
 async function createTestRXR(name: string, content: string): Promise<RXR> {
   const rxd: RXD = {
-    // Local resources have no domain
+    // Local resources have no registry
     name,
     type: "text",
     version: "1.0.0",
@@ -121,7 +121,7 @@ describe("LocalRegistry", () => {
       await registry.put(rxr);
 
       const retrieved = await registry.get(rxr.locator);
-      expect(retrieved.manifest.domain).toBeUndefined();
+      expect(retrieved.manifest.registry).toBeUndefined();
       expect(retrieved.manifest.path).toBe("tools/ai");
       expect(retrieved.manifest.name).toBe("helper");
     });

@@ -13,7 +13,7 @@ export interface RemoteFetcher {
  * RemoteAccessor - Remote resource accessor with auto-caching.
  *
  * Fetches from remote registry and caches to MirrorRegistry.
- * Only handles resources with domain.
+ * Only handles resources with registry.
  */
 export class RemoteAccessor implements RegistryAccessor {
   readonly name = "remote";
@@ -24,8 +24,8 @@ export class RemoteAccessor implements RegistryAccessor {
   ) {}
 
   async canHandle(rxl: RXL): Promise<boolean> {
-    // Only handle resources with domain
-    return !!rxl.domain;
+    // Only handle resources with registry
+    return !!rxl.registry;
   }
 
   async get(rxl: RXL): Promise<RXR> {

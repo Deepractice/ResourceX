@@ -65,7 +65,7 @@ export async function handlePublish(request: Request, registry: Registry): Promi
     const manifestData = JSON.parse(manifestText);
 
     const rxm = manifest({
-      domain: manifestData.domain ?? rxl.domain ?? "localhost",
+      registry: manifestData.registry ?? rxl.registry,
       path: manifestData.path ?? rxl.path,
       name: manifestData.name ?? rxl.name,
       type: manifestData.type ?? rxl.type,
@@ -96,7 +96,7 @@ export async function handleGetResource(locator: string, registry: Registry): Pr
     const rxr = await registry.get(rxl);
 
     const response: GetResourceResponse = {
-      domain: rxr.manifest.domain,
+      registry: rxr.manifest.registry,
       path: rxr.manifest.path,
       name: rxr.manifest.name,
       type: rxr.manifest.type,
@@ -190,7 +190,7 @@ export async function handleSearch(
     const response: SearchResponse = {
       results: results.map((rxl) => ({
         locator: format(rxl),
-        domain: rxl.domain ?? "localhost",
+        registry: rxl.registry,
         path: rxl.path,
         name: rxl.name,
         type: rxl.type ?? "",

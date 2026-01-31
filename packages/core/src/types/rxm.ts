@@ -4,7 +4,7 @@
  * Resource metadata stored within the resource (pure data object).
  */
 export interface RXM {
-  readonly domain: string;
+  readonly registry?: string;
   readonly path?: string;
   readonly name: string;
   readonly type: string;

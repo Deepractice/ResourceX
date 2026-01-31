@@ -132,6 +132,18 @@ Given("a fresh local cache", async function (this: AuthorWorld) {
   await mkdir(join(TEST_RX_HOME, "cache"), { recursive: true });
 });
 
+Given("a fresh local environment", async function (this: AuthorWorld) {
+  // Clear all local directories (hosted, cache, linked)
+  await rm(join(TEST_RX_HOME, "hosted"), { recursive: true, force: true });
+  await rm(join(TEST_RX_HOME, "cache"), { recursive: true, force: true });
+  await rm(join(TEST_RX_HOME, "linked"), { recursive: true, force: true });
+  await rm(join(TEST_RX_HOME, "local"), { recursive: true, force: true });
+  await mkdir(join(TEST_RX_HOME, "hosted"), { recursive: true });
+  await mkdir(join(TEST_RX_HOME, "cache"), { recursive: true });
+  await mkdir(join(TEST_RX_HOME, "linked"), { recursive: true });
+  await mkdir(join(TEST_RX_HOME, "local"), { recursive: true });
+});
+
 Given(
   "I create a resource directory {string} with:",
   async function (

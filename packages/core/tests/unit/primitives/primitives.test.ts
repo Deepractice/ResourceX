@@ -15,7 +15,7 @@ describe("primitives", () => {
     name: "my-prompt",
     type: "prompt",
     version: "1.0.0",
-    domain: "deepractice.ai",
+    registry: "deepractice.ai",
     path: "assistants",
   };
 
@@ -23,14 +23,13 @@ describe("primitives", () => {
     name: "simple",
     type: "text",
     version: "0.1.0",
-    domain: "localhost",
   };
 
   describe("manifest(rxd) → RXM", () => {
     it("creates RXM from RXD with all fields", () => {
       const rxm = manifest(sampleRXD);
 
-      expect(rxm.domain).toBe("deepractice.ai");
+      expect(rxm.registry).toBe("deepractice.ai");
       expect(rxm.path).toBe("assistants");
       expect(rxm.name).toBe("my-prompt");
       expect(rxm.type).toBe("prompt");
@@ -40,7 +39,7 @@ describe("primitives", () => {
     it("creates RXM from minimal RXD", () => {
       const rxm = manifest(minimalRXD);
 
-      expect(rxm.domain).toBe("localhost");
+      expect(rxm.registry).toBeUndefined();
       expect(rxm.path).toBeUndefined();
       expect(rxm.name).toBe("simple");
       expect(rxm.type).toBe("text");
@@ -111,7 +110,7 @@ describe("primitives", () => {
       const rxm = manifest(sampleRXD);
       const rxl = locate(rxm);
 
-      expect(rxl.domain).toBe("deepractice.ai");
+      expect(rxl.registry).toBe("deepractice.ai");
       expect(rxl.path).toBe("assistants");
       expect(rxl.name).toBe("my-prompt");
       expect(rxl.type).toBe("prompt");
@@ -122,7 +121,7 @@ describe("primitives", () => {
       const rxm = manifest(minimalRXD);
       const rxl = locate(rxm);
 
-      expect(rxl.domain).toBe("localhost");
+      expect(rxl.registry).toBeUndefined();
       expect(rxl.path).toBeUndefined();
       expect(rxl.name).toBe("simple");
       expect(rxl.type).toBe("text");
@@ -147,7 +146,7 @@ describe("primitives", () => {
       const rxa = await archive({ content: Buffer.from("Hello") });
       const rxr = resource(rxm, rxa);
 
-      expect(rxr.locator.domain).toBe(rxr.manifest.domain);
+      expect(rxr.locator.registry).toBe(rxr.manifest.registry);
       expect(rxr.locator.name).toBe(rxr.manifest.name);
       expect(rxr.locator.type).toBe(rxr.manifest.type);
       expect(rxr.locator.version).toBe(rxr.manifest.version);

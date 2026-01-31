@@ -36,7 +36,7 @@ describe("loadResource", () => {
 
       const rxr = await loadResource(resourceDir);
 
-      expect(rxr.manifest.domain).toBe("localhost");
+      expect(rxr.manifest.registry).toBeUndefined();
       expect(rxr.manifest.name).toBe("test-resource");
       expect(rxr.manifest.type).toBe("text");
       expect(rxr.manifest.version).toBe("1.0.0");
@@ -45,14 +45,14 @@ describe("loadResource", () => {
       expect(files["content"].toString()).toBe("Hello, World!");
     });
 
-    it("loads resource with custom domain", async () => {
-      const resourceDir = join(TEST_DIR, "custom-domain");
+    it("loads resource with custom registry", async () => {
+      const resourceDir = join(TEST_DIR, "custom-registry");
       await mkdir(resourceDir, { recursive: true });
 
       await writeFile(
         join(resourceDir, "resource.json"),
         JSON.stringify({
-          domain: "example.com",
+          registry: "example.com",
           name: "resource",
           type: "json",
           version: "2.0.0",
@@ -63,7 +63,7 @@ describe("loadResource", () => {
 
       const rxr = await loadResource(resourceDir);
 
-      expect(rxr.manifest.domain).toBe("example.com");
+      expect(rxr.manifest.registry).toBe("example.com");
     });
 
     it("loads resource with path", async () => {
@@ -73,7 +73,6 @@ describe("loadResource", () => {
       await writeFile(
         join(resourceDir, "resource.json"),
         JSON.stringify({
-          domain: "localhost",
           path: "utils/helpers",
           name: "formatter",
           type: "text",
@@ -242,7 +241,7 @@ describe("loadResource", () => {
 
         async load(source: string): Promise<RXR> {
           const rxm = manifest({
-            domain: "mock.com",
+            registry: "mock.com",
             name: source,
             type: "text",
             version: "1.0.0",
@@ -254,7 +253,7 @@ describe("loadResource", () => {
 
       const rxr = await loadResource("any-source", { loader: new MockLoader() });
 
-      expect(rxr.manifest.domain).toBe("mock.com");
+      expect(rxr.manifest.registry).toBe("mock.com");
       expect(rxr.manifest.name).toBe("any-source");
       const files = await extract(rxr.archive);
       expect(files["content"].toString()).toBe("mocked content");

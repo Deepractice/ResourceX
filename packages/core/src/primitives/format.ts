@@ -4,8 +4,8 @@ import type { RXL } from "~/types/index.js";
  * Format RXL to locator string.
  *
  * Two formats:
- * - Local:  name.type@version (no domain)
- * - Remote: domain/[path/]name.type@version (with domain)
+ * - Local:  name.type@version (no registry)
+ * - Remote: registry/[path/]name.type@version (with registry)
  *
  * @param rxl - Resource locator
  * @returns Locator string
@@ -13,9 +13,9 @@ import type { RXL } from "~/types/index.js";
 export function format(rxl: RXL): string {
   let result = "";
 
-  // Add domain if present
-  if (rxl.domain) {
-    result += rxl.domain + "/";
+  // Add registry if present
+  if (rxl.registry) {
+    result += rxl.registry + "/";
     if (rxl.path) {
       result += rxl.path + "/";
     }

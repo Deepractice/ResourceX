@@ -28,7 +28,7 @@ export const CONTENT_TYPES = {
 // ============================================
 
 export interface ManifestData {
-  domain: string;
+  registry?: string;
   path?: string;
   name: string;
   type: string;
@@ -59,7 +59,7 @@ export type GetResourceResponse = ManifestData;
 
 export interface SearchResultItem {
   locator: string;
-  domain: string;
+  registry?: string;
   path?: string;
   name: string;
   type: string;

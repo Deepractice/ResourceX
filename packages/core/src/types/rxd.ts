@@ -10,8 +10,8 @@ export interface RXD {
   readonly type: string;
   readonly version: string;
 
-  // Core fields (optional, with defaults)
-  readonly domain: string; // defaults to "localhost"
+  // Core fields (optional)
+  readonly registry?: string;
   readonly path?: string;
 
   // Extended fields (optional)

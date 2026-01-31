@@ -4,9 +4,9 @@ import { MirrorRegistry, RegistryError } from "../../src/index.js";
 import { manifest, archive, resource, parse } from "@resourcexjs/core";
 import type { RXR, RXD } from "@resourcexjs/core";
 
-async function createTestRXR(domain: string, name: string, content: string): Promise<RXR> {
+async function createTestRXR(registry: string, name: string, content: string): Promise<RXR> {
   const rxd: RXD = {
-    domain,
+    registry,
     name,
     type: "text",
     version: "1.0.0",
@@ -32,7 +32,7 @@ describe("MirrorRegistry", () => {
       await registry.put(rxr);
 
       const retrieved = await registry.get(rxr.locator);
-      expect(retrieved.manifest.domain).toBe("deepractice.ai");
+      expect(retrieved.manifest.registry).toBe("deepractice.ai");
       expect(retrieved.manifest.name).toBe("hello");
     });
 
@@ -85,7 +85,7 @@ describe("MirrorRegistry", () => {
 
       const results = await registry.list({ query: "example" });
       expect(results).toHaveLength(1);
-      expect(results[0].domain).toBe("example.com");
+      expect(results[0].registry).toBe("example.com");
     });
   });
 });

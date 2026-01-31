@@ -1,8 +1,8 @@
 /**
- * Domain Validation Middleware
+ * Registry Validation Middleware
  *
- * Validates that resources returned from the registry match the trusted domain.
- * Prevents untrusted registries from impersonating other domains.
+ * Validates that resources returned from the registry match the trusted registry.
+ * Prevents untrusted registries from impersonating other registries.
  */
 
 import type { RXR, RXL } from "@resourcexjs/core";
@@ -11,44 +11,48 @@ import { RegistryMiddleware } from "./RegistryMiddleware.js";
 import { RegistryError } from "../errors.js";
 
 /**
- * Domain validation middleware.
- * Ensures all resources from this registry match the trusted domain.
+ * Registry validation middleware.
+ * Ensures all resources from this registry match the trusted registry.
  */
-export class DomainValidation extends RegistryMiddleware {
+export class RegistryValidation extends RegistryMiddleware {
   constructor(
     inner: Registry,
-    private readonly trustedDomain: string
+    private readonly trustedRegistry: string
   ) {
     super(inner);
   }
 
   /**
-   * Validate that manifest domain matches trusted domain.
+   * Validate that manifest registry matches trusted registry.
    */
-  private validateDomain(rxr: RXR): void {
-    if (rxr.manifest.domain !== this.trustedDomain) {
+  private validateRegistry(rxr: RXR): void {
+    if (rxr.manifest.registry !== this.trustedRegistry) {
       throw new RegistryError(
-        `Untrusted domain: resource claims "${rxr.manifest.domain}" but registry only trusts "${this.trustedDomain}"`
+        `Untrusted registry: resource claims "${rxr.manifest.registry}" but registry only trusts "${this.trustedRegistry}"`
       );
     }
   }
 
   /**
-   * Get resource and validate domain.
+   * Get resource and validate registry.
    */
   override async get(rxl: RXL): Promise<RXR> {
     const rxr = await this.inner.get(rxl);
-    this.validateDomain(rxr);
+    this.validateRegistry(rxr);
     return rxr;
   }
 }
 
 /**
- * Factory function to create domain validation middleware.
+ * Factory function to create registry validation middleware.
  *
  * @example
- * const registry = withDomainValidation(hostedRegistry, "deepractice.ai");
+ * const registry = withRegistryValidation(hostedRegistry, "deepractice.ai");
  */
-export function withDomainValidation(registry: Registry, trustedDomain: string): Registry {
-  return new DomainValidation(registry, trustedDomain);
+export function withRegistryValidation(registry: Registry, trustedRegistry: string): Registry {
+  return new RegistryValidation(registry, trustedRegistry);
 }
+
+// Backwards compatibility aliases
+export const DomainValidation: typeof RegistryValidation = RegistryValidation;
+export const withDomainValidation: typeof withRegistryValidation = withRegistryValidation;

@@ -14,8 +14,8 @@ export class CacheAccessor implements RegistryAccessor {
   constructor(private readonly registry: MirrorRegistry) {}
 
   async canHandle(rxl: RXL): Promise<boolean> {
-    // Only handle resources with domain
-    if (!rxl.domain) {
+    // Only handle resources with registry
+    if (!rxl.registry) {
       return false;
     }
     return this.registry.has(rxl);

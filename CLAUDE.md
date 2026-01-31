@@ -28,8 +28,8 @@ ResourceX is a resource management protocol for AI Agents, similar to npm for pa
    - Simple interface: get, put, delete, exists, list
 
 3. **Registry Layer** - Business logic for RXR (`@resourcexjs/registry`)
-   - HostedRegistry: Resources you own
-   - MirrorRegistry: Cached remote resources
+   - LocalRegistry: Local resources (no registry in path)
+   - MirrorRegistry: Cached remote resources (with registry)
    - LinkedRegistry: Development symlinks
 
 4. **ResourceX API** - Unified client API (`resourcexjs`)
@@ -89,7 +89,7 @@ packages/
 const rxl = parse("deepractice.ai/hello.text@1.0.0");
 
 // Create manifest from definition
-const rxm = manifest({ domain: "localhost", name: "hello", type: "text", version: "1.0.0" });
+const rxm = manifest({ name: "hello", type: "text", version: "1.0.0" });
 
 // Create archive from content
 const rxa = await archive({ content: Buffer.from("Hello!") });
@@ -155,7 +155,6 @@ Unified client API combining all layers. Users only interact with:
 import { createResourceX } from "resourcexjs";
 
 const rx = createResourceX({
-  domain: "mycompany.com",
   registry: "https://registry.mycompany.com",
 });
 
@@ -169,7 +168,7 @@ const results = await rx.search("hello"); // Search local resources
 
 // Remote operations
 await rx.push("./my-prompt"); // Push directory to remote registry
-await rx.pull("hello.text@1.0.0"); // Pull from remote to local cache
+await rx.pull("registry.example.com/hello.text@1.0.0"); // Pull from remote to local cache
 
 // Extension
 rx.supportType(myCustomType); // Add custom type
@@ -180,41 +179,41 @@ rx.supportType(myCustomType); // Add custom type
 ```typescript
 const rx = createResourceX({
   path: "~/.resourcex", // Storage path (default: ~/.resourcex)
-  domain: "mycompany.com", // Default domain (default: "localhost")
   registry: "https://...", // Central registry URL (required for remote ops)
   types: [myType], // Custom types
   isolator: "none", // Sandbox: none | srt | cloudflare | e2b
 });
 ```
 
-### Locator Normalization
+### Locator Format
 
-Locators without explicit domain use the configured default domain:
+Two locator formats (Go-style):
 
 ```typescript
-const rx = createResourceX({ domain: "mycompany.com" });
-
-// These are equivalent:
+// Local: name.type@version (no registry)
 await rx.resolve("hello.text@1.0.0");
-await rx.resolve("mycompany.com/hello.text@1.0.0");
+
+// Remote: registry/[path/]name.type@version (with registry)
+await rx.resolve("registry.example.com/hello.text@1.0.0");
 ```
 
 ### Storage Directory Structure
 
 ```
 ~/.resourcex/
-├── hosted/                  # HostedRegistry - your resources
-│   └── localhost/
-│       └── my-tool.text/
-│           └── 1.0.0/
-│               ├── manifest.json
-│               └── archive.tar.gz
-├── cache/                   # MirrorRegistry - cached remote
+├── local/                   # LocalRegistry - local resources (no registry)
+│   └── my-tool.text/
+│       └── 1.0.0/
+│           ├── manifest.json
+│           └── archive.tar.gz
+├── cache/                   # MirrorRegistry - cached remote (with registry)
 │   └── deepractice.ai/
 │       └── hello.text/
 │           └── 1.0.0/
+│               ├── manifest.json
+│               └── archive.tar.gz
 └── linked/                  # LinkedRegistry - dev symlinks
-    └── localhost/
+    └── {registry}/
         └── dev.text/
             └── 1.0.0 → /path/to/dev
 ```
@@ -224,16 +223,15 @@ await rx.resolve("mycompany.com/hello.text@1.0.0");
 ```
 rx.resolve("hello.text@1.0.0")
   ↓
-1. Normalize locator (add default domain if missing)
+1. Parse locator (determine if local or remote)
 2. Check linked (development priority)
-3. Check hosted (local storage)
-4. Check cache (remote cache)
-5. If registry configured:
+3. Check local (no registry) or cache (with registry)
+4. If registry configured and has registry in locator:
    - Fetch from remote registry
    - Cache locally
-6. Get BundledType from TypeHandlerChain
-7. Execute resolver
-8. Return Executable { execute, schema }
+5. Get BundledType from TypeHandlerChain
+6. Execute resolver
+7. Return Executable { execute, schema }
 ```
 
 ### Type System

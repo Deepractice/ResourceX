@@ -43,13 +43,13 @@ class InternalRegistryAccess {
       return this.linked.get(rxl);
     }
 
-    // Check local (no domain)
-    if (!rxl.domain && (await this.local.has(rxl))) {
+    // Check local (no registry)
+    if (!rxl.registry && (await this.local.has(rxl))) {
       return this.local.get(rxl);
     }
 
-    // Check cache (has domain)
-    if (rxl.domain && (await this.cache.has(rxl))) {
+    // Check cache (has registry)
+    if (rxl.registry && (await this.cache.has(rxl))) {
       return this.cache.get(rxl);
     }
 
@@ -139,7 +139,7 @@ export class RxrTransport implements TransportHandler {
 
   /**
    * Parse location into RXL and internal path.
-   * Format: {domain}/{path}/{name}.{type}@{version}/{internal-path}
+   * Format: {registry}/{path}/{name}.{type}@{version}/{internal-path}
    * Example: deepractice.ai/nuwa.role@1.0.0/thought/first-principles.md
    */
   private parseLocation(location: string): { rxl: string; internalPath: string } {

@@ -8,7 +8,7 @@ import type { RXM, RXL } from "~/types/index.js";
  */
 export function locate(rxm: RXM): RXL {
   return {
-    domain: rxm.domain,
+    registry: rxm.registry,
     path: rxm.path,
     name: rxm.name,
     type: rxm.type,

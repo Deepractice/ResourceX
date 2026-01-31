@@ -27,7 +27,7 @@ describe("LinkedRegistry", () => {
 
     // Create resource.json
     const resourceJson = {
-      domain: "localhost",
+      registry: "localhost",
       name,
       type: "text",
       version: "1.0.0",
@@ -56,7 +56,7 @@ describe("LinkedRegistry", () => {
 
       const rxl = await registry.link(devPath);
 
-      expect(rxl.domain).toBe("localhost");
+      expect(rxl.registry).toBe("localhost");
       expect(rxl.name).toBe("test-resource");
       expect(rxl.version).toBe("1.0.0");
     });

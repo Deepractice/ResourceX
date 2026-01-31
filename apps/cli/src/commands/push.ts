@@ -18,16 +18,25 @@ export const push = defineCommand({
       description: "Resource locator (e.g., hello.text@1.0.0)",
       required: true,
     },
+    registry: {
+      type: "string",
+      alias: "r",
+      description: "Registry URL (overrides config)",
+    },
   },
   async run({ args }) {
     try {
       const config = await getConfig();
-      if (!config.registry) {
-        consola.error("No registry configured. Use: rx config set registry <url>");
+      const registryUrl = args.registry ?? config.registry;
+
+      if (!registryUrl) {
+        consola.error(
+          "No registry configured. Use: rx config set registry <url> or --registry <url>"
+        );
         process.exit(1);
       }
 
-      const rx = await getClient();
+      const rx = await getClient({ registry: registryUrl });
       await rx.push(args.locator);
       consola.success(`Pushed: ${args.locator}`);
     } catch (error) {

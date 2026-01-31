@@ -5,8 +5,8 @@ import { LocatorError } from "~/errors.js";
  * Parse locator string to RXL.
  *
  * Two formats supported:
- * - Local:  name.type@version (no domain)
- * - Remote: domain/[path/]name.type@version (with domain)
+ * - Local:  name.type@version (no registry)
+ * - Remote: registry/[path/]name.type@version (with registry)
  *
  * @param locator - Locator string
  * @returns RXL object
@@ -43,18 +43,18 @@ export function parse(locator: string): RXL {
     throw new LocatorError("type is required", locator);
   }
 
-  // Split by / to get domain, path, name
+  // Split by / to get registry, path, name
   const parts = beforeType.split("/");
 
-  // Check if has domain (contains /)
+  // Check if has registry (contains /)
   if (parts.length === 1) {
-    // Local format: name.type@version (no domain)
+    // Local format: name.type@version (no registry)
     const name = parts[0];
     if (!name) {
       throw new LocatorError("name is required", locator);
     }
     return {
-      domain: undefined,
+      registry: undefined,
       path: undefined,
       name,
       type,
@@ -62,13 +62,13 @@ export function parse(locator: string): RXL {
     };
   }
 
-  // Remote format: domain/[path/]name.type@version
-  const domain = parts[0];
+  // Remote format: registry/[path/]name.type@version
+  const registry = parts[0];
   const name = parts[parts.length - 1];
   const path = parts.length > 2 ? parts.slice(1, -1).join("/") : undefined;
 
-  if (!domain) {
-    throw new LocatorError("domain is required", locator);
+  if (!registry) {
+    throw new LocatorError("registry is required", locator);
   }
 
   if (!name) {
@@ -76,7 +76,7 @@ export function parse(locator: string): RXL {
   }
 
   return {
-    domain,
+    registry,
     path,
     name,
     type,

@@ -22,11 +22,11 @@ export class MirrorRegistry implements Registry {
    * Build storage key prefix for a resource.
    */
   private buildKeyPrefix(rxl: RXL): string {
-    const domain = rxl.domain ?? "localhost";
+    const registry = rxl.registry ?? "localhost";
     const resourceName = rxl.type ? `${rxl.name}.${rxl.type}` : rxl.name;
     const version = rxl.version ?? "latest";
 
-    let key = domain;
+    let key = registry;
     if (rxl.path) {
       key += `/${rxl.path}`;
     }
@@ -50,7 +50,7 @@ export class MirrorRegistry implements Registry {
 
     const manifestJson = JSON.parse(manifestData.toString("utf-8"));
     const rxm: RXM = {
-      domain: manifestJson.domain,
+      registry: manifestJson.registry,
       path: manifestJson.path,
       name: manifestJson.name,
       type: manifestJson.type,
@@ -72,7 +72,7 @@ export class MirrorRegistry implements Registry {
 
     // Write manifest
     const manifestJson = {
-      domain: rxr.manifest.domain,
+      registry: rxr.manifest.registry,
       path: rxr.manifest.path,
       name: rxr.manifest.name,
       type: rxr.manifest.type,
@@ -120,7 +120,7 @@ export class MirrorRegistry implements Registry {
       const lowerQuery = query.toLowerCase();
       filtered = locators.filter((rxl) => {
         const searchText =
-          `${rxl.domain ?? ""} ${rxl.path ?? ""} ${rxl.name} ${rxl.type ?? ""}`.toLowerCase();
+          `${rxl.registry ?? ""} ${rxl.path ?? ""} ${rxl.name} ${rxl.type ?? ""}`.toLowerCase();
         return searchText.includes(lowerQuery);
       });
     }
@@ -138,35 +138,35 @@ export class MirrorRegistry implements Registry {
 
   /**
    * Clear cached resources.
-   * @param domain - If provided, only clear resources from this domain
+   * @param registry - If provided, only clear resources from this registry
    */
-  async clear(domain?: string): Promise<void> {
-    if (domain) {
-      // Clear specific domain
-      await this.storage.delete(domain);
+  async clear(registry?: string): Promise<void> {
+    if (registry) {
+      // Clear specific registry
+      await this.storage.delete(registry);
     } else {
-      // Clear all - list and delete each domain directory
+      // Clear all - list and delete each registry directory
       const allKeys = await this.storage.list();
-      const domains = new Set<string>();
+      const registries = new Set<string>();
 
       for (const key of allKeys) {
         const firstSlash = key.indexOf("/");
         if (firstSlash !== -1) {
-          domains.add(key.substring(0, firstSlash));
+          registries.add(key.substring(0, firstSlash));
         } else {
-          domains.add(key);
+          registries.add(key);
         }
       }
 
-      for (const d of domains) {
-        await this.storage.delete(d);
+      for (const r of registries) {
+        await this.storage.delete(r);
       }
     }
   }
 
   /**
    * Parse storage key to RXL.
-   * Key format: {domain}/{path}/{name}.{type}/{version}/manifest.json
+   * Key format: {registry}/{path}/{name}.{type}/{version}/manifest.json
    */
   private parseKeyToRXL(key: string): RXL | null {
     // Remove /manifest.json suffix
@@ -179,7 +179,7 @@ export class MirrorRegistry implements Registry {
 
     const version = parts.pop()!;
     const nameTypePart = parts.pop()!;
-    const domain = parts.shift()!;
+    const registry = parts.shift()!;
     const path = parts.length > 0 ? parts.join("/") : undefined;
 
     const dotIndex = nameTypePart.lastIndexOf(".");
@@ -194,7 +194,7 @@ export class MirrorRegistry implements Registry {
       type = undefined;
     }
 
-    let locatorStr = domain;
+    let locatorStr = registry;
     if (path) locatorStr += `/${path}`;
     locatorStr += `/${name}`;
     if (type) locatorStr += `.${type}`;

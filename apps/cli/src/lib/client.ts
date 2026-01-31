@@ -5,12 +5,15 @@
 import { createResourceX } from "resourcexjs";
 import { getConfig } from "./config.js";
 
-export async function getClient() {
+export interface ClientOptions {
+  registry?: string;
+}
+
+export async function getClient(options?: ClientOptions) {
   const cfg = await getConfig();
 
   return createResourceX({
     path: cfg.path,
-    domain: cfg.domain,
-    registry: cfg.registry,
+    registry: options?.registry ?? cfg.registry,
   });
 }

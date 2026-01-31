@@ -9,7 +9,7 @@ import type { RXD, RXM } from "~/types/index.js";
  */
 export function manifest(rxd: RXD): RXM {
   return {
-    domain: rxd.domain,
+    registry: rxd.registry,
     path: rxd.path,
     name: rxd.name,
     type: rxd.type,

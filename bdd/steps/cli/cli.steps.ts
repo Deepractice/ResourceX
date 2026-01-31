@@ -291,6 +291,12 @@ Given("the resource is not in local cache", async function (this: CLIWorld) {
   // Cache is cleaned in Before hook, so nothing to do
 });
 
+Given("rx CLI has no registry configured", async function (this: CLIWorld) {
+  // This will be handled by passing empty registry to runRxCommand
+  // We'll use a special marker that the When step can check
+  (this as any).noRegistryConfigured = true;
+});
+
 // ============================================
 // When steps
 // ============================================
@@ -302,7 +308,10 @@ When("I run rx command {string}", async function (this: CLIWorld, command: strin
     processedCommand = command.replace(/\.\/([^\s]+)/g, (_, path) => join(TEST_RESOURCES, path));
   }
 
-  const { output, exitCode } = await runRxCommand(processedCommand, TEST_RX_HOME, SERVER_URL);
+  // Check if registry should be disabled
+  const registry = (this as any).noRegistryConfigured ? "" : SERVER_URL;
+
+  const { output, exitCode } = await runRxCommand(processedCommand, TEST_RX_HOME, registry);
   this.commandOutput = output;
   this.commandExitCode = exitCode;
 });

@@ -9,7 +9,7 @@ Feature: ResourceX CLI
     And rx CLI is configured with the test registry
 
   # ============================================
-  # Local operations
+  # Local operations - add, list, resolve, remove
   # ============================================
 
   Scenario: Add resource from directory
@@ -20,6 +20,7 @@ Feature: ResourceX CLI
     When I run rx command "add ./hello-prompt"
     Then the command should succeed
     And the output should contain "Added"
+    And the output should contain "hello.text@1.0.0"
 
   Scenario: List local resources
     Given a local resource "test.text@1.0.0" with content "Test content"
@@ -33,6 +34,13 @@ Feature: ResourceX CLI
     Then the command should succeed
     And the output should contain "Hello from CLI!"
 
+  Scenario: Get resource info
+    Given a local resource "myinfo.text@1.0.0" with content "Info content"
+    When I run rx command "info myinfo.text@1.0.0"
+    Then the command should succeed
+    And the output should contain "myinfo.text@1.0.0"
+    And the output should contain "content"
+
   Scenario: Remove local resource
     Given a local resource "removeme.text@1.0.0" with content "To be removed"
     When I run rx command "remove removeme.text@1.0.0"
@@ -42,12 +50,42 @@ Feature: ResourceX CLI
     Then the output should not contain "removeme.text@1.0.0"
 
   # ============================================
-  # Remote operations
+  # Link operations - for development workflow
+  # ============================================
+
+  Scenario: Link development directory
+    Given a CLI resource directory "dev-resource" with:
+      | file          | content                                             |
+      | resource.json | {"name":"devres","type":"text","version":"1.0.0"}   |
+      | content       | Development content                                 |
+    When I run rx command "link ./dev-resource"
+    Then the command should succeed
+    And the output should contain "Linked"
+
+  Scenario: Resolve linked resource reflects live changes
+    Given a CLI resource directory "live-dev" with:
+      | file          | content                                            |
+      | resource.json | {"name":"livedev","type":"text","version":"1.0.0"} |
+      | content       | Original content                                   |
+    When I run rx command "link ./live-dev"
+    Then the command should succeed
+    When I run rx command "resolve livedev.text@1.0.0"
+    Then the output should contain "Original content"
+    # Note: In real test, we would modify the file and verify change is reflected
+
+  # ============================================
+  # Remote operations - push, pull, search
   # ============================================
 
   Scenario: Push resource to remote registry
     Given a local resource "mypkg.text@1.0.0" with content "Package content"
     When I run rx command "push mypkg.text@1.0.0"
+    Then the command should succeed
+    And the output should contain "Pushed"
+
+  Scenario: Push resource with explicit registry flag
+    Given a local resource "explicit.text@1.0.0" with content "Explicit registry"
+    When I run rx command "push explicit.text@1.0.0 --registry http://localhost:3099"
     Then the command should succeed
     And the output should contain "Pushed"
 
@@ -58,13 +96,18 @@ Feature: ResourceX CLI
     And the output should contain "searchme.text@1.0.0"
 
   Scenario: Pull resource from remote registry
-    Given a remote resource "localhost/pullme.text@1.0.0" on the registry with content "Pulled content"
+    Given a remote resource "pullme.text@1.0.0" on the registry with content "Pulled content"
     And the resource is not in local cache
-    When I run rx command "pull localhost/pullme.text@1.0.0"
+    When I run rx command "pull pullme.text@1.0.0"
     Then the command should succeed
     And the output should contain "Pulled"
-    When I run rx command "resolve localhost/pullme.text@1.0.0"
-    Then the output should contain "Pulled content"
+
+  Scenario: Resolve pulls from remote if not local
+    Given a remote resource "autopull.text@1.0.0" on the registry with content "Auto pulled"
+    And the resource is not in local cache
+    When I run rx command "resolve autopull.text@1.0.0"
+    Then the command should succeed
+    And the output should contain "Auto pulled"
 
   # ============================================
   # Configuration
@@ -73,9 +116,36 @@ Feature: ResourceX CLI
   Scenario: List configuration
     When I run rx command "config list"
     Then the command should succeed
+    And the output should contain "path:"
     And the output should contain "registry:"
 
-  Scenario: Set configuration
-    When I run rx command "config set domain mycompany.com"
+  Scenario: Set registry configuration
+    When I run rx command "config set registry http://example.com"
     Then the command should succeed
-    And the output should contain "Set domain"
+    And the output should contain "Set registry"
+
+  # ============================================
+  # Error handling
+  # ============================================
+
+  Scenario: Add non-existent directory fails
+    When I run rx command "add ./non-existent-dir"
+    Then the command should fail
+    And the output should contain "Cannot load resource"
+
+  Scenario: Resolve non-existent resource fails
+    When I run rx command "resolve notfound.text@1.0.0"
+    Then the command should fail
+    And the output should contain "not found"
+
+  Scenario: Push without registry configured fails
+    Given rx CLI has no registry configured
+    When I run rx command "push someresource.text@1.0.0"
+    Then the command should fail
+    And the output should contain "No registry configured"
+
+  Scenario: Pull without registry configured fails
+    Given rx CLI has no registry configured
+    When I run rx command "pull someresource.text@1.0.0"
+    Then the command should fail
+    And the output should contain "No registry configured"

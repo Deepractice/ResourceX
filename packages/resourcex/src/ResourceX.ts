@@ -29,7 +29,42 @@ import type { SearchOptions, RemoteFetcher } from "@resourcexjs/registry";
 import { loadResource } from "@resourcexjs/loader";
 
 const DEFAULT_BASE_PATH = `${homedir()}/.resourcex`;
-const DEFAULT_DOMAIN = "localhost";
+
+/**
+ * Normalize registry URL to host:port format.
+ *
+ * Rules:
+ * - Remove protocol (http://, https://)
+ * - Keep non-standard ports (e.g., localhost:3098)
+ * - Omit standard ports (80 for http, 443 for https)
+ *
+ * Examples:
+ * - http://localhost:3098 → localhost:3098
+ * - https://registry.example.com → registry.example.com
+ * - https://registry.example.com:443 → registry.example.com
+ * - http://registry.example.com:80 → registry.example.com
+ */
+function normalizeRegistryUrl(url: string): string {
+  try {
+    const parsed = new URL(url);
+    const host = parsed.hostname;
+    const port = parsed.port;
+    const protocol = parsed.protocol;
+
+    // Determine if port should be included
+    const isDefaultPort =
+      (protocol === "http:" && (port === "" || port === "80")) ||
+      (protocol === "https:" && (port === "" || port === "443"));
+
+    if (isDefaultPort || !port) {
+      return host;
+    }
+    return `${host}:${port}`;
+  } catch {
+    // If URL parsing fails, return as-is (might already be host:port format)
+    return url;
+  }
+}
 
 /**
  * ResourceX configuration.
@@ -40,13 +75,6 @@ export interface ResourceXConfig {
    * Default: ~/.resourcex
    */
   path?: string;
-
-  /**
-   * Default domain for resources.
-   * Used when locator doesn't include domain.
-   * Default: "localhost"
-   */
-  domain?: string;
 
   /**
    * Central registry URL.
@@ -79,13 +107,13 @@ export interface ResourceXConfig {
  * - resource: this object with full metadata
  */
 export interface Resource {
-  /** Full locator string (e.g., "localhost/hello.text@1.0.0") */
+  /** Full locator string (e.g., "registry.example.com/hello.text@1.0.0") */
   locator: string;
 
-  /** Resource domain */
-  domain: string;
+  /** Resource registry (optional for local resources) */
+  registry?: string;
 
-  /** Resource path within domain (optional) */
+  /** Resource path within registry (optional) */
   path?: string;
 
   /** Resource name */
@@ -177,6 +205,14 @@ export interface ResourceX {
    */
   pull(locator: string): Promise<void>;
 
+  // ===== Cache operations =====
+
+  /**
+   * Clear cached resources.
+   * @param registry - If provided, only clear resources from this registry
+   */
+  clearCache(registry?: string): Promise<void>;
+
   // ===== Extension =====
 
   /**
@@ -244,8 +280,9 @@ class DefaultResourceX implements ResourceX {
    */
   private createRemoteFetcher(): RemoteFetcher {
     const registryUrl = this.registryUrl!;
+    const normalizedRegistry = normalizeRegistryUrl(registryUrl);
     return {
-      fetch: async (rxl) => this.fetchFromRegistry(format(rxl), registryUrl),
+      fetch: async (rxl) => this.fetchFromRegistry(format(rxl), registryUrl, normalizedRegistry),
     };
   }
 
@@ -255,7 +292,7 @@ class DefaultResourceX implements ResourceX {
   private toResource(rxr: RXR): Resource {
     return {
       locator: format(rxr.locator),
-      domain: rxr.manifest.domain ?? "",
+      registry: rxr.manifest.registry,
       path: rxr.manifest.path,
       name: rxr.manifest.name,
       type: rxr.manifest.type,
@@ -269,13 +306,13 @@ class DefaultResourceX implements ResourceX {
   async add(path: string): Promise<Resource> {
     const rxr = await loadResource(path);
 
-    // Local resources should not have domain
-    // Clear domain if it was set (e.g., from manifest.json)
-    if (rxr.manifest.domain) {
+    // Local resources should not have registry
+    // Clear registry if it was set (e.g., from resource.json)
+    if (rxr.manifest.registry) {
       const { manifest: createManifest, resource: createResource } =
         await import("@resourcexjs/core");
       const newManifest = createManifest({
-        domain: undefined,
+        registry: undefined,
         path: rxr.manifest.path,
         name: rxr.manifest.name,
         type: rxr.manifest.type,
@@ -309,7 +346,7 @@ class DefaultResourceX implements ResourceX {
 
     return {
       locator: format(rxr.locator),
-      domain: rxr.manifest.domain ?? "",
+      registry: rxr.manifest.registry,
       path: rxr.manifest.path,
       name: rxr.manifest.name,
       type: rxr.manifest.type,
@@ -325,10 +362,10 @@ class DefaultResourceX implements ResourceX {
     if (await this.linked.has(rxl)) {
       await this.linked.remove(rxl);
     }
-    if (!rxl.domain && (await this.local.has(rxl))) {
+    if (!rxl.registry && (await this.local.has(rxl))) {
       await this.local.remove(rxl);
     }
-    if (rxl.domain && (await this.cache.has(rxl))) {
+    if (rxl.registry && (await this.cache.has(rxl))) {
       await this.cache.remove(rxl);
     }
 
@@ -396,8 +433,15 @@ class DefaultResourceX implements ResourceX {
       throw new RegistryError("Registry URL not configured. Set 'registry' in config.");
     }
 
-    const rxr = await this.fetchFromRegistry(locator, this.registryUrl);
+    const normalizedRegistry = normalizeRegistryUrl(this.registryUrl);
+    const rxr = await this.fetchFromRegistry(locator, this.registryUrl, normalizedRegistry);
     await this.cache.put(rxr);
+  }
+
+  // ===== Cache operations =====
+
+  async clearCache(registry?: string): Promise<void> {
+    await this.cache.clear(registry);
   }
 
   // ===== Extension =====
@@ -425,7 +469,7 @@ class DefaultResourceX implements ResourceX {
       new Blob(
         [
           JSON.stringify({
-            domain: rxr.manifest.domain,
+            registry: rxr.manifest.registry,
             path: rxr.manifest.path,
             name: rxr.manifest.name,
             type: rxr.manifest.type,
@@ -452,9 +496,17 @@ class DefaultResourceX implements ResourceX {
 
   /**
    * Fetch resource from registry via GET /resource/{locator} and GET /content/{locator}.
+   * @param locator - Resource locator string
+   * @param registryUrl - Full registry URL (e.g., http://localhost:3098)
+   * @param normalizedRegistry - Optional normalized registry (e.g., localhost:3098). If not provided, will be computed from registryUrl.
    */
-  private async fetchFromRegistry(locator: string, registryUrl: string): Promise<RXR> {
+  private async fetchFromRegistry(
+    locator: string,
+    registryUrl: string,
+    normalizedRegistry?: string
+  ): Promise<RXR> {
     const baseUrl = registryUrl.replace(/\/$/, "");
+    const registry = normalizedRegistry ?? normalizeRegistryUrl(registryUrl);
 
     // Fetch manifest
     const manifestUrl = `${baseUrl}/resource/${encodeURIComponent(locator)}`;
@@ -468,7 +520,7 @@ class DefaultResourceX implements ResourceX {
     }
 
     const manifestData = (await manifestResponse.json()) as {
-      domain: string;
+      registry?: string;
       path?: string;
       name: string;
       type: string;
@@ -481,8 +533,9 @@ class DefaultResourceX implements ResourceX {
       resource: createResource,
     } = await import("@resourcexjs/core");
 
+    // Use normalized registry instead of what server returns
     const rxm = createManifest({
-      domain: manifestData.domain,
+      registry: registry,
       path: manifestData.path,
       name: manifestData.name,
       type: manifestData.type,
@@ -518,7 +571,7 @@ class DefaultResourceX implements ResourceX {
     // Build context
     const context = {
       manifest: {
-        domain: rxr.manifest.domain,
+        registry: rxr.manifest.registry,
         path: rxr.manifest.path,
         name: rxr.manifest.name,
         type: rxr.manifest.type,
@@ -583,7 +636,6 @@ class DefaultResourceX implements ResourceX {
  * @example
  * ```typescript
  * const rx = createResourceX({
- *   domain: "mycompany.com",
  *   registry: "https://registry.mycompany.com"
  * });
  *

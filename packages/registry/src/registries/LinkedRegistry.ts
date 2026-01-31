@@ -23,11 +23,11 @@ export class LinkedRegistry implements Registry {
    * Build symlink path for a resource.
    */
   private buildLinkPath(rxl: RXL): string {
-    const domain = rxl.domain ?? "localhost";
+    const registry = rxl.registry ?? "localhost";
     const resourceName = rxl.type ? `${rxl.name}.${rxl.type}` : rxl.name;
     const version = rxl.version ?? "latest";
 
-    let linkPath = join(this.basePath, domain);
+    let linkPath = join(this.basePath, registry);
     if (rxl.path) {
       linkPath = join(linkPath, rxl.path);
     }
@@ -97,7 +97,7 @@ export class LinkedRegistry implements Registry {
       const lowerQuery = query.toLowerCase();
       filtered = locators.filter((rxl) => {
         const searchText =
-          `${rxl.domain ?? ""} ${rxl.path ?? ""} ${rxl.name} ${rxl.type ?? ""}`.toLowerCase();
+          `${rxl.registry ?? ""} ${rxl.path ?? ""} ${rxl.name} ${rxl.type ?? ""}`.toLowerCase();
         return searchText.includes(lowerQuery);
       });
     }
@@ -194,13 +194,13 @@ export class LinkedRegistry implements Registry {
 
   /**
    * Parse relative path to RXL.
-   * Path format: {domain}/{path}/{name}.{type}/{version}
+   * Path format: {registry}/{path}/{name}.{type}/{version}
    */
   private parsePathToRXL(relPath: string): RXL | null {
     const parts = relPath.split("/");
 
     if (parts.length < 3) {
-      // Need at least: domain, name.type, version
+      // Need at least: registry, name.type, version
       return null;
     }
 
@@ -208,8 +208,8 @@ export class LinkedRegistry implements Registry {
     const version = parts.pop()!;
     // Second to last is {name}.{type}
     const nameTypePart = parts.pop()!;
-    // First part is domain
-    const domain = parts.shift()!;
+    // First part is registry
+    const registry = parts.shift()!;
     // Remaining parts are path (if any)
     const path = parts.length > 0 ? parts.join("/") : undefined;
 
@@ -227,7 +227,7 @@ export class LinkedRegistry implements Registry {
     }
 
     // Construct locator string and parse
-    let locatorStr = domain;
+    let locatorStr = registry;
     if (path) locatorStr += `/${path}`;
     locatorStr += `/${name}`;
     if (type) locatorStr += `.${type}`;

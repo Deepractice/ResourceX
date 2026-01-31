@@ -14,8 +14,8 @@ export class LocalAccessor implements RegistryAccessor {
   constructor(private readonly registry: LocalRegistry) {}
 
   async canHandle(rxl: RXL): Promise<boolean> {
-    // Only handle resources without domain
-    if (rxl.domain) {
+    // Only handle resources without registry
+    if (rxl.registry) {
       return false;
     }
     return this.registry.has(rxl);
