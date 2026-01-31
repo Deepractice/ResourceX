@@ -2,14 +2,21 @@ import { Given, When, Before, After } from "@cucumber/cucumber";
 import { join } from "node:path";
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { spawn } from "node:child_process";
+import type { Server } from "node:http";
 
 // Use fixtures directory for resources
 const BDD_ROOT = process.cwd();
 const FIXTURES_DIR = join(BDD_ROOT, "fixtures");
 const TEST_RX_HOME = join(BDD_ROOT, ".test-rx-home");
+const TEST_REGISTRY_STORAGE = join(BDD_ROOT, ".test-registry-author");
+const REGISTRY_PORT = 3097;
+const REGISTRY_URL = `http://localhost:${REGISTRY_PORT}`;
 
 // CLI path
 const CLI_PATH = join(BDD_ROOT, "..", "packages/cli/src/index.ts");
+
+// Author's own server instance (separate from CLI tests)
+let authorServer: Server | null = null;
 
 interface AuthorWorld {
   commandOutput: string;
@@ -18,7 +25,7 @@ interface AuthorWorld {
 }
 
 /**
- * Run rx CLI command (local only, no registry)
+ * Run rx CLI command
  */
 async function runRxCommand(
   args: string,
@@ -30,7 +37,7 @@ async function runRxCommand(
       env: {
         ...process.env,
         RX_HOME: TEST_RX_HOME,
-        // No RX_REGISTRY - local only
+        RX_REGISTRY: REGISTRY_URL,
       },
       stdio: ["ignore", "pipe", "pipe"],
     });
@@ -72,8 +79,18 @@ Before({ tags: "@author" }, async function (this: AuthorWorld) {
 });
 
 After({ tags: "@author" }, async function (this: AuthorWorld) {
+  // Stop server if running
+  if (authorServer) {
+    authorServer.close();
+    authorServer = null;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+
   // Cleanup RX_HOME
   await rm(TEST_RX_HOME, { recursive: true, force: true });
+
+  // Cleanup registry storage
+  await rm(TEST_REGISTRY_STORAGE, { recursive: true, force: true });
 
   // Cleanup dynamically created resource dirs (but keep pre-existing fixtures)
   for (const dir of this.resourceDirs) {
@@ -87,6 +104,32 @@ After({ tags: "@author" }, async function (this: AuthorWorld) {
 
 Given("a clean local environment", async function (this: AuthorWorld) {
   // Already done in Before hook
+});
+
+Given("a registry server for publishing", async function (this: AuthorWorld) {
+  if (!authorServer) {
+    const { createRegistryServer } = await import("@resourcexjs/server");
+    const { serve } = await import("@hono/node-server");
+
+    await mkdir(TEST_REGISTRY_STORAGE, { recursive: true });
+    const app = createRegistryServer({ storagePath: TEST_REGISTRY_STORAGE });
+
+    await new Promise<void>((resolve, reject) => {
+      try {
+        authorServer = serve({ fetch: app.fetch, port: REGISTRY_PORT }, () => resolve());
+      } catch (err) {
+        reject(err);
+      }
+    });
+  }
+});
+
+Given("a fresh local cache", async function (this: AuthorWorld) {
+  // Clear hosted and cache directories
+  await rm(join(TEST_RX_HOME, "hosted"), { recursive: true, force: true });
+  await rm(join(TEST_RX_HOME, "cache"), { recursive: true, force: true });
+  await mkdir(join(TEST_RX_HOME, "hosted"), { recursive: true });
+  await mkdir(join(TEST_RX_HOME, "cache"), { recursive: true });
 });
 
 Given(
