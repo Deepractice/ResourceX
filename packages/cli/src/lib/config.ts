@@ -11,10 +11,13 @@ export interface Config {
   registry?: string;
 }
 
-const CONFIG_PATH = join(homedir(), ".resourcex", "config.json");
+// Support RX_HOME environment variable for testing
+const RX_HOME = process.env.RX_HOME || join(homedir(), ".resourcex");
+const CONFIG_PATH = join(RX_HOME, "config.json");
 const DEFAULT_CONFIG: Config = {
-  path: join(homedir(), ".resourcex"),
+  path: RX_HOME,
   domain: "localhost",
+  registry: process.env.RX_REGISTRY,
 };
 
 export async function getConfig(): Promise<Config> {

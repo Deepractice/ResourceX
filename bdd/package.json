@@ -11,6 +11,9 @@
   },
   "devDependencies": {
     "resourcexjs": "workspace:*",
+    "@resourcexjs/server": "workspace:*",
+    "@hono/node-server": "^1.14.3",
+    "hono": "^4.7.10",
     "@cucumber/cucumber": "^11.2.0",
     "@types/node": "^24.9.2",
     "tsx": "^4.20.6",

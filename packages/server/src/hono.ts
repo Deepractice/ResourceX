@@ -70,7 +70,7 @@ export function createRegistryServer(config?: RegistryServerConfig): Hono {
   });
 
   // HEAD /resource/:locator
-  app.head(`${ENDPOINTS.resource}/:locator`, async (c) => {
+  app.on("HEAD", `${ENDPOINTS.resource}/:locator`, async (c) => {
     const locator = decodeURIComponent(c.req.param("locator"));
     return handleHeadResource(locator, registry);
   });

@@ -125,9 +125,9 @@ export interface ResourceX {
   // ===== Remote operations =====
 
   /**
-   * Push resource from directory to remote registry.
+   * Push local resource to remote registry.
    */
-  push(path: string): Promise<void>;
+  push(locator: string): Promise<void>;
 
   /**
    * Pull resource from remote to local cache.
@@ -294,26 +294,15 @@ class DefaultResourceX implements ResourceX {
 
   // ===== Remote operations =====
 
-  async push(path: string): Promise<void> {
+  async push(locator: string): Promise<void> {
     if (!this.registry) {
       throw new RegistryError("Registry URL not configured. Set 'registry' in config.");
     }
 
-    const rxr = await loadResource(path);
+    const normalizedLocator = this.normalizeLocator(locator);
+    const rxr = await this.getRxr(normalizedLocator);
 
-    // Override domain with configured default
-    const { manifest: createManifest, resource: createResource } =
-      await import("@resourcexjs/core");
-    const newManifest = createManifest({
-      domain: this.domain,
-      path: rxr.manifest.path,
-      name: rxr.manifest.name,
-      type: rxr.manifest.type,
-      version: rxr.manifest.version,
-    });
-    const newRxr = createResource(newManifest, rxr.archive);
-
-    await this.publishToRegistry(newRxr);
+    await this.publishToRegistry(rxr);
   }
 
   async pull(locator: string): Promise<void> {
