@@ -441,7 +441,13 @@ class DefaultResourceX implements ResourceX {
       throw new RegistryError(`Failed to fetch resource: ${manifestResponse.statusText}`);
     }
 
-    const manifestData = await manifestResponse.json();
+    const manifestData = (await manifestResponse.json()) as {
+      domain: string;
+      path?: string;
+      name: string;
+      type: string;
+      version: string;
+    };
 
     const {
       manifest: createManifest,
@@ -449,7 +455,13 @@ class DefaultResourceX implements ResourceX {
       resource: createResource,
     } = await import("@resourcexjs/core");
 
-    const rxm = createManifest(manifestData);
+    const rxm = createManifest({
+      domain: manifestData.domain,
+      path: manifestData.path,
+      name: manifestData.name,
+      type: manifestData.type,
+      version: manifestData.version,
+    });
 
     // Fetch content
     const contentUrl = `${baseUrl}/content?locator=${encodeURIComponent(locator)}`;
@@ -511,7 +523,8 @@ class DefaultResourceX implements ResourceX {
     } else {
       // Use sandbox
       const { createSandbox } = await import("sandboxxjs");
-      const sandbox = createSandbox({ type: this.isolator });
+
+      const sandbox = createSandbox({ type: this.isolator } as any);
 
       const resolverMatch = code.match(/\/\/ @resolver: (\w+)/);
       const resolverName = resolverMatch ? resolverMatch[1] : "resolver";

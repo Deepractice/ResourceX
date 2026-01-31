@@ -89,4 +89,4 @@ export {
 export type { ARI, ARL } from "@resourcexjs/arp";
 
 // RxrTransport from local (ResourceX-specific)
-export { RxrTransport, clearRegistryCache, type RxrTransportRegistry } from "./transport/rxr.js";
+export { RxrTransport, clearRegistryCache } from "./transport/rxr.js";

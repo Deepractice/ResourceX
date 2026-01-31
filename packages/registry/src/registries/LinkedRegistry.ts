@@ -1,5 +1,5 @@
 import { join, resolve as resolvePath } from "node:path";
-import { symlink, lstat, readlink, rm, mkdir, readdir, stat } from "node:fs/promises";
+import { symlink, lstat, readlink, rm, mkdir, readdir } from "node:fs/promises";
 import type { RXL, RXR } from "@resourcexjs/core";
 import { format, parse } from "@resourcexjs/core";
 import { loadResource } from "@resourcexjs/loader";

@@ -4,31 +4,61 @@
  * Format: arp:{semantic}:rxr://{rxl}/{internal-path}
  *
  * This is a read-only transport - set and delete operations are not supported.
- *
- * The transport uses a ResourceX instance that handles:
- * - localhost: Local storage only
- * - Other domains: Local cache -> [Mirror] -> Source (well-known)
  */
 
+import { homedir } from "node:os";
+import { join } from "node:path";
 import { TransportError } from "@resourcexjs/arp";
 import type { TransportHandler, TransportResult, TransportParams } from "@resourcexjs/arp";
-import { extract } from "@resourcexjs/core";
-import type { RXA } from "@resourcexjs/core";
-import { createResourceX } from "../ResourceX.js";
-import type { ResourceX } from "../ResourceX.js";
+import { extract, parse } from "@resourcexjs/core";
+import type { RXR } from "@resourcexjs/core";
+import { FileSystemStorage } from "@resourcexjs/storage";
+import { HostedRegistry, MirrorRegistry, LinkedRegistry } from "@resourcexjs/registry";
+
+const DEFAULT_BASE_PATH = `${homedir()}/.resourcex`;
 
 /**
- * Minimal registry interface required by RxrTransport.
- * This allows RxrTransport to work without depending on the full Registry type.
+ * Internal registry access for RxrTransport.
+ * Uses the same registry structure as ResourceX.
  */
-export interface RxrTransportRegistry {
-  get(locator: string): Promise<{
-    archive: RXA;
-  }>;
+class InternalRegistryAccess {
+  private readonly hosted: HostedRegistry;
+  private readonly cache: MirrorRegistry;
+  private readonly linked: LinkedRegistry;
+
+  constructor(basePath: string = DEFAULT_BASE_PATH) {
+    const hostedStorage = new FileSystemStorage(join(basePath, "hosted"));
+    const cacheStorage = new FileSystemStorage(join(basePath, "cache"));
+
+    this.hosted = new HostedRegistry(hostedStorage);
+    this.cache = new MirrorRegistry(cacheStorage);
+    this.linked = new LinkedRegistry(join(basePath, "linked"));
+  }
+
+  async get(locator: string): Promise<RXR> {
+    const rxl = parse(locator);
+
+    // Check linked first (development priority)
+    if (await this.linked.has(rxl)) {
+      return this.linked.get(rxl);
+    }
+
+    // Check hosted
+    if (await this.hosted.has(rxl)) {
+      return this.hosted.get(rxl);
+    }
+
+    // Check cache
+    if (await this.cache.has(rxl)) {
+      return this.cache.get(rxl);
+    }
+
+    throw new Error(`Resource not found: ${locator}`);
+  }
 }
 
-// Singleton ResourceX instance
-let defaultRx: ResourceX | null = null;
+// Singleton registry access
+let defaultRegistry: InternalRegistryAccess | null = null;
 
 /**
  * RXR Transport - Access files inside a resource.
@@ -41,7 +71,7 @@ let defaultRx: ResourceX | null = null;
 export class RxrTransport implements TransportHandler {
   readonly name = "rxr";
 
-  constructor(private registry?: RxrTransportRegistry) {}
+  constructor(private basePath?: string) {}
 
   /**
    * Get file content from inside a resource.
@@ -95,17 +125,16 @@ export class RxrTransport implements TransportHandler {
 
   /**
    * Get the registry instance.
-   * Uses injected registry if provided, otherwise creates/returns singleton.
    */
-  private getRegistry(): RxrTransportRegistry {
-    if (this.registry) {
-      return this.registry;
+  private getRegistry(): InternalRegistryAccess {
+    if (this.basePath) {
+      return new InternalRegistryAccess(this.basePath);
     }
 
-    if (!defaultRx) {
-      defaultRx = createResourceX();
+    if (!defaultRegistry) {
+      defaultRegistry = new InternalRegistryAccess();
     }
-    return defaultRx;
+    return defaultRegistry;
   }
 
   /**
@@ -140,5 +169,5 @@ export class RxrTransport implements TransportHandler {
  * Clear the default registry. Useful for testing.
  */
 export function clearRegistryCache(): void {
-  defaultRx = null;
+  defaultRegistry = null;
 }
