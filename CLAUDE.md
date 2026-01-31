@@ -148,7 +148,7 @@ LinkedRegistry; // Development symlinks (live editing)
 
 Unified client API combining all layers. Users only interact with:
 
-- **path**: Local directory (for add, publish, link)
+- **path**: Local directory (for add, push, link)
 - **locator**: Resource identifier string (e.g., `hello.text@1.0.0`)
 
 ```typescript
@@ -159,23 +159,17 @@ const rx = createResourceX({
   registry: "https://registry.mycompany.com",
 });
 
-// Directory operations
-await rx.add("./my-prompt"); // Add from directory to local
-await rx.publish("./my-prompt"); // Publish from directory to remote
+// Local operations
+await rx.add("./my-prompt"); // Add from directory to local storage
 await rx.link("./dev-prompt"); // Link for live development
-
-// Locator operations
-await rx.pull("hello.text@1.0.0"); // Pull from remote to local cache
-await rx.push("hello.text@1.0.0"); // Push local to remote
 await rx.has("hello.text@1.0.0"); // Check if exists locally
 await rx.remove("hello.text@1.0.0"); // Remove from local
-
-// Resolve & execute
-const result = await rx.resolve("hello.text@1.0.0");
-const content = await result.execute();
-
-// Search
+const result = await rx.resolve("hello.text@1.0.0"); // Resolve & execute
 const results = await rx.search("hello"); // Search local resources
+
+// Remote operations
+await rx.push("./my-prompt"); // Push directory to remote registry
+await rx.pull("hello.text@1.0.0"); // Pull from remote to local cache
 
 // Extension
 rx.supportType(myCustomType); // Add custom type

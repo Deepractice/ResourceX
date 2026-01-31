@@ -7,9 +7,9 @@
 
 ## resourcexjs
 
-Simplified API that hides internal objects (RXR, RXL, RXM, RXA). Users now interact only with:
+Simplified API that hides internal objects. Users now interact only with:
 
-- `path`: local directory (for add, publish, link)
+- `path`: local directory (for add, push, link)
 - `locator`: resource identifier string (e.g., "hello.text@1.0.0")
 
 ### New Features
@@ -17,23 +17,23 @@ Simplified API that hides internal objects (RXR, RXL, RXM, RXA). Users now inter
 - `domain` config for default domain (default: "localhost")
 - `registry` config for central registry URL
 - Locator normalization: short locators use default domain
-- `publish(path)` for directory → remote registry
 
 ### API Changes
 
-- `save()` renamed to `add()`
-- `get()` removed (use `resolve()` instead)
-- `load()` removed (internal only now)
-- Hidden internal objects from public exports
+- `push(path)` - push directory to remote registry (renamed from publish)
+- `pull(locator)` - pull from remote to local cache
+- Removed old `push(locator)` method
+- Hidden internal objects (RXR, RXL, RXM, RXA) from public exports
 
 ## @resourcexjs/protocol
 
-Rewrote HTTP API protocol to match ResourceX implementation:
+Rewrote HTTP API protocol with RESTful endpoints:
 
-- `POST /resource` - create/update manifest (JSON body)
-- `GET /resource?locator=xxx` - get manifest
-- `HEAD /resource?locator=xxx` - check existence
-- `DELETE /resource?locator=xxx` - delete resource
-- `POST /content?locator=xxx` - upload archive (binary)
-- `GET /content?locator=xxx` - get archive
+- `POST /publish` - publish resource (multipart form data)
+- `GET /resource/{locator}` - get manifest
+- `HEAD /resource/{locator}` - check existence
+- `DELETE /resource/{locator}` - delete resource
+- `GET /content/{locator}` - get content
 - `GET /search?q=xxx` - search resources
+
+Client uses push/pull (user perspective), Server uses publish (registry perspective).
