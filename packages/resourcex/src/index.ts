@@ -30,7 +30,7 @@
 // Main API
 // ============================================
 export { createResourceX } from "./ResourceX.js";
-export type { ResourceX, ResourceXConfig, Executable } from "./ResourceX.js";
+export type { ResourceX, ResourceXConfig, Resource, Executable } from "./ResourceX.js";
 
 // ============================================
 // Errors

@@ -25,10 +25,12 @@ if (!result.success) {
   process.exit(1);
 }
 
-// Add shebang to the output file
+// Ensure shebang exists (Bun may already add one with target: "bun")
 const indexPath = `${outdir}/index.js`;
 const content = await Bun.file(indexPath).text();
-await Bun.write(indexPath, `#!/usr/bin/env bun\n${content}`);
+if (!content.startsWith("#!/")) {
+  await Bun.write(indexPath, `#!/usr/bin/env bun\n${content}`);
+}
 
 // Make executable
 await Bun.$`chmod +x ${indexPath}`;

@@ -91,10 +91,6 @@
         "@resourcexjs/core": "workspace:*",
       },
     },
-    "packages/protocol": {
-      "name": "@resourcexjs/protocol",
-      "version": "2.5.0",
-    },
     "packages/registry": {
       "name": "@resourcexjs/registry",
       "version": "2.5.0",
@@ -491,8 +487,6 @@
     "@resourcexjs/loader": ["@resourcexjs/loader@workspace:packages/loader"],
 
     "@resourcexjs/portal": ["@resourcexjs/portal@workspace:apps/portal"],
-
-    "@resourcexjs/protocol": ["@resourcexjs/protocol@workspace:packages/protocol"],
 
     "@resourcexjs/registry": ["@resourcexjs/registry@workspace:packages/registry"],
 

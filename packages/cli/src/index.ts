@@ -7,6 +7,7 @@ import { defineCommand, runMain } from "citty";
 import { add } from "./commands/add.js";
 import { link } from "./commands/link.js";
 import { list } from "./commands/list.js";
+import { info } from "./commands/info.js";
 import { remove } from "./commands/remove.js";
 import { push } from "./commands/push.js";
 import { pull } from "./commands/pull.js";
@@ -24,6 +25,7 @@ const main = defineCommand({
     add,
     link,
     list,
+    info,
     remove,
     push,
     pull,

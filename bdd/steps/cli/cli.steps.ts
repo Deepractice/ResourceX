@@ -1,4 +1,4 @@
-import { Given, When, Then, Before, After, BeforeAll, AfterAll } from "@cucumber/cucumber";
+import { Given, When, Before, After, BeforeAll, AfterAll } from "@cucumber/cucumber";
 import { strict as assert } from "node:assert";
 import { join } from "node:path";
 import { mkdir, rm, writeFile } from "node:fs/promises";
@@ -315,35 +315,4 @@ When("I run rx command {string}", async function (this: CLIWorld, command: strin
   this.commandExitCode = exitCode;
 });
 
-// ============================================
-// Then steps
-// ============================================
-
-Then("the command should succeed", async function (this: CLIWorld) {
-  assert.equal(
-    this.commandExitCode,
-    0,
-    `Command should succeed but got exit code ${this.commandExitCode}. Output: ${this.commandOutput}`
-  );
-});
-
-Then("the command should fail", async function (this: CLIWorld) {
-  assert.notEqual(this.commandExitCode, 0, "Command should fail");
-});
-
-Then("the output should contain {string}", async function (this: CLIWorld, expected: string) {
-  assert.ok(
-    this.commandOutput.includes(expected),
-    `Output should contain "${expected}" but got: ${this.commandOutput}`
-  );
-});
-
-Then(
-  "the output should not contain {string}",
-  async function (this: CLIWorld, notExpected: string) {
-    assert.ok(
-      !this.commandOutput.includes(notExpected),
-      `Output should not contain "${notExpected}" but got: ${this.commandOutput}`
-    );
-  }
-);
+// Then steps are defined in common.steps.ts

@@ -66,6 +66,37 @@ export interface ResourceXConfig {
 }
 
 /**
+ * Resource - user-facing resource object.
+ *
+ * Three forms of resource reference:
+ * - path: local directory (e.g., "./my-prompt")
+ * - locator: identifier string (e.g., "hello.text@1.0.0")
+ * - resource: this object with full metadata
+ */
+export interface Resource {
+  /** Full locator string (e.g., "localhost/hello.text@1.0.0") */
+  locator: string;
+
+  /** Resource domain */
+  domain: string;
+
+  /** Resource path within domain (optional) */
+  path?: string;
+
+  /** Resource name */
+  name: string;
+
+  /** Resource type (e.g., "text", "json") */
+  type: string;
+
+  /** Semantic version */
+  version: string;
+
+  /** File list in the resource archive */
+  files?: string[];
+}
+
+/**
  * Executable resource - result of resolve().
  */
 export interface Executable<T = unknown> {
@@ -92,8 +123,9 @@ export interface ResourceX {
 
   /**
    * Add resource from directory to local storage.
+   * @returns The added resource
    */
-  add(path: string): Promise<void>;
+  add(path: string): Promise<Resource>;
 
   /**
    * Link development directory (symlink for live editing).
@@ -104,6 +136,12 @@ export interface ResourceX {
    * Check if resource exists locally.
    */
   has(locator: string): Promise<boolean>;
+
+  /**
+   * Get detailed resource information.
+   * @returns Resource with files list
+   */
+  info(locator: string): Promise<Resource>;
 
   /**
    * Remove resource from local storage.
@@ -197,9 +235,24 @@ class DefaultResourceX implements ResourceX {
     return `${this.domain}/${locator}`;
   }
 
+  /**
+   * Convert RXR to user-facing Resource.
+   */
+  private toResource(rxr: RXR): Resource {
+    return {
+      locator: format(rxr.locator),
+      domain: rxr.manifest.domain,
+      path: rxr.manifest.path,
+      name: rxr.manifest.name,
+      type: rxr.manifest.type,
+      version: rxr.manifest.version,
+      files: rxr.manifest.files,
+    };
+  }
+
   // ===== Directory operations =====
 
-  async add(path: string): Promise<void> {
+  async add(path: string): Promise<Resource> {
     const rxr = await loadResource(path);
 
     // Override domain with configured default if not set
@@ -216,8 +269,10 @@ class DefaultResourceX implements ResourceX {
       });
       const newRxr = createResource(newManifest, rxr.archive);
       await this.hosted.put(newRxr);
+      return this.toResource(newRxr);
     } else {
       await this.hosted.put(rxr);
+      return this.toResource(rxr);
     }
   }
 
@@ -232,6 +287,25 @@ class DefaultResourceX implements ResourceX {
     return (
       (await this.linked.has(rxl)) || (await this.hosted.has(rxl)) || (await this.cache.has(rxl))
     );
+  }
+
+  async info(locator: string): Promise<Resource> {
+    const normalizedLocator = this.normalizeLocator(locator);
+    const rxr = await this.getRxr(normalizedLocator);
+
+    // Extract file list from archive
+    const filesRecord = await extract(rxr.archive);
+    const files = Object.keys(filesRecord);
+
+    return {
+      locator: format(rxr.locator),
+      domain: rxr.manifest.domain,
+      path: rxr.manifest.path,
+      name: rxr.manifest.name,
+      type: rxr.manifest.type,
+      version: rxr.manifest.version,
+      files,
+    };
   }
 
   async remove(locator: string): Promise<void> {

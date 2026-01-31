@@ -21,8 +21,16 @@ export const add = defineCommand({
   async run({ args }) {
     try {
       const rx = await getClient();
-      await rx.add(args.path);
-      consola.success(`Added: ${args.path}`);
+      const resource = await rx.add(args.path);
+
+      consola.success(`Added resource:\n`);
+      console.log(`  Locator:  ${resource.locator}`);
+      console.log(`  Name:     ${resource.name}`);
+      console.log(`  Type:     ${resource.type}`);
+      console.log(`  Version:  ${resource.version}`);
+      if (resource.files?.length) {
+        console.log(`  Files:    ${resource.files.join(", ")}`);
+      }
     } catch (error) {
       consola.error(error instanceof Error ? error.message : "Failed to add resource");
       process.exit(1);
