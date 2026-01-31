@@ -2,11 +2,35 @@ import type { RXL } from "~/types/index.js";
 import { LocatorError } from "~/errors.js";
 
 /**
+ * Check if a string looks like a registry (contains port or is a domain).
+ * Used to distinguish registry from path.
+ */
+function looksLikeRegistry(str: string): boolean {
+  // Contains port (e.g., localhost:3098)
+  if (str.includes(":") && !str.includes("/")) {
+    return true;
+  }
+  // Contains dot (e.g., registry.example.com)
+  if (str.includes(".")) {
+    return true;
+  }
+  // localhost without port
+  if (str === "localhost") {
+    return true;
+  }
+  return false;
+}
+
+/**
  * Parse locator string to RXL.
  *
- * Two formats supported:
- * - Local:  name.type@version (no registry)
- * - Remote: registry/[path/]name.type@version (with registry)
+ * Docker-style format: [registry/][path/]name[:tag]
+ *
+ * Examples:
+ * - hello                    → name=hello, tag=latest
+ * - hello:1.0.0             → name=hello, tag=1.0.0
+ * - prompts/hello:stable    → path=prompts, name=hello, tag=stable
+ * - localhost:3098/hello:1.0.0 → registry=localhost:3098, name=hello, tag=1.0.0
  *
  * @param locator - Locator string
  * @returns RXL object
@@ -14,72 +38,77 @@ import { LocatorError } from "~/errors.js";
  */
 export function parse(locator: string): RXL {
   if (!locator || typeof locator !== "string") {
-    throw new LocatorError("locator must be a non-empty string", locator);
+    throw new LocatorError("Locator must be a non-empty string", locator);
   }
 
-  // Split by @ to get version
-  const atIndex = locator.lastIndexOf("@");
-  if (atIndex === -1) {
-    throw new LocatorError("locator must contain version (@)", locator);
+  // Validate no invalid characters
+  if (locator.includes("@")) {
+    throw new LocatorError("Invalid locator format. Use name:tag instead of name@version", locator);
   }
 
-  const version = locator.slice(atIndex + 1);
-  const beforeVersion = locator.slice(0, atIndex);
+  // Split by last colon to extract tag (but be careful with registry port)
+  // Strategy: find the name:tag part first, which is after the last /
+  const lastSlashIndex = locator.lastIndexOf("/");
+  let beforeSlash = "";
+  let afterSlash = locator;
 
-  if (!version) {
-    throw new LocatorError("version is required", locator);
+  if (lastSlashIndex !== -1) {
+    beforeSlash = locator.substring(0, lastSlashIndex);
+    afterSlash = locator.substring(lastSlashIndex + 1);
   }
 
-  // Split by . to get type (last dot before @)
-  const dotIndex = beforeVersion.lastIndexOf(".");
-  if (dotIndex === -1) {
-    throw new LocatorError("locator must contain type (.)", locator);
+  // Parse name:tag from afterSlash
+  const colonIndex = afterSlash.lastIndexOf(":");
+  let name: string;
+  let tag: string;
+
+  if (colonIndex === -1) {
+    // No tag specified, default to "latest"
+    name = afterSlash;
+    tag = "latest";
+  } else {
+    name = afterSlash.substring(0, colonIndex);
+    tag = afterSlash.substring(colonIndex + 1);
   }
 
-  const type = beforeVersion.slice(dotIndex + 1);
-  const beforeType = beforeVersion.slice(0, dotIndex);
-
-  if (!type) {
-    throw new LocatorError("type is required", locator);
+  if (!name) {
+    throw new LocatorError("Name is required", locator);
   }
 
-  // Split by / to get registry, path, name
-  const parts = beforeType.split("/");
+  if (!tag) {
+    throw new LocatorError("Tag cannot be empty. Use name:tag format or omit tag for :latest", locator);
+  }
 
-  // Check if has registry (contains /)
-  if (parts.length === 1) {
-    // Local format: name.type@version (no registry)
-    const name = parts[0];
-    if (!name) {
-      throw new LocatorError("name is required", locator);
-    }
+  // If no slash, it's a simple local locator
+  if (lastSlashIndex === -1) {
     return {
       registry: undefined,
       path: undefined,
       name,
-      type,
-      version,
+      tag,
     };
   }
 
-  // Remote format: registry/[path/]name.type@version
-  const registry = parts[0];
-  const name = parts[parts.length - 1];
-  const path = parts.length > 2 ? parts.slice(1, -1).join("/") : undefined;
+  // Parse registry and path from beforeSlash
+  const parts = beforeSlash.split("/");
 
-  if (!registry) {
-    throw new LocatorError("registry is required", locator);
+  // Check if first part looks like a registry
+  if (looksLikeRegistry(parts[0])) {
+    const registry = parts[0];
+    const path = parts.length > 1 ? parts.slice(1).join("/") : undefined;
+    return {
+      registry,
+      path,
+      name,
+      tag,
+    };
   }
 
-  if (!name) {
-    throw new LocatorError("name is required", locator);
-  }
-
+  // No registry, everything before last slash is path
   return {
-    registry,
-    path,
+    registry: undefined,
+    path: beforeSlash,
     name,
-    type,
-    version,
+    tag,
   };
 }

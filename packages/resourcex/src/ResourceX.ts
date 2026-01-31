@@ -25,7 +25,7 @@ import {
   CacheAccessor,
   RemoteAccessor,
 } from "@resourcexjs/registry";
-import type { SearchOptions, RemoteFetcher } from "@resourcexjs/registry";
+import type { SearchOptions, RemoteFetcher, RegistryAccessor } from "@resourcexjs/registry";
 import { loadResource } from "@resourcexjs/loader";
 
 const DEFAULT_BASE_PATH = `${homedir()}/.resourcex`;
@@ -260,7 +260,7 @@ class DefaultResourceX implements ResourceX {
     this.linked = new LinkedRegistry(join(this.basePath, "linked"));
 
     // Build access chain
-    const accessors = [
+    const accessors: RegistryAccessor[] = [
       new LinkedAccessor(this.linked),
       new LocalAccessor(this.local),
       new CacheAccessor(this.cache),

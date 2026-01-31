@@ -134,8 +134,8 @@ async function publishToServer(
   // Create tar.gz with "content" file
   await execAsync(`tar -czf ${archivePath} -C ${tmpDir} content`);
 
-  // Publish via curl (no /api prefix)
-  const locator = `localhost/${name}.${type}@${version}`;
+  // Publish via curl using new Docker-style locator format: registry/name:tag
+  const locator = `localhost/${name}:${version}`;
   const result = await execAsync(
     `curl -s -X POST ${SERVER_URL}/publish ` +
       `-F "locator=${locator}" ` +
@@ -246,12 +246,14 @@ Given(
 Given(
   "a local resource {string} with content {string}",
   async function (this: CLIWorld, locator: string, content: string) {
-    // Parse locator
-    const match = locator.match(/^([^.]+)\.([^@]+)@(.+)$/);
+    // Parse locator in new Docker-style format: name:tag (tag is version)
+    // Type defaults to "text" since it's no longer in the locator
+    const match = locator.match(/^([^:]+):(.+)$/);
     if (!match) {
       throw new Error(`Invalid locator: ${locator}`);
     }
-    const [, name, type, version] = match;
+    const [, name, version] = match;
+    const type = "text"; // Default type since it's no longer in locator
 
     // Create resource directory
     const resourceDir = join(TEST_RESOURCES, name);
@@ -272,18 +274,28 @@ Given(
 Given(
   "a remote resource {string} on the registry",
   async function (this: CLIWorld, locator: string) {
-    const { parse } = await import("resourcexjs");
-    const rxl = parse(locator);
-    await publishToServer(rxl.name, rxl.type, rxl.version, "Remote content");
+    // Parse locator in new Docker-style format: name:tag (tag is version)
+    const match = locator.match(/^([^:]+):(.+)$/);
+    if (!match) {
+      throw new Error(`Invalid locator: ${locator}`);
+    }
+    const [, name, version] = match;
+    const type = "text"; // Default type since it's no longer in locator
+    await publishToServer(name, type, version, "Remote content");
   }
 );
 
 Given(
   "a remote resource {string} on the registry with content {string}",
   async function (this: CLIWorld, locator: string, content: string) {
-    const { parse } = await import("resourcexjs");
-    const rxl = parse(locator);
-    await publishToServer(rxl.name, rxl.type, rxl.version, content);
+    // Parse locator in new Docker-style format: name:tag (tag is version)
+    const match = locator.match(/^([^:]+):(.+)$/);
+    if (!match) {
+      throw new Error(`Invalid locator: ${locator}`);
+    }
+    const [, name, version] = match;
+    const type = "text"; // Default type since it's no longer in locator
+    await publishToServer(name, type, version, content);
   }
 );
 

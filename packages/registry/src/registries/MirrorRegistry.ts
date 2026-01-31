@@ -7,11 +7,11 @@ import { RegistryError } from "../errors.js";
 /**
  * MirrorRegistry - Registry for cached/mirrored remote resources.
  *
- * Similar to HostedRegistry but adds cache management methods.
+ * Similar to LocalRegistry but includes registry in path.
  * Resources can be cleared (evicted from cache).
  *
  * Storage structure:
- *   {domain}/{path}/{name}.{type}/{version}/
+ *   {registry}/{path}/{name}/{tag}/
  *     - manifest.json
  *     - archive.tar.gz
  */
@@ -23,14 +23,13 @@ export class MirrorRegistry implements Registry {
    */
   private buildKeyPrefix(rxl: RXL): string {
     const registry = rxl.registry ?? "localhost";
-    const resourceName = rxl.type ? `${rxl.name}.${rxl.type}` : rxl.name;
-    const version = rxl.version ?? "latest";
+    const tag = rxl.tag ?? "latest";
 
     let key = registry;
     if (rxl.path) {
       key += `/${rxl.path}`;
     }
-    key += `/${resourceName}/${version}`;
+    key += `/${rxl.name}/${tag}`;
 
     return key;
   }
@@ -119,8 +118,7 @@ export class MirrorRegistry implements Registry {
     if (query) {
       const lowerQuery = query.toLowerCase();
       filtered = locators.filter((rxl) => {
-        const searchText =
-          `${rxl.registry ?? ""} ${rxl.path ?? ""} ${rxl.name} ${rxl.type ?? ""}`.toLowerCase();
+        const searchText = `${rxl.registry ?? ""} ${rxl.path ?? ""} ${rxl.name}`.toLowerCase();
         return searchText.includes(lowerQuery);
       });
     }
@@ -166,7 +164,7 @@ export class MirrorRegistry implements Registry {
 
   /**
    * Parse storage key to RXL.
-   * Key format: {registry}/{path}/{name}.{type}/{version}/manifest.json
+   * Key format: {registry}/{path}/{name}/{tag}/manifest.json
    */
   private parseKeyToRXL(key: string): RXL | null {
     // Remove /manifest.json suffix
@@ -174,31 +172,24 @@ export class MirrorRegistry implements Registry {
     const parts = dirPath.split("/");
 
     if (parts.length < 3) {
+      // Need at least: registry, name, tag
       return null;
     }
 
-    const version = parts.pop()!;
-    const nameTypePart = parts.pop()!;
+    // Last part is tag
+    const tag = parts.pop()!;
+    // Second to last is name
+    const name = parts.pop()!;
+    // First part is registry
     const registry = parts.shift()!;
+    // Remaining parts are path (if any)
     const path = parts.length > 0 ? parts.join("/") : undefined;
 
-    const dotIndex = nameTypePart.lastIndexOf(".");
-    let name: string;
-    let type: string | undefined;
-
-    if (dotIndex !== -1) {
-      name = nameTypePart.substring(0, dotIndex);
-      type = nameTypePart.substring(dotIndex + 1);
-    } else {
-      name = nameTypePart;
-      type = undefined;
-    }
-
+    // Construct locator string
     let locatorStr = registry;
     if (path) locatorStr += `/${path}`;
     locatorStr += `/${name}`;
-    if (type) locatorStr += `.${type}`;
-    locatorStr += `@${version}`;
+    if (tag !== "latest") locatorStr += `:${tag}`;
 
     try {
       return parse(locatorStr);

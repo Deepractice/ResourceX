@@ -33,9 +33,9 @@ Feature: Manage multiple resources
 
     # List shows all
     When I run "rx list"
-    Then the output should contain "greeting.text@1.0.0"
-    And the output should contain "farewell.text@1.0.0"
-    And the output should contain "error.text@1.0.0"
+    Then the output should contain "greeting:1.0.0"
+    And the output should contain "farewell:1.0.0"
+    And the output should contain "error:1.0.0"
 
   Scenario: Organize resources with paths
     # Create resources with path organization
@@ -73,31 +73,31 @@ Feature: Manage multiple resources
     And I run "rx add ./toolkit/reporter"
 
     # Push all to registry
-    When I run "rx push analyzer.text@1.0.0"
-    And I run "rx push reporter.text@1.0.0"
+    When I run "rx push analyzer:1.0.0"
+    And I run "rx push reporter:1.0.0"
     Then the command should succeed
 
     # Verify on registry
     When I run "rx search analyzer"
-    Then the output should contain "analyzer.text@1.0.0"
+    Then the output should contain "analyzer:1.0.0"
     When I run "rx search reporter"
-    Then the output should contain "reporter.text@1.0.0"
+    Then the output should contain "reporter:1.0.0"
 
   Scenario: Remove subset of resources
     # Add multiple resources
-    Given a local resource "keep-me.text@1.0.0" with content "Keep this"
-    And a local resource "delete-me.text@1.0.0" with content "Delete this"
-    And a local resource "also-keep.text@1.0.0" with content "Also keep"
+    Given a local resource "keep-me:1.0.0" with content "Keep this"
+    And a local resource "delete-me:1.0.0" with content "Delete this"
+    And a local resource "also-keep:1.0.0" with content "Also keep"
 
     # Remove one
-    When I run "rx remove delete-me.text@1.0.0"
+    When I run "rx remove delete-me:1.0.0"
     Then the command should succeed
 
     # Verify state
     When I run "rx list"
-    Then the output should contain "keep-me.text@1.0.0"
-    And the output should contain "also-keep.text@1.0.0"
-    And the output should not contain "delete-me.text@1.0.0"
+    Then the output should contain "keep-me:1.0.0"
+    And the output should contain "also-keep:1.0.0"
+    And the output should not contain "delete-me:1.0.0"
 
   Scenario: Update one resource without affecting others
     # Add multiple resources
@@ -122,9 +122,9 @@ Feature: Manage multiple resources
     When I run "rx add ./changing"
 
     # Verify stable unchanged
-    When I run "rx resolve stable.text@1.0.0"
+    When I run "rx resolve stable:1.0.0"
     Then the output should contain "Stable content"
 
     # Verify changing updated
-    When I run "rx resolve changing.text@1.1.0"
+    When I run "rx resolve changing:1.1.0"
     Then the output should contain "Updated content"

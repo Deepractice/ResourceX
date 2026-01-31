@@ -22,18 +22,18 @@ Feature: Create and test resource locally
     # Step 3: Verify it's listed
     When I run "rx list"
     Then the command should succeed
-    And the output should contain "my-prompt.text@1.0.0"
+    And the output should contain "my-prompt:1.0.0"
 
     # Step 4: Resolve and verify output
-    When I run "rx resolve my-prompt.text@1.0.0"
+    When I run "rx resolve my-prompt:1.0.0"
     Then the command should succeed
     And the output should contain "Hello, this is my first resource!"
 
     # Step 5: Clean up
-    When I run "rx remove my-prompt.text@1.0.0"
+    When I run "rx remove my-prompt:1.0.0"
     Then the command should succeed
     And the output should contain "Removed"
 
     # Step 6: Verify removal
     When I run "rx list"
-    Then the output should not contain "my-prompt.text@1.0.0"
+    Then the output should not contain "my-prompt:1.0.0"

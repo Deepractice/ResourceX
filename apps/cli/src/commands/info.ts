@@ -14,7 +14,7 @@ export const info = defineCommand({
   args: {
     locator: {
       type: "positional",
-      description: "Resource locator (e.g., hello.text@1.0.0)",
+      description: "Resource locator (e.g., hello:1.0.0)",
       required: true,
     },
   },
@@ -24,11 +24,13 @@ export const info = defineCommand({
       const resource = await rx.info(args.locator);
 
       console.log();
-      console.log(`  ${resource.name}.${resource.type}@${resource.version}`);
+      console.log(`  ${resource.name}:${resource.version}`);
       console.log(`  ${"─".repeat(40)}`);
       console.log();
       console.log(`  Locator:  ${resource.locator}`);
-      console.log(`  Domain:   ${resource.domain}`);
+      if (resource.registry) {
+        console.log(`  Registry: ${resource.registry}`);
+      }
       if (resource.path) {
         console.log(`  Path:     ${resource.path}`);
       }

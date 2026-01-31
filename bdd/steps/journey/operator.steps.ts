@@ -20,7 +20,7 @@ interface OperatorWorld {
 
 Before({ tags: "@operator" }, async function (this: OperatorWorld) {
   this.server = null;
-  this.serverPort = 3098;
+  this.serverPort = 3097;
   this.lastResponse = null;
   this.lastResponseBody = null;
 
@@ -69,7 +69,7 @@ When(
       options[row.option] = row.value;
     }
 
-    const port = parseInt(options.port || "3098", 10);
+    const port = parseInt(options.port || "3097", 10);
     const storagePath = options.storagePath ? join(BDD_ROOT, options.storagePath) : TEST_STORAGE;
 
     this.serverPort = port;
@@ -163,10 +163,10 @@ async function publishViaAPI(port: number, locator: string, content: string): Pr
   const { promisify } = await import("node:util");
   const execAsync = promisify(exec);
 
-  // Parse locator
-  const match = locator.match(/^([^.]+)\.([^@]+)@(.+)$/);
+  // Parse locator (Docker-style: name:tag)
+  const match = locator.match(/^([^:]+):(.+)$/);
   if (!match) throw new Error(`Invalid locator: ${locator}`);
-  const [, name, type, version] = match;
+  const [, name, version] = match;
 
   // Create temp files
   const tmpDir = join(BDD_ROOT, ".tmp-publish");
@@ -176,12 +176,12 @@ async function publishViaAPI(port: number, locator: string, content: string): Pr
   const contentPath = join(tmpDir, "content");
   const archivePath = join(tmpDir, "archive.tar.gz");
 
-  await writeFile(manifestPath, JSON.stringify({ name, type, version }));
+  await writeFile(manifestPath, JSON.stringify({ name, type: "text", version }));
   await writeFile(contentPath, content);
 
   await execAsync(`tar -czf ${archivePath} -C ${tmpDir} content`);
 
-  const fullLocator = `localhost/${name}.${type}@${version}`;
+  const fullLocator = `localhost/${name}:${version}`;
   await execAsync(
     `curl -s -X POST http://localhost:${port}/publish ` +
       `-F "locator=${fullLocator}" ` +

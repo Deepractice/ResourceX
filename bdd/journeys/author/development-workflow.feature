@@ -20,14 +20,14 @@ Feature: Development workflow with link
     And the output should contain "Linked"
 
     # Step 3: Resolve sees current content
-    When I run "rx resolve dev-prompt.text@0.1.0"
+    When I run "rx resolve dev-prompt:0.1.0"
     Then the output should contain "Initial draft"
 
     # Step 4: Modify content (simulate editing)
     Given I update file "dev-prompt/content" with "Improved draft"
 
     # Step 5: Resolve sees updated content immediately
-    When I run "rx resolve dev-prompt.text@0.1.0"
+    When I run "rx resolve dev-prompt:0.1.0"
     Then the output should contain "Improved draft"
 
   Scenario: Unlink after development complete
@@ -41,15 +41,15 @@ Feature: Development workflow with link
 
     # Verify linked
     When I run "rx list"
-    Then the output should contain "temp-dev.text@1.0.0"
+    Then the output should contain "temp-dev:1.0.0"
 
     # Unlink
-    When I run "rx unlink temp-dev.text@1.0.0"
+    When I run "rx unlink temp-dev:1.0.0"
     Then the command should succeed
     And the output should contain "Unlinked"
 
     # Verify no longer available
-    When I run "rx resolve temp-dev.text@1.0.0"
+    When I run "rx resolve temp-dev:1.0.0"
     Then the command should fail
 
   Scenario: Link takes priority over local storage
@@ -68,12 +68,12 @@ Feature: Development workflow with link
     When I run "rx link ./priority-dev"
 
     # Link should take priority
-    When I run "rx resolve priority.text@1.0.0"
+    When I run "rx resolve priority:1.0.0"
     Then the output should contain "Linked development version"
 
     # After unlink, falls back to local
-    When I run "rx unlink priority.text@1.0.0"
-    When I run "rx resolve priority.text@1.0.0"
+    When I run "rx unlink priority:1.0.0"
+    When I run "rx resolve priority:1.0.0"
     Then the output should contain "Local storage version"
 
   Scenario: Finalize development and add to local
@@ -92,8 +92,8 @@ Feature: Development workflow with link
     Then the command should succeed
 
     # Unlink development version
-    When I run "rx unlink final.text@1.0.0"
+    When I run "rx unlink final:1.0.0"
 
     # Local version persists
-    When I run "rx resolve final.text@1.0.0"
+    When I run "rx resolve final:1.0.0"
     Then the output should contain "Final polished version"

@@ -18,14 +18,14 @@ Feature: Publish resource to registry
     Then the command should succeed
 
     # Step 2: Push to registry
-    When I run "rx push my-tool.text@1.0.0"
+    When I run "rx push my-tool:1.0.0"
     Then the command should succeed
     And the output should contain "Pushed"
 
     # Step 3: Verify on registry (search)
     When I run "rx search my-tool"
     Then the command should succeed
-    And the output should contain "my-tool.text@1.0.0"
+    And the output should contain "my-tool:1.0.0"
 
   Scenario: Pull resource from registry to fresh environment
     # Setup: Publish a resource first
@@ -34,18 +34,18 @@ Feature: Publish resource to registry
       | resource.json | {"name":"shared-prompt","type":"text","version":"1.0.0"} |
       | content       | A prompt to share with others                         |
     When I run "rx add ./shared-prompt"
-    And I run "rx push shared-prompt.text@1.0.0"
+    And I run "rx push shared-prompt:1.0.0"
     Then the command should succeed
 
     # Clear local cache to simulate fresh environment
     Given a fresh local cache
 
     # Pull from registry
-    When I run "rx pull shared-prompt.text@1.0.0"
+    When I run "rx pull shared-prompt:1.0.0"
     Then the command should succeed
     And the output should contain "Pulled"
 
     # Verify can resolve
-    When I run "rx resolve shared-prompt.text@1.0.0"
+    When I run "rx resolve shared-prompt:1.0.0"
     Then the command should succeed
     And the output should contain "A prompt to share with others"

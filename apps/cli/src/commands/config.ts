@@ -14,7 +14,7 @@ const set = defineCommand({
   args: {
     key: {
       type: "positional",
-      description: "Configuration key (path, domain, registry)",
+      description: "Configuration key (path, registry)",
       required: true,
     },
     value: {
@@ -24,7 +24,7 @@ const set = defineCommand({
     },
   },
   async run({ args }) {
-    const validKeys = ["path", "domain", "registry"];
+    const validKeys = ["path", "registry"];
     if (!validKeys.includes(args.key)) {
       consola.error(`Invalid key: ${args.key}. Valid keys: ${validKeys.join(", ")}`);
       process.exit(1);
@@ -44,7 +44,6 @@ const list = defineCommand({
     const config = await getConfig();
     consola.info("Configuration:\n");
     console.log(`  path:     ${config.path}`);
-    console.log(`  domain:   ${config.domain}`);
     console.log(`  registry: ${config.registry || "(not set)"}`);
   },
 });

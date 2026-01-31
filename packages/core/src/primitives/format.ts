@@ -3,9 +3,12 @@ import type { RXL } from "~/types/index.js";
 /**
  * Format RXL to locator string.
  *
- * Two formats:
- * - Local:  name.type@version (no registry)
- * - Remote: registry/[path/]name.type@version (with registry)
+ * Docker-style format: [registry/][path/]name[:tag]
+ *
+ * Examples:
+ * - { name: "hello", tag: "latest" } → "hello" (omit :latest)
+ * - { name: "hello", tag: "1.0.0" } → "hello:1.0.0"
+ * - { registry: "localhost:3098", name: "hello", tag: "1.0.0" } → "localhost:3098/hello:1.0.0"
  *
  * @param rxl - Resource locator
  * @returns Locator string
@@ -16,13 +19,20 @@ export function format(rxl: RXL): string {
   // Add registry if present
   if (rxl.registry) {
     result += rxl.registry + "/";
-    if (rxl.path) {
-      result += rxl.path + "/";
-    }
   }
 
+  // Add path if present
+  if (rxl.path) {
+    result += rxl.path + "/";
+  }
+
+  // Add name
   result += rxl.name;
-  result += "." + rxl.type;
-  result += "@" + rxl.version;
+
+  // Add tag (omit if "latest" for cleaner output)
+  if (rxl.tag && rxl.tag !== "latest") {
+    result += ":" + rxl.tag;
+  }
+
   return result;
 }

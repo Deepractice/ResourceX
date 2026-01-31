@@ -10,9 +10,9 @@ Feature: Deploy and configure registry server
   Scenario: Start server and verify health
     When I start a registry server with:
       | option      | value              |
-      | port        | 3098               |
+      | port        | 3097               |
       | storagePath | .test-registry     |
-    Then the server should be running on port 3098
+    Then the server should be running on port 3097
     And GET "/health" should return status 200
 
   Scenario: Verify API endpoints are available
@@ -25,6 +25,6 @@ Feature: Deploy and configure registry server
     Given the registry server is running
     When I publish via API:
       | locator                | content      |
-      | test.text@1.0.0        | Hello API    |
-    Then GET "/resource/localhost%2Ftest.text%401.0.0" should return status 200
-    And GET "/content/localhost%2Ftest.text%401.0.0" should return status 200
+      | test:1.0.0             | Hello API    |
+    Then GET "/resource/localhost%2Ftest%3A1.0.0" should return status 200
+    And GET "/content/localhost%2Ftest%3A1.0.0" should return status 200

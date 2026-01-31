@@ -68,12 +68,26 @@ async function runRxCommand(
 }
 
 /**
+ * Parse new locator format: name:tag or name (defaults to :latest)
+ */
+function parseLocator(locator: string): { name: string; tag: string } {
+  const colonIndex = locator.lastIndexOf(":");
+  if (colonIndex === -1) {
+    return { name: locator, tag: "latest" };
+  }
+  return {
+    name: locator.substring(0, colonIndex),
+    tag: locator.substring(colonIndex + 1),
+  };
+}
+
+/**
  * Publish resource directly to server via API
+ * New locator format: name:tag
  */
 async function publishResourceToServer(
   name: string,
-  type: string,
-  version: string,
+  tag: string,
   content: string,
   serverUrl: string
 ): Promise<void> {
@@ -89,7 +103,8 @@ async function publishResourceToServer(
   const contentPath = join(tmpDir, "content");
   const archivePath = join(tmpDir, "archive.tar.gz");
 
-  await writeFile(manifestPath, JSON.stringify({ name, type, version }));
+  // Type is now in manifest, default to "text" for tests
+  await writeFile(manifestPath, JSON.stringify({ name, type: "text", version: tag }));
   await writeFile(contentPath, content);
 
   // Create tar.gz with "content" file
@@ -102,8 +117,8 @@ async function publishResourceToServer(
       ? `${url.hostname}:${url.port}`
       : url.hostname;
 
-  // Publish via curl
-  const locator = `${registry}/${name}.${type}@${version}`;
+  // New locator format: registry/name:tag
+  const locator = `${registry}/${name}:${tag}`;
   await execAsync(
     `curl -s -X POST ${serverUrl}/publish ` +
       `-F "locator=${locator}" ` +
@@ -235,10 +250,8 @@ Given("a registry server with no resources", async function (this: ConsumerWorld
 Given(
   "the registry has resource {string} with content {string}",
   async function (this: ConsumerWorld, locator: string, content: string) {
-    const match = locator.match(/^([^.]+)\.([^@]+)@(.+)$/);
-    if (!match) throw new Error(`Invalid locator: ${locator}`);
-    const [, name, type, version] = match;
-    await publishResourceToServer(name, type, version, content, REGISTRY_URL);
+    const { name, tag } = parseLocator(locator);
+    await publishResourceToServer(name, tag, content, REGISTRY_URL);
   }
 );
 
@@ -249,10 +262,8 @@ Given(
     dataTable: { hashes: () => Array<{ locator: string; content: string }> }
   ) {
     for (const row of dataTable.hashes()) {
-      const match = row.locator.match(/^([^.]+)\.([^@]+)@(.+)$/);
-      if (!match) throw new Error(`Invalid locator: ${row.locator}`);
-      const [, name, type, version] = match;
-      await publishResourceToServer(name, type, version, row.content, REGISTRY_URL);
+      const { name, tag } = parseLocator(row.locator);
+      await publishResourceToServer(name, tag, row.content, REGISTRY_URL);
     }
   }
 );
@@ -290,10 +301,8 @@ Given("consumer network is interrupted", async function (this: ConsumerWorld) {
 Given(
   "the registry resource {string} content changes to {string}",
   async function (this: ConsumerWorld, locator: string, newContent: string) {
-    const match = locator.match(/^([^.]+)\.([^@]+)@(.+)$/);
-    if (!match) throw new Error(`Invalid locator: ${locator}`);
-    const [, name, type, version] = match;
-    await publishResourceToServer(name, type, version, newContent, REGISTRY_URL);
+    const { name, tag } = parseLocator(locator);
+    await publishResourceToServer(name, tag, newContent, REGISTRY_URL);
   }
 );
 

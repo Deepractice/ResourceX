@@ -5,11 +5,11 @@ import type { Registry, SearchOptions } from "./Registry.js";
 import { RegistryError } from "../errors.js";
 
 /**
- * LocalRegistry - Registry for local/owned resources (no domain in path).
+ * LocalRegistry - Registry for local/owned resources (no registry in path).
  *
  * Uses Storage layer for persistence.
- * Storage structure (no domain):
- *   {name}.{type}/{version}/
+ * Storage structure (no registry):
+ *   {path/}{name}/{tag}/
  *     - manifest.json
  *     - archive.tar.gz
  *
@@ -21,17 +21,16 @@ export class LocalRegistry implements Registry {
   constructor(private readonly storage: Storage) {}
 
   /**
-   * Build storage key prefix for a resource (no domain).
+   * Build storage key prefix for a resource (no registry).
    */
   private buildKeyPrefix(rxl: RXL): string {
-    const resourceName = rxl.type ? `${rxl.name}.${rxl.type}` : rxl.name;
-    const version = rxl.version ?? "latest";
+    const tag = rxl.tag ?? "latest";
 
-    let key = resourceName;
+    let key = rxl.name;
     if (rxl.path) {
       key = `${rxl.path}/${key}`;
     }
-    key += `/${version}`;
+    key += `/${tag}`;
 
     return key;
   }
@@ -96,7 +95,7 @@ export class LocalRegistry implements Registry {
 
   async remove(rxl: RXL): Promise<void> {
     const prefix = this.buildKeyPrefix(rxl);
-    // Delete entire version directory
+    // Delete entire tag directory
     await this.storage.delete(prefix);
   }
 
@@ -121,8 +120,7 @@ export class LocalRegistry implements Registry {
     if (query) {
       const lowerQuery = query.toLowerCase();
       filtered = locators.filter((rxl) => {
-        const searchText =
-          `${rxl.registry ?? ""} ${rxl.path ?? ""} ${rxl.name} ${rxl.type ?? ""}`.toLowerCase();
+        const searchText = `${rxl.path ?? ""} ${rxl.name}`.toLowerCase();
         return searchText.includes(lowerQuery);
       });
     }
@@ -137,8 +135,8 @@ export class LocalRegistry implements Registry {
   }
 
   /**
-   * Parse storage key to RXL (no domain).
-   * Key format: {path/}{name}.{type}/{version}/manifest.json
+   * Parse storage key to RXL (no registry).
+   * Key format: {path/}{name}/{tag}/manifest.json
    */
   private parseKeyToRXL(key: string): RXL | null {
     // Remove /manifest.json suffix
@@ -146,36 +144,22 @@ export class LocalRegistry implements Registry {
     const parts = dirPath.split("/");
 
     if (parts.length < 2) {
-      // Need at least: name.type, version
+      // Need at least: name, tag
       return null;
     }
 
-    // Last part is version
-    const version = parts.pop()!;
-    // Second to last is {name}.{type}
-    const nameTypePart = parts.pop()!;
+    // Last part is tag
+    const tag = parts.pop()!;
+    // Second to last is name
+    const name = parts.pop()!;
     // Remaining parts are path (if any)
     const path = parts.length > 0 ? parts.join("/") : undefined;
 
-    // Split name and type
-    const dotIndex = nameTypePart.lastIndexOf(".");
-    let name: string;
-    let type: string | undefined;
-
-    if (dotIndex !== -1) {
-      name = nameTypePart.substring(0, dotIndex);
-      type = nameTypePart.substring(dotIndex + 1);
-    } else {
-      name = nameTypePart;
-      type = undefined;
-    }
-
-    // Construct locator string (no domain)
+    // Construct locator string (no registry)
     let locatorStr = "";
     if (path) locatorStr += `${path}/`;
     locatorStr += name;
-    if (type) locatorStr += `.${type}`;
-    locatorStr += `@${version}`;
+    if (tag !== "latest") locatorStr += `:${tag}`;
 
     try {
       return parse(locatorStr);

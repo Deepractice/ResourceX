@@ -14,7 +14,7 @@ import { RegistryError } from "../errors.js";
  * Instead, it manages symlinks in a base directory.
  *
  * Storage structure:
- *   {basePath}/{domain}/{path}/{name}.{type}/{version} → /path/to/dev/folder
+ *   {basePath}/{registry}/{path}/{name}/{tag} → /path/to/dev/folder
  */
 export class LinkedRegistry implements Registry {
   constructor(private readonly basePath: string) {}
@@ -24,14 +24,13 @@ export class LinkedRegistry implements Registry {
    */
   private buildLinkPath(rxl: RXL): string {
     const registry = rxl.registry ?? "localhost";
-    const resourceName = rxl.type ? `${rxl.name}.${rxl.type}` : rxl.name;
-    const version = rxl.version ?? "latest";
+    const tag = rxl.tag ?? "latest";
 
     let linkPath = join(this.basePath, registry);
     if (rxl.path) {
       linkPath = join(linkPath, rxl.path);
     }
-    return join(linkPath, resourceName, version);
+    return join(linkPath, rxl.name, tag);
   }
 
   /**
@@ -97,7 +96,7 @@ export class LinkedRegistry implements Registry {
       const lowerQuery = query.toLowerCase();
       filtered = locators.filter((rxl) => {
         const searchText =
-          `${rxl.registry ?? ""} ${rxl.path ?? ""} ${rxl.name} ${rxl.type ?? ""}`.toLowerCase();
+          `${rxl.registry ?? ""} ${rxl.path ?? ""} ${rxl.name}`.toLowerCase();
         return searchText.includes(lowerQuery);
       });
     }
@@ -194,44 +193,30 @@ export class LinkedRegistry implements Registry {
 
   /**
    * Parse relative path to RXL.
-   * Path format: {registry}/{path}/{name}.{type}/{version}
+   * Path format: {registry}/{path}/{name}/{tag}
    */
   private parsePathToRXL(relPath: string): RXL | null {
     const parts = relPath.split("/");
 
     if (parts.length < 3) {
-      // Need at least: registry, name.type, version
+      // Need at least: registry, name, tag
       return null;
     }
 
-    // Last part is version
-    const version = parts.pop()!;
-    // Second to last is {name}.{type}
-    const nameTypePart = parts.pop()!;
+    // Last part is tag
+    const tag = parts.pop()!;
+    // Second to last is name
+    const name = parts.pop()!;
     // First part is registry
     const registry = parts.shift()!;
     // Remaining parts are path (if any)
     const path = parts.length > 0 ? parts.join("/") : undefined;
 
-    // Split name and type
-    const dotIndex = nameTypePart.lastIndexOf(".");
-    let name: string;
-    let type: string | undefined;
-
-    if (dotIndex !== -1) {
-      name = nameTypePart.substring(0, dotIndex);
-      type = nameTypePart.substring(dotIndex + 1);
-    } else {
-      name = nameTypePart;
-      type = undefined;
-    }
-
     // Construct locator string and parse
     let locatorStr = registry;
     if (path) locatorStr += `/${path}`;
     locatorStr += `/${name}`;
-    if (type) locatorStr += `.${type}`;
-    locatorStr += `@${version}`;
+    if (tag !== "latest") locatorStr += `:${tag}`;
 
     try {
       return parse(locatorStr);
