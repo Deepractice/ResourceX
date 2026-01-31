@@ -13,7 +13,7 @@ const REGISTRY_PORT = 3097;
 const REGISTRY_URL = `http://localhost:${REGISTRY_PORT}`;
 
 // CLI path
-const CLI_PATH = join(BDD_ROOT, "..", "packages/cli/src/index.ts");
+const CLI_PATH = join(BDD_ROOT, "..", "apps/cli/src/index.ts");
 
 // Author's own server instance (separate from CLI tests)
 let authorServer: Server | null = null;

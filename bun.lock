@@ -23,6 +23,20 @@
         "typescript": "^5.9.3",
       },
     },
+    "apps/cli": {
+      "name": "@resourcexjs/cli",
+      "version": "0.1.0",
+      "bin": {
+        "rx": "./dist/index.js",
+      },
+      "dependencies": {
+        "@hono/node-server": "",
+        "@resourcexjs/server": "workspace:*",
+        "citty": "^0.1.6",
+        "consola": "^3.4.2",
+        "resourcexjs": "workspace:*",
+      },
+    },
     "apps/portal": {
       "name": "@resourcexjs/portal",
       "version": "0.0.1",
@@ -63,19 +77,6 @@
     "packages/arp": {
       "name": "@resourcexjs/arp",
       "version": "2.5.0",
-    },
-    "packages/cli": {
-      "name": "@resourcexjs/cli",
-      "version": "0.1.0",
-      "bin": {
-        "rx": "./dist/index.js",
-      },
-      "dependencies": {
-        "@resourcexjs/server": "workspace:*",
-        "citty": "^0.1.6",
-        "consola": "^3.4.2",
-        "resourcexjs": "workspace:*",
-      },
     },
     "packages/core": {
       "name": "@resourcexjs/core",
@@ -480,7 +481,7 @@
 
     "@resourcexjs/bdd": ["@resourcexjs/bdd@workspace:bdd"],
 
-    "@resourcexjs/cli": ["@resourcexjs/cli@workspace:packages/cli"],
+    "@resourcexjs/cli": ["@resourcexjs/cli@workspace:apps/cli"],
 
     "@resourcexjs/core": ["@resourcexjs/core@workspace:packages/core"],
 

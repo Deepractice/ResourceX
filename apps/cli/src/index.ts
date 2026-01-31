@@ -14,6 +14,7 @@ import { pull } from "./commands/pull.js";
 import { search } from "./commands/search.js";
 import { resolve } from "./commands/resolve.js";
 import { config } from "./commands/config.js";
+import { server } from "./commands/server.js";
 
 const main = defineCommand({
   meta: {
@@ -32,6 +33,7 @@ const main = defineCommand({
     search,
     resolve,
     config,
+    server,
   },
 });
 

@@ -17,10 +17,11 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "resourcexjs": "workspace:*",
+    "@hono/node-server": "^1.19.9",
     "@resourcexjs/server": "workspace:*",
     "citty": "^0.1.6",
-    "consola": "^3.4.2"
+    "consola": "^3.4.2",
+    "resourcexjs": "workspace:*"
   },
   "devDependencies": {},
   "publishConfig": {

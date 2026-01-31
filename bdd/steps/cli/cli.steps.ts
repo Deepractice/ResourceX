@@ -16,7 +16,7 @@ const SERVER_PORT = 3099;
 const SERVER_URL = `http://localhost:${SERVER_PORT}`;
 
 // CLI path (relative to monorepo root, not bdd directory)
-const CLI_PATH = join(process.cwd(), "..", "packages/cli/src/index.ts");
+const CLI_PATH = join(process.cwd(), "..", "apps/cli/src/index.ts");
 
 interface CLIWorld {
   commandOutput: string;
