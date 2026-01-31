@@ -150,7 +150,7 @@ export interface ResourceX {
 
   /**
    * Resolve resource and return executable.
-   * Checks: linked → hosted → cache → remote
+   * Checks: linked → local → cache → remote
    */
   resolve<T = unknown>(locator: string): Promise<Executable<T>>;
 
@@ -191,7 +191,7 @@ class DefaultResourceX implements ResourceX {
   private readonly isolator: IsolatorType;
 
   // Three registries
-  private readonly hosted: HostedRegistry;
+  private readonly local: HostedRegistry;
   private readonly cache: MirrorRegistry;
   private readonly linked: LinkedRegistry;
 
@@ -210,10 +210,10 @@ class DefaultResourceX implements ResourceX {
     }
 
     // Initialize registries with Storage layer
-    const hostedStorage = new FileSystemStorage(join(this.basePath, "hosted"));
+    const localStorage = new FileSystemStorage(join(this.basePath, "local"));
     const cacheStorage = new FileSystemStorage(join(this.basePath, "cache"));
 
-    this.hosted = new HostedRegistry(hostedStorage);
+    this.local = new HostedRegistry(localStorage);
     this.cache = new MirrorRegistry(cacheStorage);
     this.linked = new LinkedRegistry(join(this.basePath, "linked"));
   }
@@ -268,10 +268,10 @@ class DefaultResourceX implements ResourceX {
         version: rxr.manifest.version,
       });
       const newRxr = createResource(newManifest, rxr.archive);
-      await this.hosted.put(newRxr);
+      await this.local.put(newRxr);
       return this.toResource(newRxr);
     } else {
-      await this.hosted.put(rxr);
+      await this.local.put(rxr);
       return this.toResource(rxr);
     }
   }
@@ -285,7 +285,7 @@ class DefaultResourceX implements ResourceX {
     const rxl = parse(normalizedLocator);
 
     return (
-      (await this.linked.has(rxl)) || (await this.hosted.has(rxl)) || (await this.cache.has(rxl))
+      (await this.linked.has(rxl)) || (await this.local.has(rxl)) || (await this.cache.has(rxl))
     );
   }
 
@@ -316,8 +316,8 @@ class DefaultResourceX implements ResourceX {
     if (await this.linked.has(rxl)) {
       await this.linked.remove(rxl);
     }
-    if (await this.hosted.has(rxl)) {
-      await this.hosted.remove(rxl);
+    if (await this.local.has(rxl)) {
+      await this.local.remove(rxl);
     }
     if (await this.cache.has(rxl)) {
       await this.cache.remove(rxl);
@@ -345,9 +345,9 @@ class DefaultResourceX implements ResourceX {
     const options: SearchOptions | undefined = query ? { query } : undefined;
 
     // Combine results from all registries
-    const [linkedResults, hostedResults, cacheResults] = await Promise.all([
+    const [linkedResults, localResults, cacheResults] = await Promise.all([
       this.linked.list(options),
-      this.hosted.list(options),
+      this.local.list(options),
       this.cache.list(options),
     ]);
 
@@ -355,7 +355,7 @@ class DefaultResourceX implements ResourceX {
     const seen = new Set<string>();
     const results: string[] = [];
 
-    for (const rxl of [...linkedResults, ...hostedResults, ...cacheResults]) {
+    for (const rxl of [...linkedResults, ...localResults, ...cacheResults]) {
       const key = format(rxl);
       if (!seen.has(key)) {
         seen.add(key);
@@ -408,9 +408,9 @@ class DefaultResourceX implements ResourceX {
       return this.linked.get(rxl);
     }
 
-    // 2. Check hosted
-    if (await this.hosted.has(rxl)) {
-      return this.hosted.get(rxl);
+    // 2. Check local
+    if (await this.local.has(rxl)) {
+      return this.local.get(rxl);
     }
 
     // 3. Check cache

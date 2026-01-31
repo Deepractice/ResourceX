@@ -1,13 +1,14 @@
 /**
- * Default paths for ResourceX
+ * Default paths for ResourceX Client
  *
  * Directory structure:
  * ~/.resourcex/
  * ├── config.json     # CLI configuration
- * ├── hosted/         # Local resources (rx add)
+ * ├── local/          # Local resources (rx add)
  * ├── cache/          # Cached remote resources (rx pull)
- * ├── linked/         # Development symlinks (rx link)
- * └── server/         # Registry server storage (rx server)
+ * └── linked/         # Development symlinks (rx link)
+ *
+ * Server storage is separate (--storage flag, default ./data)
  */
 
 import { homedir } from "node:os";
@@ -16,12 +17,11 @@ import { join } from "node:path";
 // Support RX_HOME environment variable for testing
 export const RX_HOME = process.env.RX_HOME || join(homedir(), ".resourcex");
 
-// Paths
+// Client paths
 export const PATHS = {
   root: RX_HOME,
   config: join(RX_HOME, "config.json"),
-  hosted: join(RX_HOME, "hosted"),
+  local: join(RX_HOME, "local"),
   cache: join(RX_HOME, "cache"),
   linked: join(RX_HOME, "linked"),
-  server: join(RX_HOME, "server"),
 } as const;

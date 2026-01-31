@@ -1,10 +1,12 @@
 /**
  * rx server - Start registry API server
+ *
+ * Server storage is separate from client (~/.resourcex)
+ * Default: ./data (current directory)
  */
 
 import { defineCommand } from "citty";
 import consola from "consola";
-import { PATHS } from "../lib/paths.js";
 
 export const server = defineCommand({
   meta: {
@@ -24,7 +26,7 @@ export const server = defineCommand({
   },
   async run({ args }) {
     const port = parseInt(args.port, 10);
-    const storagePath = args.storage || PATHS.server;
+    const storagePath = args.storage || "./data";
 
     const { createRegistryServer } = await import("@resourcexjs/server");
     const { serve } = await import("@hono/node-server");
