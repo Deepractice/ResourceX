@@ -272,26 +272,18 @@ Given(
 Given(
   "a remote resource {string} on the registry",
   async function (this: CLIWorld, locator: string) {
-    const match = locator.match(/^([^.]+)\.([^@]+)@(.+)$/);
-    if (!match) {
-      throw new Error(`Invalid locator: ${locator}`);
-    }
-    const [, name, type, version] = match;
-
-    await publishToServer(name, type, version, "Remote content");
+    const { parse } = await import("resourcexjs");
+    const rxl = parse(locator);
+    await publishToServer(rxl.name, rxl.type, rxl.version, "Remote content");
   }
 );
 
 Given(
   "a remote resource {string} on the registry with content {string}",
   async function (this: CLIWorld, locator: string, content: string) {
-    const match = locator.match(/^([^.]+)\.([^@]+)@(.+)$/);
-    if (!match) {
-      throw new Error(`Invalid locator: ${locator}`);
-    }
-    const [, name, type, version] = match;
-
-    await publishToServer(name, type, version, content);
+    const { parse } = await import("resourcexjs");
+    const rxl = parse(locator);
+    await publishToServer(rxl.name, rxl.type, rxl.version, content);
   }
 );
 

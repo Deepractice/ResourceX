@@ -58,12 +58,12 @@ Feature: ResourceX CLI
     And the output should contain "searchme.text@1.0.0"
 
   Scenario: Pull resource from remote registry
-    Given a remote resource "pullme.text@1.0.0" on the registry with content "Pulled content"
+    Given a remote resource "localhost/pullme.text@1.0.0" on the registry with content "Pulled content"
     And the resource is not in local cache
-    When I run rx command "pull pullme.text@1.0.0"
+    When I run rx command "pull localhost/pullme.text@1.0.0"
     Then the command should succeed
     And the output should contain "Pulled"
-    When I run rx command "resolve pullme.text@1.0.0"
+    When I run rx command "resolve localhost/pullme.text@1.0.0"
     Then the output should contain "Pulled content"
 
   # ============================================
