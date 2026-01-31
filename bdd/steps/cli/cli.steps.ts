@@ -135,7 +135,8 @@ async function publishToServer(
   await execAsync(`tar -czf ${archivePath} -C ${tmpDir} content`);
 
   // Publish via curl using new Docker-style locator format: registry/name:tag
-  const locator = `localhost/${name}:${version}`;
+  // Use localhost:PORT to match the normalized registry format
+  const locator = `localhost:${SERVER_PORT}/${name}:${version}`;
   const result = await execAsync(
     `curl -s -X POST ${SERVER_URL}/publish ` +
       `-F "locator=${locator}" ` +

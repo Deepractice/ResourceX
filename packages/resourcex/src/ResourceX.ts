@@ -9,7 +9,7 @@
 
 import { homedir } from "node:os";
 import { join } from "node:path";
-import type { RXR } from "@resourcexjs/core";
+import type { RXR, RXL } from "@resourcexjs/core";
 import { parse, format, extract } from "@resourcexjs/core";
 import type { BundledType, IsolatorType } from "@resourcexjs/type";
 import { TypeHandlerChain } from "@resourcexjs/type";
@@ -164,6 +164,11 @@ export interface ResourceX {
    * Link development directory (symlink for live editing).
    */
   link(path: string): Promise<void>;
+
+  /**
+   * Unlink development directory.
+   */
+  unlink(locator: string): Promise<void>;
 
   /**
    * Check if resource exists locally.
@@ -331,6 +336,12 @@ class DefaultResourceX implements ResourceX {
     await this.linked.link(path);
   }
 
+  async unlink(locator: string): Promise<void> {
+    const rxl = parse(locator);
+    await this.linked.unlink(rxl);
+    this.chain.invalidate(rxl);
+  }
+
   async has(locator: string): Promise<boolean> {
     const rxl = parse(locator);
     return this.chain.has(rxl);
@@ -377,7 +388,31 @@ class DefaultResourceX implements ResourceX {
 
   async resolve<T = unknown>(locator: string): Promise<Executable<T>> {
     const rxl = parse(locator);
-    const rxr = await this.chain.get(rxl);
+    let rxr: RXR;
+
+    try {
+      rxr = await this.chain.get(rxl);
+    } catch (error) {
+      // Auto-pull: if locator has no registry and a registry is configured,
+      // try fetching from the configured registry
+      if (!rxl.registry && this.registryUrl) {
+        const normalizedRegistry = normalizeRegistryUrl(this.registryUrl);
+
+        try {
+          // Fetch using original locator (without registry prefix)
+          // The fetchFromRegistry will add the registry prefix to the manifest
+          rxr = await this.fetchFromRegistry(format(rxl), this.registryUrl, normalizedRegistry);
+          // Cache the result
+          await this.cache.put(rxr);
+        } catch {
+          // Re-throw original error if remote fetch also fails
+          throw error;
+        }
+      } else {
+        throw error;
+      }
+    }
+
     const handler = this.typeHandler.getHandler(rxr.manifest.type);
 
     return {

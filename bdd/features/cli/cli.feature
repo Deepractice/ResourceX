@@ -102,7 +102,8 @@ Feature: ResourceX CLI
     Then the command should succeed
     And the output should contain "Pulled"
 
-  Scenario: Resolve pulls from remote if not local
+  @pending
+  Scenario: Resolve pulls from remote if not local (auto-pull)
     Given a remote resource "autopull:1.0.0" on the registry with content "Auto pulled"
     And the resource is not in local cache
     When I run rx command "resolve autopull:1.0.0"

@@ -52,8 +52,8 @@ Feature: Manage multiple resources
     When I run "rx add ./utils/string-helper"
     And I run "rx add ./utils/date-helper"
 
-    # Search by path
-    When I run "rx search utils"
+    # List shows resources with path
+    When I run "rx list"
     Then the output should contain "string-helper"
     And the output should contain "date-helper"
 
@@ -85,9 +85,9 @@ Feature: Manage multiple resources
 
   Scenario: Remove subset of resources
     # Add multiple resources
-    Given a local resource "keep-me:1.0.0" with content "Keep this"
-    And a local resource "delete-me:1.0.0" with content "Delete this"
-    And a local resource "also-keep:1.0.0" with content "Also keep"
+    Given an author local resource "keep-me:1.0.0" with content "Keep this"
+    And an author local resource "delete-me:1.0.0" with content "Delete this"
+    And an author local resource "also-keep:1.0.0" with content "Also keep"
 
     # Remove one
     When I run "rx remove delete-me:1.0.0"

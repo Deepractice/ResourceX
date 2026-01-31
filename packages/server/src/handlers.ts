@@ -68,8 +68,8 @@ export async function handlePublish(request: Request, registry: Registry): Promi
       registry: manifestData.registry ?? rxl.registry,
       path: manifestData.path ?? rxl.path,
       name: manifestData.name ?? rxl.name,
-      type: manifestData.type ?? rxl.type,
-      version: manifestData.version ?? rxl.version ?? "1.0.0",
+      type: manifestData.type, // Type must come from manifest, not locator
+      version: manifestData.version ?? rxl.tag ?? "latest",
       files: manifestData.files,
     });
 
@@ -193,8 +193,8 @@ export async function handleSearch(
         registry: rxl.registry,
         path: rxl.path,
         name: rxl.name,
-        type: rxl.type ?? "",
-        version: rxl.version ?? "latest",
+        type: "", // Type not in RXL anymore, would need to read manifest
+        version: rxl.tag ?? "latest",
       })),
       total: results.length,
     };

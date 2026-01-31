@@ -45,6 +45,21 @@ After({ tags: "@resourcex" }, async function () {
 // Helper functions
 // ============================================
 
+/**
+ * Parse Docker-style locator format: name:tag
+ * Returns { name, tag }
+ */
+function parseLocator(locator: string): { name: string; tag: string } {
+  const colonIndex = locator.lastIndexOf(":");
+  if (colonIndex === -1) {
+    return { name: locator, tag: "latest" };
+  }
+  return {
+    name: locator.substring(0, colonIndex),
+    tag: locator.substring(colonIndex + 1),
+  };
+}
+
 async function createResourceDir(
   basePath: string,
   name: string,
@@ -52,7 +67,7 @@ async function createResourceDir(
   version: string,
   content: string
 ): Promise<string> {
-  const dir = join(basePath, `${name}.${type}`);
+  const dir = join(basePath, name);
   await mkdir(dir, { recursive: true });
   await writeFile(join(dir, "content"), content);
   await writeFile(join(dir, "resource.json"), JSON.stringify({ name, type, version }));
@@ -83,51 +98,49 @@ Given(
   }
 );
 
-Given("I have added resource {string}", async function (this: ResourceXWorld, locator: string) {
-  const { parse } = await import("resourcexjs");
-  const rxl = parse(locator);
-  const dir = await createResourceDir(TEST_DIR, rxl.name, rxl.type, rxl.version, "default content");
-  await this.rx.add(dir);
-});
+Given(
+  "I have added resource {string} with type {string}",
+  async function (this: ResourceXWorld, locator: string, type: string) {
+    const { name, tag } = parseLocator(locator);
+    const dir = await createResourceDir(TEST_DIR, name, type, tag, "default content");
+    await this.rx.add(dir);
+  }
+);
 
 Given(
-  "I have added resource {string} with content {string}",
-  async function (this: ResourceXWorld, locator: string, content: string) {
-    const { parse } = await import("resourcexjs");
-    const rxl = parse(locator);
-    const dir = await createResourceDir(TEST_DIR, rxl.name, rxl.type, rxl.version, content);
+  "I have added resource {string} with type {string} and content {string}",
+  async function (this: ResourceXWorld, locator: string, type: string, content: string) {
+    const { name, tag } = parseLocator(locator);
+    const dir = await createResourceDir(TEST_DIR, name, type, tag, content);
     await this.rx.add(dir);
   }
 );
 
 Given(
   "I have added resources:",
-  async function (this: ResourceXWorld, dataTable: { hashes: () => Array<{ locator: string }> }) {
-    const { parse } = await import("resourcexjs");
+  async function (this: ResourceXWorld, dataTable: { hashes: () => Array<{ locator: string; type: string }> }) {
     const rows = dataTable.hashes();
     for (const row of rows) {
-      const rxl = parse(row.locator);
-      const dir = await createResourceDir(TEST_DIR, rxl.name, rxl.type, rxl.version, "content");
+      const { name, tag } = parseLocator(row.locator);
+      const dir = await createResourceDir(TEST_DIR, name, row.type, tag, "content");
       await this.rx.add(dir);
     }
   }
 );
 
 Given(
-  "a dev directory with resource {string} and content {string}",
-  async function (this: ResourceXWorld, locator: string, content: string) {
-    const { parse } = await import("resourcexjs");
-    const rxl = parse(locator);
-    this.devDir = await createResourceDir(DEV_DIR, rxl.name, rxl.type, rxl.version, content);
+  "a dev directory with resource {string} type {string} and content {string}",
+  async function (this: ResourceXWorld, locator: string, type: string, content: string) {
+    const { name, tag } = parseLocator(locator);
+    this.devDir = await createResourceDir(DEV_DIR, name, type, tag, content);
   }
 );
 
 Given(
-  "a linked dev directory with {string} and content {string}",
-  async function (this: ResourceXWorld, locator: string, content: string) {
-    const { parse } = await import("resourcexjs");
-    const rxl = parse(locator);
-    const dir = await createResourceDir(DEV_DIR, rxl.name, rxl.type, rxl.version, content);
+  "a linked dev directory with {string} type {string} and content {string}",
+  async function (this: ResourceXWorld, locator: string, type: string, content: string) {
+    const { name, tag } = parseLocator(locator);
+    const dir = await createResourceDir(DEV_DIR, name, type, tag, content);
     await this.rx.link(dir);
   }
 );
@@ -161,11 +174,10 @@ When("I link the dev directory", async function (this: ResourceXWorld) {
 });
 
 When(
-  "I add resource {string} with content {string}",
-  async function (this: ResourceXWorld, locator: string, content: string) {
-    const { parse } = await import("resourcexjs");
-    const rxl = parse(locator);
-    const dir = await createResourceDir(TEST_DIR, rxl.name, rxl.type, rxl.version, content);
+  "I add resource {string} with type {string} and content {string}",
+  async function (this: ResourceXWorld, locator: string, type: string, content: string) {
+    const { name, tag } = parseLocator(locator);
+    const dir = await createResourceDir(TEST_DIR, name, type, tag, content);
     await this.rx.add(dir);
   }
 );

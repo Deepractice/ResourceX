@@ -162,6 +162,56 @@ Given(
   }
 );
 
+Given(
+  "I update the resource directory {string} with:",
+  async function (
+    this: AuthorWorld,
+    dirName: string,
+    dataTable: { hashes: () => Array<{ file: string; content: string }> }
+  ) {
+    const resourceDir = join(FIXTURES_DIR, dirName);
+
+    for (const row of dataTable.hashes()) {
+      await writeFile(join(resourceDir, row.file), row.content);
+    }
+  }
+);
+
+Given(
+  "I update file {string} with {string}",
+  async function (this: AuthorWorld, filePath: string, content: string) {
+    const fullPath = join(FIXTURES_DIR, filePath);
+    await writeFile(fullPath, content);
+  }
+);
+
+Given(
+  "an author local resource {string} with content {string}",
+  async function (this: AuthorWorld, locator: string, content: string) {
+    // Parse locator in Docker-style format: name:tag
+    const match = locator.match(/^([^:]+):(.+)$/);
+    if (!match) {
+      throw new Error(`Invalid locator: ${locator}`);
+    }
+    const [, name, version] = match;
+    const type = "text";
+
+    // Create resource directory in fixtures
+    const resourceDir = join(FIXTURES_DIR, `local-${name}`);
+    await mkdir(resourceDir, { recursive: true });
+    await writeFile(join(resourceDir, "resource.json"), JSON.stringify({ name, type, version }));
+    await writeFile(join(resourceDir, "content"), content);
+
+    // Add using CLI with author's RX_HOME
+    const { output, exitCode } = await runRxCommand(`add ${resourceDir}`, FIXTURES_DIR);
+    if (exitCode !== 0) {
+      throw new Error(`Failed to add resource: ${output}`);
+    }
+
+    this.resourceDirs.push(resourceDir);
+  }
+);
+
 // ============================================
 // When steps
 // ============================================

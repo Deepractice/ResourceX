@@ -9,22 +9,28 @@ export interface Config {
   registry?: string;
 }
 
-const DEFAULT_CONFIG: Config = {
-  path: RX_HOME,
-  registry: process.env.RX_REGISTRY,
-};
 
 export async function getConfig(): Promise<Config> {
+  let fileConfig: Partial<Config> = {};
+
   try {
     const file = Bun.file(PATHS.config);
     if (await file.exists()) {
-      const data = await file.json();
-      return { ...DEFAULT_CONFIG, ...data };
+      fileConfig = await file.json();
     }
   } catch {
-    // Ignore errors, use default
+    // Ignore errors, use file defaults
   }
-  return DEFAULT_CONFIG;
+
+  // Environment variables take precedence over config file
+  // Note: Empty string from env means "no registry" (explicit unset)
+  const envRegistry = process.env.RX_REGISTRY;
+  const registry = envRegistry !== undefined ? envRegistry || undefined : fileConfig.registry;
+
+  return {
+    path: process.env.RX_HOME || fileConfig.path || RX_HOME,
+    registry,
+  };
 }
 
 export async function setConfig(key: keyof Config, value: string): Promise<void> {
