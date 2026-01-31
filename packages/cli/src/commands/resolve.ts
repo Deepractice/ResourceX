@@ -1,14 +1,14 @@
 /**
- * rx run <locator> - Resolve and execute resource
+ * rx resolve <locator> - Resolve and execute resource
  */
 
 import { defineCommand } from "citty";
 import consola from "consola";
 import { getClient } from "../lib/client.js";
 
-export const run = defineCommand({
+export const resolve = defineCommand({
   meta: {
-    name: "run",
+    name: "resolve",
     description: "Resolve and execute resource",
   },
   args: {
@@ -33,7 +33,7 @@ export const run = defineCommand({
         console.log(JSON.stringify(result, null, 2));
       }
     } catch (error) {
-      consola.error(error instanceof Error ? error.message : "Failed to run resource");
+      consola.error(error instanceof Error ? error.message : "Failed to resolve resource");
       process.exit(1);
     }
   },

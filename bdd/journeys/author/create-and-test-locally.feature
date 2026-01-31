@@ -24,8 +24,8 @@ Feature: Create and test resource locally
     Then the command should succeed
     And the output should contain "my-prompt.text@1.0.0"
 
-    # Step 4: Run and verify output
-    When I run "rx run my-prompt.text@1.0.0"
+    # Step 4: Resolve and verify output
+    When I run "rx resolve my-prompt.text@1.0.0"
     Then the command should succeed
     And the output should contain "Hello, this is my first resource!"
 

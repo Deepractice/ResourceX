@@ -2,7 +2,7 @@
 Feature: ResourceX CLI
   As a developer
   I want to use rx CLI to manage resources
-  So that I can add, push, pull and run resources locally and remotely
+  So that I can add, push, pull and resolve resources locally and remotely
 
   Background:
     Given a running registry server
@@ -27,9 +27,9 @@ Feature: ResourceX CLI
     Then the command should succeed
     And the output should contain "test.text@1.0.0"
 
-  Scenario: Run local resource
+  Scenario: Resolve local resource
     Given a local resource "greeting.text@1.0.0" with content "Hello from CLI!"
-    When I run rx command "run greeting.text@1.0.0"
+    When I run rx command "resolve greeting.text@1.0.0"
     Then the command should succeed
     And the output should contain "Hello from CLI!"
 
@@ -63,7 +63,7 @@ Feature: ResourceX CLI
     When I run rx command "pull pullme.text@1.0.0"
     Then the command should succeed
     And the output should contain "Pulled"
-    When I run rx command "run pullme.text@1.0.0"
+    When I run rx command "resolve pullme.text@1.0.0"
     Then the output should contain "Pulled content"
 
   # ============================================

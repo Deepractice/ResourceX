@@ -17,8 +17,8 @@ rx add ./hello-prompt
 # 查看
 rx list
 
-# 运行
-rx run hello-prompt.text@1.0.0
+# 执行
+rx resolve hello-prompt.text@1.0.0
 
 # 删除
 rx remove hello-prompt.text@1.0.0

@@ -12,7 +12,7 @@ import { remove } from "./commands/remove.js";
 import { push } from "./commands/push.js";
 import { pull } from "./commands/pull.js";
 import { search } from "./commands/search.js";
-import { run } from "./commands/run.js";
+import { resolve } from "./commands/resolve.js";
 import { config } from "./commands/config.js";
 
 const main = defineCommand({
@@ -30,7 +30,7 @@ const main = defineCommand({
     push,
     pull,
     search,
-    run,
+    resolve,
     config,
   },
 });
