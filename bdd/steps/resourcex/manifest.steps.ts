@@ -8,8 +8,8 @@ interface ManifestWorld {
 }
 
 Given("I have access to resourcexjs manifest", async function (this: ManifestWorld) {
-  const { createRXM } = await import("resourcexjs");
-  assert.ok(createRXM, "createRXM should be defined");
+  const { manifest } = await import("resourcexjs");
+  assert.ok(manifest, "manifest should be defined");
 });
 
 When(
@@ -21,8 +21,8 @@ When(
     type: string,
     version: string
   ) {
-    const { createRXM } = await import("resourcexjs");
-    this.rxm = createRXM({ domain, name, type, version });
+    const { manifest } = await import("resourcexjs");
+    this.rxm = manifest({ domain, name, type, version });
   }
 );
 
@@ -36,42 +36,42 @@ When(
     type: string,
     version: string
   ) {
-    const { createRXM } = await import("resourcexjs");
-    this.rxm = createRXM({ domain, path, name, type, version });
+    const { manifest } = await import("resourcexjs");
+    this.rxm = manifest({ domain, path, name, type, version });
   }
 );
 
 When("I parse manifest without domain", async function (this: ManifestWorld) {
-  const { createRXM } = await import("resourcexjs");
+  const { manifest } = await import("resourcexjs");
   try {
-    this.rxm = createRXM({ name: "test", type: "prompt", version: "1.0.0" });
+    this.rxm = manifest({ name: "test", type: "prompt", version: "1.0.0" });
   } catch (e) {
     this.error = e as Error;
   }
 });
 
 When("I parse manifest without name", async function (this: ManifestWorld) {
-  const { createRXM } = await import("resourcexjs");
+  const { manifest } = await import("resourcexjs");
   try {
-    this.rxm = createRXM({ domain: "test.com", type: "prompt", version: "1.0.0" });
+    this.rxm = manifest({ domain: "test.com", type: "prompt", version: "1.0.0" });
   } catch (e) {
     this.error = e as Error;
   }
 });
 
 When("I parse manifest without type", async function (this: ManifestWorld) {
-  const { createRXM } = await import("resourcexjs");
+  const { manifest } = await import("resourcexjs");
   try {
-    this.rxm = createRXM({ domain: "test.com", name: "test", version: "1.0.0" });
+    this.rxm = manifest({ domain: "test.com", name: "test", version: "1.0.0" });
   } catch (e) {
     this.error = e as Error;
   }
 });
 
 When("I parse manifest without version", async function (this: ManifestWorld) {
-  const { createRXM } = await import("resourcexjs");
+  const { manifest } = await import("resourcexjs");
   try {
-    this.rxm = createRXM({ domain: "test.com", name: "test", type: "prompt" });
+    this.rxm = manifest({ domain: "test.com", name: "test", type: "prompt" });
   } catch (e) {
     this.error = e as Error;
   }

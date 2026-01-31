@@ -42,9 +42,9 @@ After({ tags: "@rxr-transport" }, async function () {
 Given("an ARP instance with RxrTransport", async function (this: RxrTransportWorld) {
   // Create registry if not already set
   if (!this.registry) {
-    const { createRegistry } = await import("resourcexjs");
+    const { createResourceX } = await import("resourcexjs");
     await mkdir(TEST_DIR, { recursive: true });
-    this.registry = createRegistry({ path: TEST_DIR });
+    this.registry = createResourceX({ path: TEST_DIR });
   }
 
   const { createARP, fileTransport, textSemantic, binarySemantic, RxrTransport } =

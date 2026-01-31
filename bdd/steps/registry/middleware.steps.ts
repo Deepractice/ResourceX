@@ -37,12 +37,12 @@ Given("a test registry directory", async function (this: MiddlewareWorld) {
 Given(
   "a local registry with a resource {string} and content {string}",
   async function (this: MiddlewareWorld, locator: string, content: string) {
-    const { createRegistry, createRXM, createRXA, parseRXL } = await import("resourcexjs");
+    const { createResourceX, manifest, archive, parse } = await import("resourcexjs");
 
-    this.registry = createRegistry({ path: this.testDir });
+    this.registry = createResourceX({ path: this.testDir });
 
-    const rxl = parseRXL(locator);
-    const manifest = createRXM({
+    const rxl = parse(locator);
+    const rxm = manifest({
       domain: rxl.domain ?? "localhost",
       path: rxl.path,
       name: rxl.name,
@@ -50,7 +50,7 @@ Given(
       version: rxl.version ?? "1.0.0",
     });
 
-    const rxa = await createRXA({ content });
+    const rxa = await archive({ content });
 
     const rxr: RXR = {
       locator: rxl,

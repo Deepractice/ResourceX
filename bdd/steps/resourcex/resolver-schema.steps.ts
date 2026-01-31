@@ -37,8 +37,8 @@ async function ensureRegistry(world: SchemaWorld): Promise<RegistryType> {
   if (!world.registry) {
     await rm(TEST_DIR, { recursive: true, force: true });
     await mkdir(TEST_DIR, { recursive: true });
-    const { createRegistry } = await import("resourcexjs");
-    world.registry = createRegistry({ path: TEST_DIR }) as RegistryType;
+    const { createResourceX } = await import("resourcexjs");
+    world.registry = createResourceX({ path: TEST_DIR }) as RegistryType;
   }
   return world.registry;
 }
@@ -141,9 +141,9 @@ Given(
 
 Given("a search-tool resource", async function (this: SchemaWorld) {
   await ensureRegistry(this);
-  const { createRXM, createRXA, parseRXL } = await import("resourcexjs");
+  const { manifest, archive, parse } = await import("resourcexjs");
 
-  const manifest = createRXM({
+  const rxm = manifest({
     domain: "localhost",
     name: "test-search-tool",
     type: "search-tool",
@@ -151,9 +151,9 @@ Given("a search-tool resource", async function (this: SchemaWorld) {
   });
 
   this.rxr = {
-    locator: parseRXL(manifest.toLocator()),
+    locator: parse(manifest.toLocator()),
     manifest,
-    archive: await createRXA({ content: "search tool content" }),
+    archive: await archive({ content: "search tool content" }),
   };
   this.rxrLocator = manifest.toLocator();
 
@@ -162,9 +162,9 @@ Given("a search-tool resource", async function (this: SchemaWorld) {
 
 Given("a calculator resource that adds two numbers", async function (this: SchemaWorld) {
   await ensureRegistry(this);
-  const { createRXM, createRXA, parseRXL } = await import("resourcexjs");
+  const { manifest, archive, parse } = await import("resourcexjs");
 
-  const manifest = createRXM({
+  const rxm = manifest({
     domain: "localhost",
     name: "test-calculator",
     type: "calculator",
@@ -172,9 +172,9 @@ Given("a calculator resource that adds two numbers", async function (this: Schem
   });
 
   this.rxr = {
-    locator: parseRXL(manifest.toLocator()),
+    locator: parse(manifest.toLocator()),
     manifest,
-    archive: await createRXA({ content: "calculator" }),
+    archive: await archive({ content: "calculator" }),
   };
   this.rxrLocator = manifest.toLocator();
 
@@ -257,9 +257,9 @@ Given(
   "a greeting resource with message {string}",
   async function (this: SchemaWorld, message: string) {
     await ensureRegistry(this);
-    const { createRXM, createRXA, parseRXL } = await import("resourcexjs");
+    const { manifest, archive, parse } = await import("resourcexjs");
 
-    const manifest = createRXM({
+    const rxm = manifest({
       domain: "localhost",
       name: "test-greeting",
       type: "greeting",
@@ -267,9 +267,9 @@ Given(
     });
 
     this.rxr = {
-      locator: parseRXL(manifest.toLocator()),
+      locator: parse(manifest.toLocator()),
       manifest,
-      archive: await createRXA({ content: message }),
+      archive: await archive({ content: message }),
     };
     this.rxrLocator = manifest.toLocator();
 
@@ -353,9 +353,9 @@ Given(
 
 Given("an api-tool resource", async function (this: SchemaWorld) {
   await ensureRegistry(this);
-  const { createRXM, createRXA, parseRXL } = await import("resourcexjs");
+  const { manifest, archive, parse } = await import("resourcexjs");
 
-  const manifest = createRXM({
+  const rxm = manifest({
     domain: "localhost",
     name: "test-api-tool",
     type: "api-tool",
@@ -363,9 +363,9 @@ Given("an api-tool resource", async function (this: SchemaWorld) {
   });
 
   this.rxr = {
-    locator: parseRXL(manifest.toLocator()),
+    locator: parse(manifest.toLocator()),
     manifest,
-    archive: await createRXA({ content: "api tool content" }),
+    archive: await archive({ content: "api tool content" }),
   };
   this.rxrLocator = manifest.toLocator();
 

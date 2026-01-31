@@ -42,7 +42,7 @@ After({ tags: "@add or @link" }, async function () {
 // ============================================
 
 Given("a clean local registry", async function (this: AddLinkWorld) {
-  const { createRegistry } = await import("resourcexjs");
+  const { createResourceX } = await import("resourcexjs");
 
   // Clean and recreate test directory
   try {
@@ -52,7 +52,7 @@ Given("a clean local registry", async function (this: AddLinkWorld) {
   }
   await mkdir(TEST_DIR, { recursive: true });
 
-  this.registry = createRegistry({ path: TEST_DIR });
+  this.registry = createResourceX({ path: TEST_DIR });
   this.resource = null;
   this.resolvedResource = null;
   this.error = null;
@@ -65,10 +65,10 @@ Given("a clean local registry", async function (this: AddLinkWorld) {
 Given(
   "I have a resource {string} with content {string}",
   async function (this: AddLinkWorld, locator: string, content: string) {
-    const { createRXM, createRXA, parseRXL } = await import("resourcexjs");
+    const { manifest, archive, parse } = await import("resourcexjs");
 
-    const rxl = parseRXL(locator);
-    const manifest = createRXM({
+    const rxl = parse(locator);
+    const rxm = manifest({
       domain: rxl.domain ?? "localhost",
       name: rxl.name,
       type: rxl.type ?? "text",
@@ -78,7 +78,7 @@ Given(
     this.resource = {
       locator: rxl,
       manifest,
-      archive: await createRXA({ content }),
+      archive: await archive({ content }),
     };
   }
 );
@@ -133,10 +133,10 @@ When("I add {string} to registry", async function (this: AddLinkWorld, dirPath: 
 When(
   "I create a resource {string} with content {string}",
   async function (this: AddLinkWorld, locator: string, content: string) {
-    const { createRXM, createRXA, parseRXL } = await import("resourcexjs");
+    const { manifest, archive, parse } = await import("resourcexjs");
 
-    const rxl = parseRXL(locator);
-    const manifest = createRXM({
+    const rxl = parse(locator);
+    const rxm = manifest({
       domain: rxl.domain ?? "localhost",
       name: rxl.name,
       type: rxl.type ?? "text",
@@ -146,7 +146,7 @@ When(
     this.resource = {
       locator: rxl,
       manifest,
-      archive: await createRXA({ content }),
+      archive: await archive({ content }),
     };
   }
 );

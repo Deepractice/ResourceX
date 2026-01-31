@@ -22,8 +22,8 @@ interface ArchiveWorld {
 // ============================================
 
 Given("I have access to resourcexjs archive", async function (this: ArchiveWorld) {
-  const { createRXA } = await import("resourcexjs");
-  assert.ok(createRXA, "createRXA should be defined");
+  const { archive } = await import("resourcexjs");
+  assert.ok(archive, "archive should be defined");
 });
 
 // ============================================
@@ -33,35 +33,35 @@ Given("I have access to resourcexjs archive", async function (this: ArchiveWorld
 When(
   "I create archive with file {string} containing {string}",
   async function (this: ArchiveWorld, path: string, content: string) {
-    const { createRXA } = await import("resourcexjs");
-    this.rxa = await createRXA({ [path]: Buffer.from(content) });
+    const { archive } = await import("resourcexjs");
+    this.rxa = await archive({ [path]: Buffer.from(content) });
   }
 );
 
 When("I create archive with files:", async function (this: ArchiveWorld, dataTable: DataTable) {
-  const { createRXA } = await import("resourcexjs");
+  const { archive } = await import("resourcexjs");
   const files: Record<string, Buffer> = {};
 
   for (const row of dataTable.hashes()) {
     files[row.path] = Buffer.from(row.content);
   }
 
-  this.rxa = await createRXA(files);
+  this.rxa = await archive(files);
 });
 
 Given(
   "an existing tar.gz buffer with file {string} containing {string}",
   async function (this: ArchiveWorld, path: string, content: string) {
-    const { createRXA } = await import("resourcexjs");
-    const tempRxa = await createRXA({ [path]: Buffer.from(content) });
+    const { archive } = await import("resourcexjs");
+    const tempRxa = await archive({ [path]: Buffer.from(content) });
     this.existingTarGzBuffer = await tempRxa.buffer();
   }
 );
 
 When("I create archive from the buffer", async function (this: ArchiveWorld) {
-  const { createRXA } = await import("resourcexjs");
+  const { archive } = await import("resourcexjs");
   assert.ok(this.existingTarGzBuffer, "Existing buffer should be defined");
-  this.rxa = await createRXA({ buffer: this.existingTarGzBuffer });
+  this.rxa = await archive({ buffer: this.existingTarGzBuffer });
 });
 
 // ============================================
@@ -71,20 +71,20 @@ When("I create archive from the buffer", async function (this: ArchiveWorld) {
 Given(
   "archive with file {string} containing {string}",
   async function (this: ArchiveWorld, path: string, content: string) {
-    const { createRXA } = await import("resourcexjs");
-    this.rxa = await createRXA({ [path]: Buffer.from(content) });
+    const { archive } = await import("resourcexjs");
+    this.rxa = await archive({ [path]: Buffer.from(content) });
   }
 );
 
 Given("archive with files:", async function (this: ArchiveWorld, dataTable: DataTable) {
-  const { createRXA } = await import("resourcexjs");
+  const { archive } = await import("resourcexjs");
   const files: Record<string, Buffer> = {};
 
   for (const row of dataTable.hashes()) {
     files[row.path] = Buffer.from(row.content);
   }
 
-  this.rxa = await createRXA(files);
+  this.rxa = await archive(files);
 });
 
 // ============================================

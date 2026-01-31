@@ -33,8 +33,8 @@ Given("I have access to resourcexjs type system", async function (this: Resolver
   await rm(TEST_DIR, { recursive: true, force: true });
   await mkdir(TEST_DIR, { recursive: true });
 
-  const { createRegistry } = await import("resourcexjs");
-  this.registry = createRegistry({ path: TEST_DIR }) as RegistryType;
+  const { createResourceX } = await import("resourcexjs");
+  this.registry = createResourceX({ path: TEST_DIR }) as RegistryType;
   assert.ok(this.registry, "Registry should exist");
   this.customTypes = new Map();
 });
@@ -42,9 +42,9 @@ Given("I have access to resourcexjs type system", async function (this: Resolver
 Given(
   "a text resource with content {string}",
   async function (this: ResolverWorld, content: string) {
-    const { createRXM, createRXA, parseRXL } = await import("resourcexjs");
+    const { manifest, archive, parse } = await import("resourcexjs");
 
-    const manifest = createRXM({
+    const rxm = manifest({
       domain: "localhost",
       name: "test-text",
       type: "text",
@@ -52,9 +52,9 @@ Given(
     });
 
     this.rxr = {
-      locator: parseRXL(manifest.toLocator()),
+      locator: parse(manifest.toLocator()),
       manifest,
-      archive: await createRXA({ content }),
+      archive: await archive({ content }),
     };
     this.rxrLocator = manifest.toLocator();
 
@@ -66,9 +66,9 @@ Given(
 Given(
   "a json resource with content {string}",
   async function (this: ResolverWorld, content: string) {
-    const { createRXM, createRXA, parseRXL } = await import("resourcexjs");
+    const { manifest, archive, parse } = await import("resourcexjs");
 
-    const manifest = createRXM({
+    const rxm = manifest({
       domain: "localhost",
       name: "test-json",
       type: "json",
@@ -76,9 +76,9 @@ Given(
     });
 
     this.rxr = {
-      locator: parseRXL(manifest.toLocator()),
+      locator: parse(manifest.toLocator()),
       manifest,
-      archive: await createRXA({ content }),
+      archive: await archive({ content }),
     };
     this.rxrLocator = manifest.toLocator();
 
@@ -89,13 +89,13 @@ Given(
 Given(
   "a binary resource with bytes {string}",
   async function (this: ResolverWorld, bytesStr: string) {
-    const { createRXM, createRXA, parseRXL } = await import("resourcexjs");
+    const { manifest, archive, parse } = await import("resourcexjs");
 
     // Parse "1,2,3,4" to actual array
     const bytes = bytesStr.split(",").map((s) => parseInt(s.trim(), 10));
     const buffer = Buffer.from(bytes);
 
-    const manifest = createRXM({
+    const rxm = manifest({
       domain: "localhost",
       name: "test-binary",
       type: "binary",
@@ -103,9 +103,9 @@ Given(
     });
 
     this.rxr = {
-      locator: parseRXL(manifest.toLocator()),
+      locator: parse(manifest.toLocator()),
       manifest,
-      archive: await createRXA({ content: buffer }),
+      archive: await archive({ content: buffer }),
     };
     this.rxrLocator = manifest.toLocator();
 
@@ -116,10 +116,10 @@ Given(
 Given(
   "a text resource {string} with content {string}",
   async function (this: ResolverWorld, locator: string, content: string) {
-    const { createRXM, createRXA, parseRXL } = await import("resourcexjs");
+    const { manifest, archive, parse } = await import("resourcexjs");
 
-    const rxl = parseRXL(locator);
-    const manifest = createRXM({
+    const rxl = parse(locator);
+    const rxm = manifest({
       domain: rxl.domain || "localhost",
       path: rxl.path,
       name: rxl.name,
@@ -130,7 +130,7 @@ Given(
     this.rxr = {
       locator: rxl,
       manifest,
-      archive: await createRXA({ content }),
+      archive: await archive({ content }),
     };
     this.rxrLocator = manifest.toLocator();
 
@@ -195,9 +195,9 @@ Given(
 );
 
 Given("a tool resource with code {string}", async function (this: ResolverWorld, code: string) {
-  const { createRXM, createRXA, parseRXL } = await import("resourcexjs");
+  const { manifest, archive, parse } = await import("resourcexjs");
 
-  const manifest = createRXM({
+  const rxm = manifest({
     domain: "localhost",
     name: "test-tool",
     type: "tool",
@@ -205,9 +205,9 @@ Given("a tool resource with code {string}", async function (this: ResolverWorld,
   });
 
   this.rxr = {
-    locator: parseRXL(manifest.toLocator()),
+    locator: parse(manifest.toLocator()),
     manifest,
-    archive: await createRXA({ content: code }),
+    archive: await archive({ content: code }),
   };
   this.rxrLocator = manifest.toLocator();
 
@@ -217,9 +217,9 @@ Given("a tool resource with code {string}", async function (this: ResolverWorld,
 Given(
   "a prompt resource with template {string}",
   async function (this: ResolverWorld, template: string) {
-    const { createRXM, createRXA, parseRXL } = await import("resourcexjs");
+    const { manifest, archive, parse } = await import("resourcexjs");
 
-    const manifest = createRXM({
+    const rxm = manifest({
       domain: "localhost",
       name: "test-prompt",
       type: "prompt",
@@ -227,9 +227,9 @@ Given(
     });
 
     this.rxr = {
-      locator: parseRXL(manifest.toLocator()),
+      locator: parse(manifest.toLocator()),
       manifest,
-      archive: await createRXA({ content: template }),
+      archive: await archive({ content: template }),
     };
     this.rxrLocator = manifest.toLocator();
 
@@ -261,9 +261,9 @@ Given(
 Given(
   "an async-text resource with content {string}",
   async function (this: ResolverWorld, content: string) {
-    const { createRXM, createRXA, parseRXL } = await import("resourcexjs");
+    const { manifest, archive, parse } = await import("resourcexjs");
 
-    const manifest = createRXM({
+    const rxm = manifest({
       domain: "localhost",
       name: "test-async",
       type: "async-text",
@@ -271,9 +271,9 @@ Given(
     });
 
     this.rxr = {
-      locator: parseRXL(manifest.toLocator()),
+      locator: parse(manifest.toLocator()),
       manifest,
-      archive: await createRXA({ content }),
+      archive: await archive({ content }),
     };
     this.rxrLocator = manifest.toLocator();
 
@@ -305,9 +305,9 @@ Given(
 Given(
   "a sync-text resource with content {string}",
   async function (this: ResolverWorld, content: string) {
-    const { createRXM, createRXA, parseRXL } = await import("resourcexjs");
+    const { manifest, archive, parse } = await import("resourcexjs");
 
-    const manifest = createRXM({
+    const rxm = manifest({
       domain: "localhost",
       name: "test-sync",
       type: "sync-text",
@@ -315,9 +315,9 @@ Given(
     });
 
     this.rxr = {
-      locator: parseRXL(manifest.toLocator()),
+      locator: parse(manifest.toLocator()),
       manifest,
-      archive: await createRXA({ content }),
+      archive: await archive({ content }),
     };
     this.rxrLocator = manifest.toLocator();
 

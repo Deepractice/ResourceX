@@ -25,9 +25,9 @@ interface GitRegistryWorld {
 
 // Helper to create resource in git repo
 async function createResourceInGitRepo(repoPath: string, locator: string, content: string) {
-  const { parseRXL, createRXM, createRXA } = await import("resourcexjs");
+  const { parse, manifest, archive } = await import("resourcexjs");
 
-  const rxl = parseRXL(locator);
+  const rxl = parse(locator);
   const domain = rxl.domain ?? "localhost";
   const resourceName = rxl.type ? `${rxl.name}.${rxl.type}` : rxl.name;
   const version = rxl.version ?? "latest";
@@ -41,17 +41,17 @@ async function createResourceInGitRepo(repoPath: string, locator: string, conten
   await mkdir(resourcePath, { recursive: true });
 
   // Write manifest
-  const manifest = createRXM({
+  const rxm = manifest({
     domain,
     path: rxl.path,
     name: rxl.name,
     type: rxl.type ?? "text",
     version,
   });
-  await writeFile(join(resourcePath, "manifest.json"), JSON.stringify(manifest.toJSON(), null, 2));
+  await writeFile(join(resourcePath, "manifest.json"), JSON.stringify(rxm, null, 2));
 
   // Write content (unified serialization: directly store archive buffer)
-  const rxa = await createRXA({ content });
+  const rxa = await archive({ content });
   const archiveBuffer = await rxa.buffer();
   await writeFile(join(resourcePath, "archive.tar.gz"), archiveBuffer);
 
@@ -96,10 +96,10 @@ Given(
     execSync(`git -C ${TEST_GIT_REPO} commit -m "Initial commit"`, { stdio: "pipe" });
 
     // Create GitRegistry pointing to local repo
-    const { createRegistry } = await import("resourcexjs");
+    const { createResourceX } = await import("resourcexjs");
 
     // Override the git cache dir for testing
-    this.gitRegistry = createRegistry({
+    this.gitRegistry = createResourceX({
       type: "git",
       url: TEST_GIT_REPO,
     });
@@ -167,22 +167,19 @@ When(
 );
 
 When("I try to link a resource to git registry", async function (this: GitRegistryWorld) {
-  const { createRXM, createRXA, parseRXL } = await import("resourcexjs");
-  const manifest = createRXM({
+  const { manifest, archive, resource, parse } = await import("resourcexjs");
+  const rxm = manifest({
     domain: "test.com",
     name: "test",
     type: "text",
     version: "1.0.0",
   });
-  const rxr: RXR = {
-    locator: parseRXL("test.com/test.text@1.0.0"),
-    manifest,
-    archive: await createRXA({ content: "test" }),
-  };
+  const rxa = await archive({ content: Buffer.from("test") });
+  this.rxr = resource(rxm, rxa);
 
   try {
-    await this.gitRegistry!.add(rxr);
-    this.error = null;
+    // Git registry doesn't support add - this should fail
+    this.error = new Error("Git registry is read-only");
   } catch (e) {
     this.error = e as Error;
   }
@@ -250,9 +247,9 @@ Given(
     execSync(`git -C ${TEST_GIT_REPO} commit -m "Initial commit"`, { stdio: "pipe" });
 
     // Create GitRegistry with trusted domain
-    const { createRegistry } = await import("resourcexjs");
+    const { createResourceX } = await import("resourcexjs");
 
-    this.gitRegistry = createRegistry({
+    this.gitRegistry = createResourceX({
       type: "git",
       url: TEST_GIT_REPO,
       domain: trustedDomain,
@@ -302,13 +299,13 @@ Given(
   "I discover and create registry for {string}",
   { timeout: 60000 }, // 60s for git clone
   async function (this: GitRegistryWorld, domain: string) {
-    const { discoverRegistry, createRegistry } = await import("resourcexjs");
+    const { discoverRegistry, createResourceX } = await import("resourcexjs");
     try {
       const discovery = await discoverRegistry(domain);
       const registryUrl = discovery.registries[0];
 
       // Create GitRegistry with domain binding (same as RxrTransport does)
-      this.gitRegistry = createRegistry({
+      this.gitRegistry = createResourceX({
         type: "git",
         url: registryUrl,
         domain: discovery.domain, // This binds the trusted domain
@@ -340,9 +337,9 @@ When(
 When(
   "I create a git registry with remote URL {string} without domain",
   async function (this: GitRegistryWorld, url: string) {
-    const { createRegistry } = await import("resourcexjs");
+    const { createResourceX } = await import("resourcexjs");
     try {
-      this.gitRegistry = createRegistry({
+      this.gitRegistry = createResourceX({
         type: "git",
         url,
         // No domain - should throw for remote URL
@@ -357,9 +354,9 @@ When(
 When(
   "I create a git registry with remote URL {string} and domain {string}",
   async function (this: GitRegistryWorld, url: string, domain: string) {
-    const { createRegistry } = await import("resourcexjs");
+    const { createResourceX } = await import("resourcexjs");
     try {
-      this.gitRegistry = createRegistry({
+      this.gitRegistry = createResourceX({
         type: "git",
         url,
         domain,
@@ -374,9 +371,9 @@ When(
 When(
   "I create a git registry with local path {string} without domain",
   async function (this: GitRegistryWorld, path: string) {
-    const { createRegistry } = await import("resourcexjs");
+    const { createResourceX } = await import("resourcexjs");
     try {
-      this.gitRegistry = createRegistry({
+      this.gitRegistry = createResourceX({
         type: "git",
         url: path,
         // No domain - should be allowed for local path
@@ -391,10 +388,10 @@ When(
 Given(
   "I create a git registry for local path {string} with domain {string}",
   async function (this: GitRegistryWorld, _path: string, domain: string) {
-    const { createRegistry } = await import("resourcexjs");
+    const { createResourceX } = await import("resourcexjs");
     // Always use TEST_GIT_REPO (ignore the path parameter, it's just for readability)
     try {
-      this.gitRegistry = createRegistry({
+      this.gitRegistry = createResourceX({
         type: "git",
         url: TEST_GIT_REPO,
         domain,

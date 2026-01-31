@@ -60,8 +60,8 @@ function parseVerticalTable(dataTable: { raw: () => string[][] }): Record<string
 
 Given("a clean test registry", async function (this: DocExamplesWorld) {
   await rm(TEST_DIR, { recursive: true, force: true }).catch(() => {});
-  const { createRegistry } = await import("resourcexjs");
-  this.registry = createRegistry({ path: TEST_DIR });
+  const { createResourceX } = await import("resourcexjs");
+  this.registry = createResourceX({ path: TEST_DIR });
 });
 
 // ============================================
@@ -69,8 +69,8 @@ Given("a clean test registry", async function (this: DocExamplesWorld) {
 // ============================================
 
 When("I doc parse locator {string}", async function (this: DocExamplesWorld, locatorStr: string) {
-  const { parseRXL } = await import("resourcexjs");
-  this.locator = parseRXL(locatorStr);
+  const { parse } = await import("resourcexjs");
+  this.locator = parse(locatorStr);
 });
 
 Then("doc locator domain should be {string}", function (this: DocExamplesWorld, expected: string) {
@@ -115,9 +115,9 @@ Then(
 Given(
   "I doc create manifest with:",
   async function (this: DocExamplesWorld, dataTable: { raw: () => string[][] }) {
-    const { createRXM } = await import("resourcexjs");
+    const { manifest } = await import("resourcexjs");
     const data = parseVerticalTable(dataTable);
-    this.manifest = createRXM(data);
+    this.manifest = manifest(data);
   }
 );
 
@@ -139,8 +139,8 @@ Then(
 Given(
   "I doc create archive with content {string}",
   async function (this: DocExamplesWorld, content: string) {
-    const { createRXA } = await import("resourcexjs");
-    this.archive = await createRXA({ content });
+    const { archive } = await import("resourcexjs");
+    this.archive = await archive({ content });
   }
 );
 
@@ -150,13 +150,13 @@ Given(
     this: DocExamplesWorld,
     dataTable: { hashes: () => Array<{ path: string; content: string }> }
   ) {
-    const { createRXA } = await import("resourcexjs");
+    const { archive } = await import("resourcexjs");
     const rows = dataTable.hashes();
     const files: Record<string, string> = {};
     for (const row of rows) {
       files[row.path] = row.content;
     }
-    this.archive = await createRXA(files);
+    this.archive = await archive(files);
   }
 );
 
@@ -274,9 +274,9 @@ Then(
 // ============================================
 
 When("I doc assemble RXR from manifest and archive", async function (this: DocExamplesWorld) {
-  const { parseRXL } = await import("resourcexjs");
+  const { parse } = await import("resourcexjs");
   this.rxr = {
-    locator: parseRXL(this.manifest!.toLocator()),
+    locator: parse(this.manifest!.toLocator()),
     manifest: this.manifest!,
     archive: this.archive!,
   };
@@ -312,16 +312,16 @@ Then(
 Given(
   "I doc create a complete resource:",
   async function (this: DocExamplesWorld, dataTable: { raw: () => string[][] }) {
-    const { createRXM, createRXA, parseRXL } = await import("resourcexjs");
+    const { manifest, archive, parse } = await import("resourcexjs");
     const data = parseVerticalTable(dataTable);
 
     const content = data.content;
     delete data.content;
 
-    this.manifest = createRXM(data);
-    this.archive = await createRXA({ content });
+    this.manifest = manifest(data);
+    this.archive = await archive({ content });
     this.rxr = {
-      locator: parseRXL(this.manifest.toLocator()),
+      locator: parse(this.manifest.toLocator()),
       manifest: this.manifest,
       archive: this.archive,
     };

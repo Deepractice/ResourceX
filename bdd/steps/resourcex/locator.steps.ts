@@ -7,13 +7,13 @@ interface LocatorWorld {
 }
 
 Given("I have access to resourcexjs", async function (this: LocatorWorld) {
-  const { parseRXL } = await import("resourcexjs");
-  assert.ok(parseRXL, "parseRXL should be defined");
+  const { parse } = await import("resourcexjs");
+  assert.ok(parse, "parse should be defined");
 });
 
 When("I parse locator {string}", async function (this: LocatorWorld, locator: string) {
-  const { parseRXL } = await import("resourcexjs");
-  this.rxl = parseRXL(locator);
+  const { parse } = await import("resourcexjs");
+  this.rxl = parse(locator);
 });
 
 Then("rxl name should be {string}", function (this: LocatorWorld, expected: string) {

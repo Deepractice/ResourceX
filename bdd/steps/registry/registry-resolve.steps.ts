@@ -68,7 +68,7 @@ Given(
     this: ResolveWorld,
     dataTable: { hashes: () => Array<{ name: string; description: string }> }
   ) {
-    const { createRegistry } = await import("resourcexjs");
+    const { createResourceX } = await import("resourcexjs");
     await mkdir(TEST_DIR, { recursive: true });
 
     const types: BundledType[] = dataTable.hashes().map((row) => ({
@@ -84,17 +84,17 @@ Given(
       `,
     }));
 
-    this.registry = createRegistry({ path: TEST_DIR, types });
+    this.registry = createResourceX({ path: TEST_DIR, types });
   }
 );
 
 Given(
   "a linked {string} resource {string}",
   async function (this: ResolveWorld, typeName: string, locator: string) {
-    const { createRXM, createRXA, parseRXL } = await import("resourcexjs");
+    const { manifest, archive, parse } = await import("resourcexjs");
 
-    const rxl = parseRXL(locator);
-    const manifest = createRXM({
+    const rxl = parse(locator);
+    const rxm = manifest({
       domain: rxl.domain || "localhost",
       path: rxl.path,
       name: rxl.name,
@@ -105,7 +105,7 @@ Given(
     const rxr: RXR = {
       locator: rxl,
       manifest,
-      archive: await createRXA({ content: `${typeName} content` }),
+      archive: await archive({ content: `${typeName} content` }),
     };
 
     await this.registry!.add(rxr);
@@ -135,10 +135,10 @@ When(
 When(
   "I link a {string} resource {string}",
   async function (this: ResolveWorld, typeName: string, locator: string) {
-    const { createRXM, createRXA, parseRXL } = await import("resourcexjs");
+    const { manifest, archive, parse } = await import("resourcexjs");
 
-    const rxl = parseRXL(locator);
-    const manifest = createRXM({
+    const rxl = parse(locator);
+    const rxm = manifest({
       domain: rxl.domain || "localhost",
       path: rxl.path,
       name: rxl.name,
@@ -149,7 +149,7 @@ When(
     const rxr: RXR = {
       locator: rxl,
       manifest,
-      archive: await createRXA({ content: `${typeName} content` }),
+      archive: await archive({ content: `${typeName} content` }),
     };
 
     await this.registry!.add(rxr);
@@ -160,9 +160,9 @@ When(
 When(
   "I try to link a resource with unsupported type {string}",
   async function (this: ResolveWorld, typeName: string) {
-    const { createRXM, createRXA, parseRXL } = await import("resourcexjs");
+    const { manifest, archive, parse } = await import("resourcexjs");
 
-    const manifest = createRXM({
+    const rxm = manifest({
       domain: "localhost",
       name: "test",
       type: typeName,
@@ -170,9 +170,9 @@ When(
     });
 
     const rxr: RXR = {
-      locator: parseRXL(manifest.toLocator()),
+      locator: parse(manifest.toLocator()),
       manifest,
-      archive: await createRXA({ content: "test content" }),
+      archive: await archive({ content: "test content" }),
     };
 
     try {
@@ -200,7 +200,7 @@ Then("it should throw a ResourceTypeError", async function (this: ResolveWorld) 
 Given(
   "a registry with a {string} type that accepts arguments",
   async function (this: ResolveWorld, typeName: string) {
-    const { createRegistry } = await import("resourcexjs");
+    const { createResourceX } = await import("resourcexjs");
     await mkdir(TEST_DIR, { recursive: true });
 
     const toolType: BundledType = {
@@ -226,17 +226,17 @@ Given(
       `,
     };
 
-    this.registry = createRegistry({ path: TEST_DIR, types: [toolType] });
+    this.registry = createResourceX({ path: TEST_DIR, types: [toolType] });
   }
 );
 
 Given(
   "a linked tool resource {string} that adds two numbers",
   async function (this: ResolveWorld, locator: string) {
-    const { createRXM, createRXA, parseRXL } = await import("resourcexjs");
+    const { manifest, archive, parse } = await import("resourcexjs");
 
-    const rxl = parseRXL(locator);
-    const manifest = createRXM({
+    const rxl = parse(locator);
+    const rxm = manifest({
       domain: rxl.domain || "localhost",
       path: rxl.path,
       name: rxl.name,
@@ -247,7 +247,7 @@ Given(
     const rxr: RXR = {
       locator: rxl,
       manifest,
-      archive: await createRXA({ content: "add function" }),
+      archive: await archive({ content: "add function" }),
     };
 
     await this.registry!.add(rxr);
@@ -274,7 +274,7 @@ Then("the result should be {string}", function (this: ResolveWorld, expected: st
 Given(
   "a registry with a {string} type that has schema",
   async function (this: ResolveWorld, typeName: string) {
-    const { createRegistry } = await import("resourcexjs");
+    const { createResourceX } = await import("resourcexjs");
     await mkdir(TEST_DIR, { recursive: true });
 
     const toolType: BundledType = {
@@ -295,15 +295,15 @@ Given(
       `,
     };
 
-    this.registry = createRegistry({ path: TEST_DIR, types: [toolType] });
+    this.registry = createResourceX({ path: TEST_DIR, types: [toolType] });
   }
 );
 
 Given("a linked tool resource {string}", async function (this: ResolveWorld, locator: string) {
-  const { createRXM, createRXA, parseRXL } = await import("resourcexjs");
+  const { manifest, archive, parse } = await import("resourcexjs");
 
-  const rxl = parseRXL(locator);
-  const manifest = createRXM({
+  const rxl = parse(locator);
+  const rxm = manifest({
     domain: rxl.domain || "localhost",
     path: rxl.path,
     name: rxl.name,
@@ -314,7 +314,7 @@ Given("a linked tool resource {string}", async function (this: ResolveWorld, loc
   const rxr: RXR = {
     locator: rxl,
     manifest,
-    archive: await createRXA({ content: "tool content" }),
+    archive: await archive({ content: "tool content" }),
   };
 
   await this.registry!.add(rxr);
@@ -324,7 +324,7 @@ Given("a linked tool resource {string}", async function (this: ResolveWorld, loc
 Given(
   "a registry {string} with custom type {string}",
   async function (this: ResolveWorld, registryName: string, typeName: string) {
-    const { createRegistry } = await import("resourcexjs");
+    const { createResourceX } = await import("resourcexjs");
     await mkdir(TEST_DIR, { recursive: true });
 
     if (!this.registries) {
@@ -344,7 +344,7 @@ Given(
       `,
     };
 
-    const registry = createRegistry({
+    const registry = createResourceX({
       path: join(TEST_DIR, registryName),
       types: [customType],
     });
@@ -381,10 +381,10 @@ Given("a clean test registry directory", async function (this: AliasSchemaWorld)
 });
 
 Given("a registry with builtin types", async function (this: AliasSchemaWorld) {
-  const { createRegistry } = await import("resourcexjs");
+  const { createResourceX } = await import("resourcexjs");
   await mkdir(TEST_DIR, { recursive: true });
   // TypeHandlerChain already includes builtin types by default
-  this.registry = createRegistry({ path: TEST_DIR });
+  this.registry = createResourceX({ path: TEST_DIR });
 });
 
 Then("executing should return {string}", async function (this: AliasSchemaWorld, expected: string) {
@@ -420,9 +420,9 @@ Given(
 Given(
   "a registry with the {string} type",
   async function (this: AliasSchemaWorld, _typeName: string) {
-    const { createRegistry } = await import("resourcexjs");
+    const { createResourceX } = await import("resourcexjs");
     await mkdir(TEST_DIR, { recursive: true });
-    this.registry = createRegistry({
+    this.registry = createResourceX({
       path: TEST_DIR,
       types: this.customType ? [this.customType] : [],
     });
@@ -432,10 +432,10 @@ Given(
 Given(
   "a resource {string} with content {string}",
   async function (this: AliasSchemaWorld, locator: string, content: string) {
-    const { createRXM, createRXA, parseRXL } = await import("resourcexjs");
+    const { manifest, archive, parse } = await import("resourcexjs");
 
-    const rxl = parseRXL(locator);
-    const manifest = createRXM({
+    const rxl = parse(locator);
+    const rxm = manifest({
       domain: rxl.domain || "localhost",
       path: rxl.path,
       name: rxl.name,
@@ -446,7 +446,7 @@ Given(
     const rxr: RXR = {
       locator: rxl,
       manifest,
-      archive: await createRXA({ content }),
+      archive: await archive({ content }),
     };
 
     await this.registry!.add(rxr);
@@ -520,10 +520,10 @@ When("I execute with argument {string}", async function (this: AliasSchemaWorld,
 When(
   "I try to add a resource {string} with content {string}",
   async function (this: AliasSchemaWorld, locator: string, content: string) {
-    const { createRXM, createRXA, parseRXL } = await import("resourcexjs");
+    const { manifest, archive, parse } = await import("resourcexjs");
 
-    const rxl = parseRXL(locator);
-    const manifest = createRXM({
+    const rxl = parse(locator);
+    const rxm = manifest({
       domain: rxl.domain || "localhost",
       path: rxl.path,
       name: rxl.name,
@@ -534,7 +534,7 @@ When(
     const rxr: RXR = {
       locator: rxl,
       manifest,
-      archive: await createRXA({ content }),
+      archive: await archive({ content }),
     };
 
     try {

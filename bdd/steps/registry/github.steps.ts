@@ -37,9 +37,9 @@ After({ tags: "@github" }, async function () {
 When(
   "I create a registry with URL {string} and domain {string}",
   async function (this: GitHubWorld, url: string, domain: string) {
-    const { createRegistry } = await import("resourcexjs");
+    const { createResourceX } = await import("resourcexjs");
     try {
-      this.registry = createRegistry({ url, domain });
+      this.registry = createResourceX({ url, domain });
       this.error = null;
     } catch (e) {
       this.error = e as Error;
@@ -51,9 +51,9 @@ When(
 When(
   "I create a registry with URL {string} without domain",
   async function (this: GitHubWorld, url: string) {
-    const { createRegistry } = await import("resourcexjs");
+    const { createResourceX } = await import("resourcexjs");
     try {
-      this.registry = createRegistry({ url });
+      this.registry = createResourceX({ url });
       this.error = null;
     } catch (e) {
       this.error = e as Error;
@@ -70,8 +70,8 @@ Given(
   "a registry with URL {string} and domain {string}",
   { timeout: 60000 },
   async function (this: GitHubWorld, url: string, domain: string) {
-    const { createRegistry } = await import("resourcexjs");
-    this.registry = createRegistry({ url, domain });
+    const { createResourceX } = await import("resourcexjs");
+    this.registry = createResourceX({ url, domain });
     this.error = null;
   }
 );
@@ -189,17 +189,17 @@ When("I try to link a resource using the URL registry", async function (this: Gi
 });
 
 When("I try to add a resource using the URL registry", async function (this: GitHubWorld) {
-  const { createRXM, createRXA, parseRXL } = await import("resourcexjs");
-  const manifest = createRXM({
+  const { manifest, archive, parse } = await import("resourcexjs");
+  const rxm = manifest({
     domain: "test.com",
     name: "test",
     type: "text",
     version: "1.0.0",
   });
   const rxr: RXR = {
-    locator: parseRXL("test.com/test.text@1.0.0"),
+    locator: parse("test.com/test.text@1.0.0"),
     manifest,
-    archive: await createRXA({ content: "test" }),
+    archive: await archive({ content: "test" }),
   };
 
   try {
@@ -253,14 +253,14 @@ When(
   "I create registry from discovery for {string}",
   { timeout: 60000 },
   async function (this: GitHubWorld, domain: string) {
-    const { discoverRegistry, createRegistry } = await import("resourcexjs");
+    const { discoverRegistry, createResourceX } = await import("resourcexjs");
     try {
       const discovery = await discoverRegistry(domain);
       this.discoveryResult = discovery;
       const registryUrl = discovery.registries[0];
 
       // Use URL-based auto-detection
-      this.registry = createRegistry({
+      this.registry = createResourceX({
         url: registryUrl,
         domain: discovery.domain,
       });

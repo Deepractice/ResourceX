@@ -27,10 +27,10 @@ Given(
     locator: string,
     dataTable: { hashes: () => Array<{ path: string; content: string }> }
   ) {
-    const { createRXM, createRXA, parseRXL } = await import("resourcexjs");
+    const { manifest, archive, parse } = await import("resourcexjs");
 
-    const rxl = parseRXL(locator);
-    const manifest = createRXM({
+    const rxl = parse(locator);
+    const rxm = manifest({
       domain: rxl.domain ?? "localhost",
       name: rxl.name,
       type: rxl.type ?? "text",
@@ -46,7 +46,7 @@ Given(
     const rxr: RXR = {
       locator: rxl,
       manifest,
-      archive: await createRXA(files),
+      archive: await archive(files),
     };
 
     await this.registry!.add(rxr);

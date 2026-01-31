@@ -20,23 +20,25 @@ interface LocalCacheWorld {
 async function createResourceAt(
   basePath: string,
   area: "local" | "cache",
-  manifest: { domain: string; path?: string; name: string; type?: string; version: string },
+  manifestData: { domain: string; path?: string; name: string; type?: string; version: string },
   content: string
 ) {
-  const { createRXA, createRXM } = await import("resourcexjs");
+  const { archive } = await import("resourcexjs");
 
   let resourcePath: string;
-  const resourceName = manifest.type ? `${manifest.name}.${manifest.type}` : manifest.name;
-  const version = manifest.version ?? "latest";
+  const resourceName = manifestData.type
+    ? `${manifestData.name}.${manifestData.type}`
+    : manifestData.name;
+  const version = manifestData.version ?? "latest";
 
   if (area === "local") {
     // local: {basePath}/local/{name}.{type}/{version}
     resourcePath = join(basePath, "local", resourceName, version);
   } else {
     // cache: {basePath}/cache/{domain}/{path}/{name}.{type}/{version}
-    resourcePath = join(basePath, "cache", manifest.domain);
-    if (manifest.path) {
-      resourcePath = join(resourcePath, manifest.path);
+    resourcePath = join(basePath, "cache", manifestData.domain);
+    if (manifestData.path) {
+      resourcePath = join(resourcePath, manifestData.path);
     }
     resourcePath = join(resourcePath, resourceName, version);
   }
@@ -44,12 +46,11 @@ async function createResourceAt(
   await mkdir(resourcePath, { recursive: true });
 
   // Write manifest
-  const rxm = createRXM(manifest);
   const manifestPath = join(resourcePath, "manifest.json");
-  await writeFile(manifestPath, JSON.stringify(rxm.toJSON(), null, 2), "utf-8");
+  await writeFile(manifestPath, JSON.stringify(manifestData, null, 2), "utf-8");
 
   // Write content (unified serialization: directly store archive buffer)
-  const rxa = await createRXA({ content });
+  const rxa = await archive({ content: Buffer.from(content) });
   const archiveBuffer = await rxa.buffer();
   const contentPath = join(resourcePath, "archive.tar.gz");
   await writeFile(contentPath, archiveBuffer);
@@ -62,8 +63,8 @@ async function createResourceAt(
 Given(
   "a resource {string} exists in local with content {string}",
   async function (this: LocalCacheWorld, locator: string, content: string) {
-    const { parseRXL } = await import("resourcexjs");
-    const rxl = parseRXL(locator);
+    const { parse } = await import("resourcexjs");
+    const rxl = parse(locator);
 
     await createResourceAt(
       TEST_DIR,
@@ -83,8 +84,8 @@ Given(
 Given(
   "a resource {string} exists in local",
   async function (this: LocalCacheWorld, locator: string) {
-    const { parseRXL } = await import("resourcexjs");
-    const rxl = parseRXL(locator);
+    const { parse } = await import("resourcexjs");
+    const rxl = parse(locator);
 
     await createResourceAt(
       TEST_DIR,
@@ -104,8 +105,8 @@ Given(
 Given(
   "a resource {string} exists in cache with content {string}",
   async function (this: LocalCacheWorld, locator: string, content: string) {
-    const { parseRXL } = await import("resourcexjs");
-    const rxl = parseRXL(locator);
+    const { parse } = await import("resourcexjs");
+    const rxl = parse(locator);
 
     await createResourceAt(
       TEST_DIR,
@@ -125,8 +126,8 @@ Given(
 Given(
   "a resource {string} exists in cache",
   async function (this: LocalCacheWorld, locator: string) {
-    const { parseRXL } = await import("resourcexjs");
-    const rxl = parseRXL(locator);
+    const { parse } = await import("resourcexjs");
+    const rxl = parse(locator);
 
     await createResourceAt(
       TEST_DIR,
@@ -157,11 +158,11 @@ Given(
       }>;
     }
   ) {
-    const { createRXM, createRXA, parseRXL } = await import("resourcexjs");
+    const { manifest, archive, parse } = await import("resourcexjs");
     const rows = dataTable.hashes();
     const row = rows[0];
 
-    const manifest = createRXM({
+    const rxm = manifest({
       domain: row.domain ?? "localhost",
       path: row.path,
       name: row.name,
@@ -170,9 +171,9 @@ Given(
     });
 
     const rxr: RXR = {
-      locator: parseRXL(manifest.toLocator()),
+      locator: parse(manifest.toLocator()),
       manifest,
-      archive: await createRXA({ content: "test content" }),
+      archive: await archive({ content: "test content" }),
     };
 
     await this.registry!.add(rxr);

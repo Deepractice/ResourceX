@@ -33,6 +33,12 @@ export { createResourceX } from "./ResourceX.js";
 export type { ResourceX, ResourceXConfig, Resource, Executable } from "./ResourceX.js";
 
 // ============================================
+// Core Primitives
+// ============================================
+export { parse, format, manifest, archive, resource, extract, wrap } from "@resourcexjs/core";
+export type { RXL, RXM, RXA, RXR, RXD } from "@resourcexjs/core";
+
+// ============================================
 // Errors
 // ============================================
 export { RegistryError } from "@resourcexjs/registry";
