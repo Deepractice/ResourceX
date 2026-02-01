@@ -29,21 +29,11 @@ export function Header({ showSearch = true, showSignOut = false }: HeaderProps) 
         </nav>
       </div>
       <div className="flex items-center gap-3">
-        {showSearch && (
-          <Input
-            type="search"
-            placeholder="Search resources..."
-            className="w-60"
-          />
-        )}
+        {showSearch && <Input type="search" placeholder="Search resources..." className="w-60" />}
         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
           <span className="text-sm font-medium text-foreground">S</span>
         </div>
-        {showSignOut ? (
-          <Button variant="outline">Sign out</Button>
-        ) : (
-          <Button>Sign in</Button>
-        )}
+        {showSignOut ? <Button variant="outline">Sign out</Button> : <Button>Sign in</Button>}
       </div>
     </header>
   );

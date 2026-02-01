@@ -8,13 +8,7 @@ interface ListItemProps {
   locator: string;
 }
 
-export function ListItem({
-  name,
-  description,
-  type,
-  version,
-  locator,
-}: ListItemProps) {
+export function ListItem({ name, description, type, version, locator }: ListItemProps) {
   return (
     <Link
       href={`/resource/${encodeURIComponent(locator)}`}

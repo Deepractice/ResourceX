@@ -18,9 +18,7 @@ export default function Error({ error }: ErrorProps) {
         <div className="flex h-16 w-16 items-center justify-center rounded-full bg-red-50 mb-6">
           <span className="text-3xl font-bold text-red-500">!</span>
         </div>
-        <h1 className="text-2xl font-semibold text-foreground mb-2">
-          Something went wrong
-        </h1>
+        <h1 className="text-2xl font-semibold text-foreground mb-2">Something went wrong</h1>
         <p className="text-sm text-muted-foreground text-center mb-2">
           {error.message || "An unexpected error occurred"}
         </p>

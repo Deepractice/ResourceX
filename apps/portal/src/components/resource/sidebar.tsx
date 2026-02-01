@@ -6,18 +6,10 @@ interface SidebarProps {
   license?: string;
 }
 
-function SidebarSection({
-  label,
-  value,
-}: {
-  label: string;
-  value: React.ReactNode;
-}) {
+function SidebarSection({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-2">
-      <span className="text-xs font-medium uppercase text-muted-foreground">
-        {label}
-      </span>
+      <span className="text-xs font-medium uppercase text-muted-foreground">{label}</span>
       <span className="text-sm text-foreground">{value}</span>
     </div>
   );
@@ -36,10 +28,7 @@ export function MetadataSidebar({
       <SidebarSection label="Version" value={version} />
       <SidebarSection label="Published by" value={publishedBy} />
       {downloads !== undefined && (
-        <SidebarSection
-          label="Downloads"
-          value={downloads.toLocaleString()}
-        />
+        <SidebarSection label="Downloads" value={downloads.toLocaleString()} />
       )}
       {license && <SidebarSection label="License" value={license} />}
     </aside>

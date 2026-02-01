@@ -130,7 +130,7 @@ export interface Resource {
 }
 
 /**
- * Executable resource - result of resolve().
+ * Executable resource - result of use().
  */
 export interface Executable<T = unknown> {
   /**
