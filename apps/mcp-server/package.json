@@ -6,7 +6,8 @@
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "resourcex-mcp": "./dist/index.js"
+    "resourcex-mcp": "./dist/index.js",
+    "mcp-server": "./dist/index.js"
   },
   "scripts": {
     "build": "bun run build.ts",
