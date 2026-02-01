@@ -7,6 +7,7 @@
 
 import { FastMCP } from "fastmcp";
 import { createResourceX } from "resourcexjs";
+import { roleType } from "rolexjs";
 import { instructions } from "./instructions.js";
 import { searchTool, useTool, infoTool, listTool, addTool, pushTool } from "./tools/index.js";
 
@@ -19,6 +20,9 @@ const rx = createResourceX({
   registry,
   path: storagePath,
 });
+
+// Register role type from RoleX
+rx.supportType(roleType);
 
 // Create MCP server
 const server = new FastMCP({
