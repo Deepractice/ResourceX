@@ -1,6 +1,6 @@
 {
   "name": "@resourcexjs/storage",
-  "version": "2.5.3",
+  "version": "2.5.4",
   "description": "ResourceX Storage - Low-level storage backends",
   "keywords": [
     "resourcex",

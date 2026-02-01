@@ -1,5 +1,13 @@
 # @resourcexjs/registry
 
+## 2.5.4
+
+### Patch Changes
+
+- @resourcexjs/core@2.5.4
+- @resourcexjs/loader@2.5.4
+- @resourcexjs/storage@2.5.4
+
 ## 2.5.3
 
 ### Patch Changes

@@ -1,5 +1,12 @@
 # @resourcexjs/cli
 
+## 2.5.4
+
+### Patch Changes
+
+- resourcexjs@2.5.4
+- @resourcexjs/server@2.5.4
+
 ## 2.5.3
 
 ### Patch Changes
