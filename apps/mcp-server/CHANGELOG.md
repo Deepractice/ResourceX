@@ -1,5 +1,12 @@
 # @resourcexjs/mcp-server
 
+## 2.5.3
+
+### Patch Changes
+
+- a5694e5: fix: add bin aliases for npx compatibility
+  - resourcexjs@2.5.3
+
 ## 2.5.2
 
 ### Patch Changes
