@@ -59,15 +59,15 @@ export {
 export { createRegistryServer, type RegistryServerConfig } from "./hono.js";
 
 // Re-export Registry for convenience
-export { LocalRegistry } from "@resourcexjs/registry";
+export { LocalRegistry } from "@resourcexjs/core";
 export { FileSystemStorage, MemoryStorage } from "@resourcexjs/storage";
 
 /**
  * Convenience function to create a registry instance.
  */
 import { FileSystemStorage } from "@resourcexjs/storage";
-import { LocalRegistry } from "@resourcexjs/registry";
-import type { Registry } from "@resourcexjs/registry";
+import { LocalRegistry } from "@resourcexjs/core";
+import type { Registry } from "@resourcexjs/core";
 
 export interface CreateRegistryConfig {
   storagePath: string;

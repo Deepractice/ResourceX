@@ -22,7 +22,6 @@
   },
   "dependencies": {
     "@resourcexjs/core": "workspace:*",
-    "@resourcexjs/registry": "workspace:*",
     "@resourcexjs/storage": "workspace:*",
     "hono": "^4.7.10"
   },

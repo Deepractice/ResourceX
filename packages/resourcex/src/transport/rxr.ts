@@ -10,10 +10,9 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { TransportError } from "@resourcexjs/arp";
 import type { TransportHandler, TransportResult, TransportParams } from "@resourcexjs/arp";
-import { extract, parse } from "@resourcexjs/core";
+import { extract, parse, LocalRegistry, MirrorRegistry, LinkedRegistry } from "@resourcexjs/core";
 import type { RXR } from "@resourcexjs/core";
 import { FileSystemStorage } from "@resourcexjs/storage";
-import { LocalRegistry, MirrorRegistry, LinkedRegistry } from "@resourcexjs/registry";
 
 const DEFAULT_BASE_PATH = `${homedir()}/.resourcex`;
 

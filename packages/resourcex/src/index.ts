@@ -41,14 +41,13 @@ export type { RXL, RXM, RXA, RXR, RXD } from "@resourcexjs/core";
 // ============================================
 // Errors
 // ============================================
-export { RegistryError } from "@resourcexjs/registry";
-export { ResourceTypeError } from "@resourcexjs/type";
+export { RegistryError, ResourceTypeError } from "@resourcexjs/core";
 
 // ============================================
 // Extension - Custom Types
 // ============================================
-export type { BundledType, IsolatorType } from "@resourcexjs/type";
-export { bundleResourceType } from "@resourcexjs/type";
+export type { BundledType, IsolatorType } from "@resourcexjs/core";
+export { bundleResourceType } from "@resourcexjs/core";
 
 // ============================================
 // Version

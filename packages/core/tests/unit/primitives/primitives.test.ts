@@ -6,8 +6,8 @@ import {
   locate,
   resource,
   extract,
-} from "../../../src/primitives/index.js";
-import type { RXD, RXM, RXL, RXA, RXR } from "../../../src/types/index.js";
+} from "../../../src/model/index.js";
+import type { RXD, RXM, RXL, RXA, RXR } from "../../../src/model/index.js";
 
 describe("primitives", () => {
   // Sample RXD for tests

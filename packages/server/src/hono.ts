@@ -7,7 +7,7 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { FileSystemStorage } from "@resourcexjs/storage";
-import { LocalRegistry } from "@resourcexjs/registry";
+import { LocalRegistry } from "@resourcexjs/core";
 import {
   handlePublish,
   handleGetResource,

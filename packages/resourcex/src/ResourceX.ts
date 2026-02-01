@@ -9,12 +9,12 @@
 
 import { homedir } from "node:os";
 import { join } from "node:path";
-import type { RXR } from "@resourcexjs/core";
-import { parse, format, extract } from "@resourcexjs/core";
-import type { BundledType, IsolatorType } from "@resourcexjs/type";
-import { TypeHandlerChain } from "@resourcexjs/type";
-import { FileSystemStorage } from "@resourcexjs/storage";
+import type { RXR, SearchOptions, RemoteFetcher, RegistryAccessor } from "@resourcexjs/core";
 import {
+  parse,
+  format,
+  extract,
+  TypeHandlerChain,
   LocalRegistry,
   MirrorRegistry,
   LinkedRegistry,
@@ -24,9 +24,10 @@ import {
   LocalAccessor,
   CacheAccessor,
   RemoteAccessor,
-} from "@resourcexjs/registry";
-import type { SearchOptions, RemoteFetcher, RegistryAccessor } from "@resourcexjs/registry";
-import { loadResource } from "@resourcexjs/loader";
+  loadResource,
+} from "@resourcexjs/core";
+import type { BundledType, IsolatorType } from "@resourcexjs/core";
+import { FileSystemStorage } from "@resourcexjs/storage";
 
 const DEFAULT_BASE_PATH = `${homedir()}/.resourcex`;
 

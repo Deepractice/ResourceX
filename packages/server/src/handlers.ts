@@ -5,7 +5,7 @@
  */
 
 import { parse, format, manifest, wrap, resource } from "@resourcexjs/core";
-import type { Registry } from "@resourcexjs/registry";
+import type { Registry } from "@resourcexjs/core";
 import {
   PUBLISH_FIELDS,
   ERROR_CODES,
