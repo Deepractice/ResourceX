@@ -12,6 +12,18 @@
 
 ---
 
+## Why ResourceX?
+
+Your prompts, tools, and agent configurations are scattered across files, Notion pages, and your memory. ResourceX gives you:
+
+- **One format** to package any AI resource
+- **Version control** like npm packages
+- **MCP integration** so Claude can directly use your resources
+
+Think of it as **npm for AI resources**.
+
+---
+
 ## Get Started in 2 Minutes
 
 ### 1. Configure MCP

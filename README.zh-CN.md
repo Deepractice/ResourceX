@@ -17,6 +17,18 @@
 
 ---
 
+## 为什么选择 ResourceX？
+
+你的 prompts、tools、agent 配置散落在各处——文件里、Notion 里、脑子里。ResourceX 提供：
+
+- **统一格式**打包任何 AI 资源
+- **版本控制**，像 npm 包一样管理
+- **MCP 集成**，让 Claude 直接使用你的资源
+
+简单说，**AI 资源的 npm**。
+
+---
+
 ## 2 分钟开始
 
 ### 1. 配置 MCP
