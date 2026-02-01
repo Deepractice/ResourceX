@@ -1,5 +1,12 @@
 # @resourcexjs/mcp-server
 
+## 2.5.4
+
+### Patch Changes
+
+- 40baee5: feat: integrate roleType from RoleX for role resource support
+  - resourcexjs@2.5.4
+
 ## 2.5.3
 
 ### Patch Changes
