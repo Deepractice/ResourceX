@@ -95,8 +95,7 @@ export class LinkedRegistry implements Registry {
     if (query) {
       const lowerQuery = query.toLowerCase();
       filtered = locators.filter((rxl) => {
-        const searchText =
-          `${rxl.registry ?? ""} ${rxl.path ?? ""} ${rxl.name}`.toLowerCase();
+        const searchText = `${rxl.registry ?? ""} ${rxl.path ?? ""} ${rxl.name}`.toLowerCase();
         return searchText.includes(lowerQuery);
       });
     }

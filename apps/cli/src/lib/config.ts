@@ -9,7 +9,6 @@ export interface Config {
   registry?: string;
 }
 
-
 export async function getConfig(): Promise<Config> {
   let fileConfig: Partial<Config> = {};
 

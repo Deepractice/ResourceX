@@ -76,7 +76,10 @@ export function parse(locator: string): RXL {
   }
 
   if (!tag) {
-    throw new LocatorError("Tag cannot be empty. Use name:tag format or omit tag for :latest", locator);
+    throw new LocatorError(
+      "Tag cannot be empty. Use name:tag format or omit tag for :latest",
+      locator
+    );
   }
 
   // If no slash, it's a simple local locator

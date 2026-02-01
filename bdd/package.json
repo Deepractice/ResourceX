@@ -12,6 +12,8 @@
   "devDependencies": {
     "resourcexjs": "workspace:*",
     "@resourcexjs/server": "workspace:*",
+    "@resourcexjs/mcp-server": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.11.0",
     "@hono/node-server": "^1.14.3",
     "hono": "^4.7.10",
     "@cucumber/cucumber": "^11.2.0",

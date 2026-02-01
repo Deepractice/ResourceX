@@ -118,7 +118,10 @@ Given(
 
 Given(
   "I have added resources:",
-  async function (this: ResourceXWorld, dataTable: { hashes: () => Array<{ locator: string; type: string }> }) {
+  async function (
+    this: ResourceXWorld,
+    dataTable: { hashes: () => Array<{ locator: string; type: string }> }
+  ) {
     const rows = dataTable.hashes();
     for (const row of rows) {
       const { name, tag } = parseLocator(row.locator);
@@ -235,7 +238,7 @@ Then("info type should be {string}", function (this: ResourceXWorld, expected: s
 });
 
 Then("info version should be {string}", function (this: ResourceXWorld, expected: string) {
-  assert.equal(this.info!.version, expected);
+  assert.equal(this.info!.tag, expected);
 });
 
 Then("execute should return {string}", async function (this: ResourceXWorld, expected: string) {

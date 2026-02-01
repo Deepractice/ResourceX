@@ -301,7 +301,7 @@ class DefaultResourceX implements ResourceX {
       path: rxr.manifest.path,
       name: rxr.manifest.name,
       type: rxr.manifest.type,
-      version: rxr.manifest.tag,
+      tag: rxr.manifest.tag,
       files: rxr.manifest.files,
     };
   }
@@ -361,7 +361,7 @@ class DefaultResourceX implements ResourceX {
       path: rxr.manifest.path,
       name: rxr.manifest.name,
       type: rxr.manifest.type,
-      version: rxr.manifest.tag,
+      tag: rxr.manifest.tag,
       files,
     };
   }

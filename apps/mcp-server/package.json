@@ -1,0 +1,24 @@
+{
+  "name": "@resourcexjs/mcp-server",
+  "version": "0.1.0",
+  "description": "ResourceX MCP Server for AI Agents",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "resourcex-mcp": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "bun run build.ts",
+    "dev": "bun run src/index.ts",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "fastmcp": "^3.26.9",
+    "resourcexjs": "workspace:*",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.0",
+    "typescript": "^5.8.3"
+  }
+}
