@@ -1,175 +1,193 @@
 <div align="center">
   <h1>ResourceX</h1>
-  <p><strong>The resource infrastructure and solution for AI Agents</strong></p>
-  <p>AI 智能体的资源基础设施和解决方案</p>
-
-  <p>Manage, version, and share prompts, tools, skills, and everything</p>
-  <p>管理、版本化、共享 prompts、tools、skills 以及一切</p>
-
-  <p>
-    <b>Decentralized</b> · <b>Extensible</b> · <b>Universal</b>
-  </p>
-  <p>
-    <b>去中心化</b> · <b>可扩展</b> · <b>通用</b>
-  </p>
+  <p><strong>Package manager for AI resources</strong></p>
+  <p>Let Claude use your prompts, tools, and agents</p>
 
   <p>
     <a href="https://github.com/Deepractice/ResourceX"><img src="https://img.shields.io/github/stars/Deepractice/ResourceX?style=social" alt="Stars"/></a>
-    <img src="https://visitor-badge.laobi.icu/badge?page_id=Deepractice.ResourceX" alt="Views"/>
     <a href="LICENSE"><img src="https://img.shields.io/github/license/Deepractice/ResourceX?color=blue" alt="License"/></a>
     <a href="https://www.npmjs.com/package/resourcexjs"><img src="https://img.shields.io/npm/v/resourcexjs?color=cb3837&logo=npm" alt="npm"/></a>
-  </p>
-
-  <p>
-    <a href="README.md"><strong>English</strong></a> |
-    <a href="README.zh-CN.md">简体中文</a>
-  </p>
-
-  <p>
-    <a href="#quick-start">Quick Start</a> •
-    <a href="./docs/README.md">Documentation</a> •
-    <a href="./docs/api/core.md">API Reference</a>
   </p>
 </div>
 
 ---
 
-## Why ResourceX?
+## Get Started in 2 Minutes
 
-AI Agents need to manage various resources: **prompts**, **tools**, **agents**, **skills**, **configurations**, and more. ResourceX provides a unified resource layer with protocol, runtime, and registry. _Everything is a resource._
+### 1. Configure MCP
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                     Registry Layer                          │
-│                                                             │
-│  Local / Remote          →  Storage & Discovery             │
-│  add / resolve / search  →  Resource Operations             │
-├─────────────────────────────────────────────────────────────┤
-│                    ResourceX Layer                          │
-│                                                             │
-│  RXL (Locator)   →  deepractice.ai/assistant.prompt@1.0.0  │
-│  RXM (Manifest)  →  Resource metadata                       │
-│  RXA (Archive)   →  tar.gz for storage/transfer             │
-│  RXP (Package)   →  Extracted files for runtime access      │
-│  Type System     →  text / json / binary / custom           │
-├─────────────────────────────────────────────────────────────┤
-│                       ARP Layer                             │
-│                                                             │
-│  Format: arp:{semantic}:{transport}://{location}            │
-│  Low-level I/O primitives for file, http, https, rxr        │
-└─────────────────────────────────────────────────────────────┘
+**Claude Desktop** (`~/.claude/claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "resourcex": {
+      "command": "npx",
+      "args": ["@resourcexjs/mcp-server"]
+    }
+  }
+}
 ```
 
-## Quick Start
+**VS Code** (Claude extension settings):
+
+```json
+{
+  "claude.mcpServers": {
+    "resourcex": {
+      "command": "npx",
+      "args": ["@resourcexjs/mcp-server"]
+    }
+  }
+}
+```
+
+### 2. Use in Claude
+
+```
+You: Search for code review resources
+Claude: [calls search("code review")] Found the following resources...
+
+You: Use code-review:1.0.0 to review this code
+Claude: [calls use("code-review:1.0.0")] Let me review your code with this prompt...
+```
+
+That's it. Claude can now access and use ResourceX resources.
+
+---
+
+## Advanced Usage
+
+<details>
+<summary><b>Create Your Own Resource</b></summary>
+
+```bash
+# Create resource directory
+mkdir my-prompt && cd my-prompt
+
+# Create metadata
+cat > resource.json << 'EOF'
+{
+  "name": "my-prompt",
+  "type": "text",
+  "version": "1.0.0"
+}
+EOF
+
+# Create content
+echo "You are a helpful assistant specialized in..." > content
+
+# Add to local storage
+npx @resourcexjs/cli add .
+```
+
+</details>
+
+<details>
+<summary><b>Manage Resources with CLI</b></summary>
+
+```bash
+# Install
+npm install -g @resourcexjs/cli
+
+# Common commands
+rx add ./my-prompt      # Add local resource
+rx list                 # List all resources
+rx use name:1.0.0       # Use a resource
+rx search keyword       # Search resources
+rx push name:1.0.0      # Publish to registry
+rx pull name:1.0.0      # Pull from registry
+```
+
+See [CLI Documentation](./apps/cli/README.md)
+
+</details>
+
+<details>
+<summary><b>Use SDK in Code</b></summary>
 
 ```bash
 npm install resourcexjs
-# or
-bun add resourcexjs
 ```
 
 ```typescript
-import { createRegistry, parseRXL, createRXM, createRXA } from "resourcexjs";
+import { createResourceX } from "resourcexjs";
 
-// 1. Create a resource (RXR = Locator + Manifest + Archive)
-const manifest = createRXM({
-  domain: "localhost",
-  name: "my-prompt",
-  type: "text",
-  version: "1.0.0",
-});
+const rx = createResourceX();
 
-const rxr = {
-  locator: parseRXL(manifest.toLocator()),
-  manifest,
-  archive: await createRXA({ content: "You are a helpful assistant." }),
-};
+// Add resource
+await rx.add("./my-prompt");
 
-// 2. Add to local registry (~/.resourcex)
-const registry = createRegistry();
-await registry.add(rxr);
+// Use resource
+const result = await rx.use("my-prompt:1.0.0");
+console.log(result.content);
 
-// 3. Resolve and execute
-const resolved = await registry.resolve("localhost/my-prompt.text@1.0.0");
-const text = await resolved.execute(); // "You are a helpful assistant."
-
-// Access the original resource
-console.log(resolved.resource.manifest.name); // "my-prompt"
+// Search resources
+const results = await rx.search("code review");
 ```
 
-## [Documentation](./docs/README.md)
+See [SDK Documentation](./packages/resourcex/README.md)
 
-### [Getting Started](./docs/getting-started/introduction.md)
+</details>
 
-- [Introduction](./docs/getting-started/introduction.md) - What is ResourceX
-- [Installation](./docs/getting-started/installation.md) - Setup guide
-- [Quick Start](./docs/getting-started/quick-start.md) - 5-minute tutorial
+<details>
+<summary><b>Self-host Registry</b></summary>
 
-### [Core Concepts](./docs/concepts/overview.md)
+```typescript
+import { createRegistryServer } from "@resourcexjs/server";
 
-- [Architecture Overview](./docs/concepts/overview.md) - Two-layer design
-- **[ResourceX Layer](./docs/concepts/resourcex/rxl-locator.md)**
-  - [RXL - Locator](./docs/concepts/resourcex/rxl-locator.md) - `domain/path/name.type@version`
-  - [RXM - Manifest](./docs/concepts/resourcex/rxm-manifest.md) - Resource metadata
-  - [RXA - Archive](./docs/concepts/resourcex/rxa-archive.md) - Archive for storage/transfer
-  - [RXR - Resource](./docs/concepts/resourcex/rxr-resource.md) - Complete resource object
-  - [Type System](./docs/concepts/resourcex/type-system.md) - Built-in & custom types
-  - [Registry](./docs/concepts/resourcex/registry.md) - Storage & retrieval
-- **[ARP Layer](./docs/concepts/arp/protocol.md)**
-  - [Protocol](./docs/concepts/arp/protocol.md) - Agent Resource Protocol
-  - [ARL](./docs/concepts/arp/arl.md) - ARP Resource Locator
-  - [Transport](./docs/concepts/arp/transport.md) - file, http, https, rxr
-  - [Semantic](./docs/concepts/arp/semantic.md) - text, binary
+const app = createRegistryServer({
+  storagePath: "./data",
+});
 
-### [Guides](./docs/guides/local-registry.md)
+export default app; // Deploy to any platform that supports Hono
+```
 
-- [Local Registry](./docs/guides/local-registry.md) - Development workflow
-- [Git Registry](./docs/guides/git-registry.md) - Team sharing
-- [Remote Registry](./docs/guides/remote-registry.md) - HTTP API
-- [Custom Types](./docs/guides/custom-types.md) - Define your own types
-- [ARP Protocol](./docs/guides/arp-protocol.md) - Low-level I/O
+See [Server Documentation](./packages/server/README.md)
 
-### [API Reference](./docs/api/core.md)
+</details>
 
-- [Core API](./docs/api/core.md) - RXL, RXM, RXA, RXP, RXR
-- [Registry API](./docs/api/registry.md) - Registry operations
-- [ARP API](./docs/api/arp.md) - Transport & Semantic
-- [Errors](./docs/api/errors.md) - Error handling
-
-### [Design & Contributing](./docs/design/README.md)
-
-- [Design Decisions](./docs/design/README.md) - Architecture rationale
-- [Development](./docs/contributing/development.md) - Setup & commands
-- [Workflow](./docs/contributing/workflow.md) - BDD process
-- [Conventions](./docs/contributing/conventions.md) - Code style
+---
 
 ## Packages
 
+| Package                                        | Description                 |
+| ---------------------------------------------- | --------------------------- |
+| [`@resourcexjs/cli`](./apps/cli)               | `rx` command-line tool      |
+| [`@resourcexjs/mcp-server`](./apps/mcp-server) | MCP Server for AI Agents    |
+| [`resourcexjs`](./packages/resourcex)          | SDK                         |
+| [`@resourcexjs/server`](./packages/server)     | Self-hosted Registry Server |
+
+<details>
+<summary>Internal Packages (for developers)</summary>
+
 | Package                                        | Description                          |
 | ---------------------------------------------- | ------------------------------------ |
-| [`resourcexjs`](./packages/resourcex)          | Main package - everything you need   |
-| [`@resourcexjs/core`](./packages/core)         | Core types (RXL, RXM, RXA, RXP, RXR) |
+| [`@resourcexjs/core`](./packages/core)         | Core primitives (RXL, RXM, RXA, RXR) |
+| [`@resourcexjs/storage`](./packages/storage)   | Storage backends                     |
 | [`@resourcexjs/registry`](./packages/registry) | Registry implementations             |
-| [`@resourcexjs/arp`](./packages/arp)           | ARP protocol                         |
+| [`@resourcexjs/loader`](./packages/loader)     | Resource loading                     |
+| [`@resourcexjs/type`](./packages/type)         | Type system                          |
+| [`@resourcexjs/arp`](./packages/arp)           | Low-level I/O protocol               |
+
+</details>
+
+---
 
 ## Ecosystem
 
 Part of the [Deepractice](https://github.com/Deepractice) AI infrastructure:
 
-- **[AgentVM](https://github.com/Deepractice/AgentVM)** - AI Agent runtime
 - **[AgentX](https://github.com/Deepractice/AgentX)** - AI Agent framework
+- **[AgentVM](https://github.com/Deepractice/AgentVM)** - AI Agent runtime
 - **ResourceX** - Resource management (this project)
-
-## Contributing
-
-See [CONTRIBUTING.md](./CONTRIBUTING.md) and [Development Guide](./docs/contributing/development.md).
 
 ## License
 
-[MIT](./LICENSE)
+[Apache-2.0](./LICENSE)
 
 ---
 
 <div align="center">
-  Built with care by <a href="https://github.com/Deepractice">Deepractice</a>
+  Built with ❤️ by <a href="https://github.com/Deepractice">Deepractice</a>
 </div>
