@@ -1,5 +1,16 @@
 # resourcexjs
 
+## 2.5.3
+
+### Patch Changes
+
+- @resourcexjs/core@2.5.3
+- @resourcexjs/type@2.5.3
+- @resourcexjs/loader@2.5.3
+- @resourcexjs/arp@2.5.3
+- @resourcexjs/registry@2.5.3
+- @resourcexjs/storage@2.5.3
+
 ## 2.5.2
 
 ### Patch Changes

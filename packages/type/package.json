@@ -1,6 +1,6 @@
 {
   "name": "@resourcexjs/type",
-  "version": "2.5.2",
+  "version": "2.5.3",
   "description": "ResourceX Type System - Type handlers and serialization",
   "keywords": [
     "resourcex",
