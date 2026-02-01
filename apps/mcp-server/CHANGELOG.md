@@ -1,5 +1,12 @@
 # @resourcexjs/mcp-server
 
+## 2.5.5
+
+### Patch Changes
+
+- Updated dependencies [49e3d04]
+  - resourcexjs@2.5.5
+
 ## 2.5.4
 
 ### Patch Changes
