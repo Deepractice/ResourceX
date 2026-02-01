@@ -14,7 +14,7 @@
     "url": "git+https://github.com/Deepractice/ResourceX.git",
     "directory": "packages/storage"
   },
-  "license": "MIT",
+  "license": "Apache-2.0",
   "engines": {
     "node": ">=22.0.0"
   },

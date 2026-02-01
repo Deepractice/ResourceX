@@ -16,7 +16,7 @@
     "url": "git+https://github.com/Deepractice/ResourceX.git"
   },
   "homepage": "https://github.com/Deepractice/ResourceX",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "engines": {
     "node": ">=22.0.0"
   },
