@@ -522,7 +522,7 @@ class DefaultResourceX implements ResourceX {
             path: rxr.manifest.path,
             name: rxr.manifest.name,
             type: rxr.manifest.type,
-            version: rxr.manifest.tag,
+            tag: rxr.manifest.tag,
           }),
         ],
         { type: "application/json" }
