@@ -1,5 +1,17 @@
 # resourcexjs
 
+## 2.5.5
+
+### Patch Changes
+
+- 49e3d04: fix: use correct 'tag' field name in publish manifest
+  - @resourcexjs/core@2.5.5
+  - @resourcexjs/type@2.5.5
+  - @resourcexjs/loader@2.5.5
+  - @resourcexjs/arp@2.5.5
+  - @resourcexjs/registry@2.5.5
+  - @resourcexjs/storage@2.5.5
+
 ## 2.5.4
 
 ### Patch Changes
