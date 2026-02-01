@@ -8,10 +8,16 @@
 // API Endpoints
 // ============================================
 
-export const API_VERSION = "v1";
-export const API_PREFIX = `/api/${API_VERSION}`;
+export const API_VERSION: string = "v1";
+export const API_PREFIX: string = `/api/${API_VERSION}`;
 
-export const ENDPOINTS = {
+export const ENDPOINTS: {
+  readonly publish: string;
+  readonly resource: string;
+  readonly content: string;
+  readonly search: string;
+  readonly health: string;
+} = {
   publish: `${API_PREFIX}/publish`,
   resource: `${API_PREFIX}/resource`,
   content: `${API_PREFIX}/content`,
