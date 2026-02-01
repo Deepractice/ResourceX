@@ -10,7 +10,10 @@
       "@resourcexjs/loader",
       "@resourcexjs/arp",
       "@resourcexjs/registry",
-      "@resourcexjs/protocol"
+      "@resourcexjs/storage",
+      "@resourcexjs/server",
+      "@resourcexjs/cli",
+      "@resourcexjs/mcp-server"
     ]
   ],
   "linked": [],
