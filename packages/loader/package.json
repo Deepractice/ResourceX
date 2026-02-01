@@ -1,6 +1,6 @@
 {
   "name": "@resourcexjs/loader",
-  "version": "2.5.1",
+  "version": "2.5.2",
   "description": "ResourceX Loader - Resource loading from various sources",
   "keywords": [
     "resourcex",

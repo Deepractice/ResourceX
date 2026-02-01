@@ -1,5 +1,11 @@
 # @resourcexjs/loader
 
+## 2.5.2
+
+### Patch Changes
+
+- @resourcexjs/core@2.5.2
+
 ## 2.5.1
 
 ### Patch Changes
