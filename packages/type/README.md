@@ -10,14 +10,13 @@ bun add @resourcexjs/type
 
 ## Overview
 
-The `@resourcexjs/type` package provides the type system for ResourceX, managing how different resource types are resolved and executed.
+The `@resourcexjs/type` package provides the type system for ResourceX, managing how different resource types are resolved and executed in sandboxed environments.
 
 ### Key Concepts
 
 - **BundledType**: Pre-bundled resource type ready for sandbox execution
 - **TypeHandlerChain**: Type registry managing type lookup and registration
-- **ResourceType**: Interface for defining custom types (before bundling)
-- **ResolvedResource**: Result object with execute function and optional schema
+- **ResolveContext**: Serializable context passed to resolvers in sandbox
 - **Builtin Types**: Text, JSON, and Binary types are included by default
 
 ## Usage
@@ -38,10 +37,12 @@ chain.canHandle("binary"); // true
 // Builtin aliases
 chain.canHandle("txt"); // true (alias for text)
 chain.canHandle("config"); // true (alias for json)
+chain.canHandle("bin"); // true (alias for binary)
 
 // Get handler
 const handler = chain.getHandler("text");
 console.log(handler.name); // "text"
+console.log(handler.code); // bundled resolver code
 
 // Get all supported types
 const types = chain.getSupportedTypes();
@@ -52,7 +53,6 @@ const types = chain.getSupportedTypes();
 
 ```typescript
 import { TypeHandlerChain, bundleResourceType } from "@resourcexjs/type";
-import type { BundledType } from "@resourcexjs/type";
 
 // Bundle a resource type from source file
 const promptType = await bundleResourceType("./prompt.type.ts");
@@ -60,6 +60,9 @@ const promptType = await bundleResourceType("./prompt.type.ts");
 // Register with chain
 const chain = TypeHandlerChain.create();
 chain.register(promptType);
+
+// Now the chain can handle the new type
+chain.canHandle("prompt"); // true
 ```
 
 ### Bundling Resource Types
@@ -71,7 +74,7 @@ import { bundleResourceType } from "@resourcexjs/type";
 
 // Bundle from source file
 const myType = await bundleResourceType("./my-resource.type.ts");
-// → { name, aliases, description, schema, code }
+// Returns: { name, aliases, description, schema, code }
 ```
 
 **Source file format (`my-resource.type.ts`):**
@@ -81,7 +84,7 @@ export default {
   name: "prompt",
   aliases: ["deepractice-prompt"],
   description: "AI Prompt template",
-  schema: undefined, // or JSONSchema for types with args
+
   async resolve(ctx) {
     // ctx.manifest - resource metadata
     // ctx.files - extracted files as Record<string, Uint8Array>
@@ -89,6 +92,22 @@ export default {
     return content;
   },
 };
+```
+
+### Accessing Builtin Types Directly
+
+```typescript
+import { textType, jsonType, binaryType, builtinTypes } from "@resourcexjs/type";
+
+// Individual types
+console.log(textType.name); // "text"
+console.log(jsonType.aliases); // ["config", "manifest"]
+console.log(binaryType.description); // "Binary content"
+
+// All builtin types as array
+for (const type of builtinTypes) {
+  console.log(type.name);
+}
 ```
 
 ## API Reference
@@ -125,6 +144,7 @@ Check if a type is supported.
 
 ```typescript
 chain.canHandle("text"); // true
+chain.canHandle("unknown"); // false
 ```
 
 ##### `getHandler(typeName: string): BundledType`
@@ -192,18 +212,6 @@ interface BundledType {
 }
 ```
 
-### ResolvedResource
-
-Result object returned after resolution:
-
-```typescript
-interface ResolvedResource<TArgs = void, TResult = unknown> {
-  resource: unknown; // Original RXR object
-  execute: (args?: TArgs) => TResult | Promise<TResult>;
-  schema: TArgs extends void ? undefined : JSONSchema;
-}
-```
-
 ### ResolveContext
 
 Context passed to resolver in sandbox:
@@ -218,6 +226,31 @@ interface ResolveContext {
     version: string;
   };
   files: Record<string, Uint8Array>;
+}
+```
+
+### ResolvedResource
+
+Result object returned after resolution:
+
+```typescript
+interface ResolvedResource<TArgs = void, TResult = unknown> {
+  resource: unknown; // Original RXR object
+  execute: (args?: TArgs) => TResult | Promise<TResult>;
+  schema: TArgs extends void ? undefined : JSONSchema;
+}
+```
+
+### ResourceType
+
+Interface for defining custom types (before bundling):
+
+```typescript
+interface ResourceType<TArgs = void, TResult = unknown> {
+  name: string;
+  aliases?: string[];
+  description: string;
+  resolver: ResourceResolver<TArgs, TResult>;
 }
 ```
 
@@ -236,29 +269,17 @@ type IsolatorType = "none" | "srt" | "cloudflare" | "e2b";
 
 ## Builtin Types
 
-All builtin types have `schema: undefined` (no arguments):
+Three builtin types are included by default:
 
-### Text Type
-
-- **Name**: `text`
-- **Aliases**: `txt`, `plaintext`
-- **Resolves to**: `string`
-
-### JSON Type
-
-- **Name**: `json`
-- **Aliases**: `config`, `manifest`
-- **Resolves to**: `unknown`
-
-### Binary Type
-
-- **Name**: `binary`
-- **Aliases**: `bin`, `blob`, `raw`
-- **Resolves to**: `Uint8Array`
+| Type     | Aliases              | Resolves to  | Description        |
+| -------- | -------------------- | ------------ | ------------------ |
+| `text`   | `txt`, `plaintext`   | `string`     | Plain text content |
+| `json`   | `config`, `manifest` | `unknown`    | JSON content       |
+| `binary` | `bin`, `blob`, `raw` | `Uint8Array` | Binary content     |
 
 ## Creating Custom Types
 
-### Example: Prompt Type (No Arguments)
+### Example: Simple Type (No Arguments)
 
 **prompt.type.ts:**
 
@@ -267,7 +288,7 @@ export default {
   name: "prompt",
   aliases: ["deepractice-prompt"],
   description: "AI Prompt template",
-  schema: undefined,
+
   async resolve(ctx) {
     const content = new TextDecoder().decode(ctx.files["content"]);
     return content;
@@ -275,7 +296,7 @@ export default {
 };
 ```
 
-### Example: Tool Type (With Arguments)
+### Example: Type with Schema
 
 **tool.type.ts:**
 
@@ -291,9 +312,12 @@ export default {
     },
     required: ["query"],
   },
-  async resolve(ctx, args) {
-    // Execute with args
-    return { query: args?.query, limit: args?.limit ?? 10 };
+
+  async resolve(ctx) {
+    // The schema is used by the executor to validate/render UI
+    // The resolver returns the tool definition
+    const code = new TextDecoder().decode(ctx.files["content"]);
+    return { code, manifest: ctx.manifest };
   },
 };
 ```
@@ -308,10 +332,35 @@ try {
 } catch (error) {
   if (error instanceof ResourceTypeError) {
     console.error("Type error:", error.message);
+    // "Unsupported resource type: unknown"
   }
 }
 ```
 
+## Exports
+
+```typescript
+// Types
+export type {
+  ResourceType,
+  ResourceResolver,
+  ResolvedResource,
+  ResolveContext,
+  JSONSchema,
+  JSONSchemaProperty,
+  BundledType,
+  IsolatorType,
+} from "@resourcexjs/type";
+
+// Classes and Functions
+export { TypeHandlerChain } from "@resourcexjs/type";
+export { bundleResourceType } from "@resourcexjs/type";
+export { ResourceTypeError } from "@resourcexjs/type";
+
+// Builtin Types
+export { textType, jsonType, binaryType, builtinTypes } from "@resourcexjs/type";
+```
+
 ## License
 
-MIT
+Apache-2.0

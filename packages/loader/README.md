@@ -281,22 +281,24 @@ ResourceXError: No content files found in resource folder
 
 ## Examples
 
-### Load and Add to Registry
+### Load and Store in Registry
 
 ```typescript
 import { loadResource } from "@resourcexjs/loader";
-import { createRegistry } from "@resourcexjs/registry";
+import { LocalRegistry } from "@resourcexjs/registry";
+import { FileSystemStorage } from "@resourcexjs/storage";
 
 // Load resource from folder
 const rxr = await loadResource("./my-prompts/assistant");
 
-// Add to registry
-const registry = createRegistry();
-await registry.add(rxr);
+// Store in registry
+const storage = new FileSystemStorage("./resources");
+const registry = new LocalRegistry(storage);
+await registry.put(rxr);
 
-// Resolve later
-const resolved = await registry.resolve("localhost/assistant.prompt@1.0.0");
-const text = await resolved.execute();
+// Retrieve later
+const resource = await registry.get(rxr.locator);
+console.log(resource.manifest.name);
 ```
 
 ### Validate Before Loading
@@ -333,4 +335,4 @@ console.log(`Loaded ${resources.length} resources`);
 
 ## License
 
-MIT
+Apache-2.0

@@ -1,6 +1,6 @@
 # @resourcexjs/registry
 
-Resource registry for ResourceX - storage and retrieval of resources.
+Registry layer for ResourceX. Provides business logic for RXR (ResourceX Resource) operations on top of the storage layer.
 
 ## Installation
 
@@ -10,375 +10,268 @@ bun add @resourcexjs/registry
 
 ## Overview
 
-The `@resourcexjs/registry` package provides a Maven-style registry for storing and resolving resources.
+The `@resourcexjs/registry` package provides:
 
-### Key Concepts
+- **Three registry types** for different use cases
+- **Access chain** for read-through cache pattern
+- **Middleware** for cross-cutting concerns
+- **Discovery** for well-known registry endpoints
 
-- **Registry**: Interface for resource storage and retrieval
-- **DefaultRegistry**: Main implementation combining Storage with type handling
-- **LocalStorage**: Filesystem-based storage for local resources
-- **Storage**: Abstract interface for different storage backends
-- **Well-known discovery**: Auto-discover registry endpoints via `/.well-known/resourcex`
-- **Isolator**: Sandbox execution for resolver code
+All registries implement a common `Registry` interface and use `@resourcexjs/storage` for persistence.
 
-## Usage
+## Registry Types
 
-### Create Registry
+### LocalRegistry
+
+For local/owned resources without a registry domain in the path.
 
 ```typescript
-import { createRegistry } from "@resourcexjs/registry";
+import { LocalRegistry } from "@resourcexjs/registry";
+import { FileSystemStorage } from "@resourcexjs/storage";
 
-// Default registry (uses LocalStorage at ~/.resourcex)
-const registry = createRegistry();
+const storage = new FileSystemStorage("~/.resourcex/local");
+const registry = new LocalRegistry(storage);
 
-// Custom local path
-const registry2 = createRegistry({
-  path: "./my-registry",
-});
-
-// With custom resource types
-import { bundleResourceType } from "@resourcexjs/type";
-const promptType = await bundleResourceType("./prompt.type.ts");
-
-const registry3 = createRegistry({
-  types: [promptType],
-});
-
-// With sandbox isolation
-const registry4 = createRegistry({
-  isolator: "srt", // "none" | "srt" | "cloudflare" | "e2b"
-});
-
-// With remote mirror
-const registry5 = createRegistry({
-  mirror: "https://registry.deepractice.ai/v1",
-});
-
-// Server mode with custom storage
-import { LocalStorage } from "@resourcexjs/registry";
-
-const registry6 = createRegistry({
-  storage: new LocalStorage({ path: "./data" }),
-});
+// Storage structure: {name}/{tag}/manifest.json + archive.tar.gz
+await registry.put(rxr);
+const resource = await registry.get(rxl);
 ```
 
-### Add Resource
+**Use cases:**
 
-Add a resource to the registry:
+- Client local storage (`~/.resourcex/local/`)
+- Server authoritative storage (`./data/`)
+
+### MirrorRegistry
+
+For cached/mirrored remote resources. Includes registry domain in the path.
 
 ```typescript
-import { loadResource } from "@resourcexjs/loader";
-import { createRegistry } from "@resourcexjs/registry";
+import { MirrorRegistry } from "@resourcexjs/registry";
+import { FileSystemStorage } from "@resourcexjs/storage";
 
-// Load resource from folder
-const rxr = await loadResource("./my-prompt");
+const storage = new FileSystemStorage("~/.resourcex/cache");
+const registry = new MirrorRegistry(storage);
 
-// Add to registry
-const registry = createRegistry();
-await registry.add(rxr);
+// Storage structure: {registry}/{name}/{tag}/manifest.json + archive.tar.gz
+await registry.put(rxr);
+const resource = await registry.get(rxl);
 
-// Or add directly from path
-await registry.add("./my-prompt");
-
-// Now stored at: ~/.resourcex/local/my-prompt.text/1.0.0/
+// Cache-specific: clear cached resources
+await registry.clear(); // Clear all
+await registry.clear("deepractice.ai"); // Clear specific registry
 ```
 
-### Link Resource (Development)
+**Use cases:**
 
-Link creates a symlink for live development changes:
+- Caching remote resources locally
+- Offline access to previously fetched resources
+
+### LinkedRegistry
+
+For development symlinks. Changes in the source directory are reflected immediately.
 
 ```typescript
-const registry = createRegistry();
+import { LinkedRegistry } from "@resourcexjs/registry";
 
-// Link directory - changes reflect immediately
-await registry.link("./my-prompts/assistant");
+const registry = new LinkedRegistry("~/.resourcex/linked");
+
+// Create symlink to development directory
+const rxl = await registry.link("./my-prompt");
+
+// Get resource (reads from symlink target)
+const resource = await registry.get(rxl);
+
+// Remove symlink
+await registry.unlink(rxl);
 ```
 
-### Resolve Resource
+**Use cases:**
 
-Retrieve and execute a resource:
+- Live development without re-adding resources
+- Testing local changes before publishing
 
-```typescript
-const registry = createRegistry();
+## Registry Interface
 
-// Resolve returns ResolvedResource with execute()
-const resolved = await registry.resolve("localhost/my-prompt.text@1.0.0");
-
-// Execute to get content
-const text = await resolved.execute();
-console.log(text);
-
-// Check schema (for types with arguments)
-console.log(resolved.schema); // undefined for text type
-```
-
-### Get Raw Resource
-
-Get the RXR without resolving:
+All registries implement:
 
 ```typescript
-const rxr = await registry.get("localhost/my-prompt.text@1.0.0");
-
-console.log(rxr.manifest.name); // "my-prompt"
-console.log(rxr.manifest.type); // "text"
-```
-
-### Check Existence
-
-```typescript
-if (await registry.exists("localhost/my-prompt.text@1.0.0")) {
-  console.log("Resource exists");
-}
-```
-
-### Delete Resource
-
-```typescript
-await registry.delete("localhost/my-prompt.text@1.0.0");
-```
-
-### Search Resources
-
-```typescript
-// List all resources
-const all = await registry.search();
-
-// Search by name
-const results = await registry.search({ query: "assistant" });
-
-// With pagination
-const page = await registry.search({
-  query: "prompt",
-  limit: 10,
-  offset: 20,
-});
-```
-
-### Support Custom Types
-
-```typescript
-import { bundleResourceType } from "@resourcexjs/type";
-
-const registry = createRegistry();
-
-// Bundle and add type at runtime
-const promptType = await bundleResourceType("./prompt.type.ts");
-registry.supportType(promptType);
-
-// Now can resolve prompt resources
-const resolved = await registry.resolve("localhost/assistant.prompt@1.0.0");
-```
-
-## API Reference
-
-### `createRegistry(config?)`
-
-Create a new registry instance.
-
-**Parameters:**
-
-- `config?: ClientRegistryConfig | ServerRegistryConfig`
-
-**Client mode (default):**
-
-- `path?: string` - Local cache path (default: `~/.resourcex`)
-- `mirror?: string` - Mirror URL for remote fetch
-- `types?: BundledType[]` - Custom resource types
-- `isolator?: IsolatorType` - Sandbox isolation level
-
-**Server mode:**
-
-- `storage: Storage` - Custom storage implementation
-- `types?: BundledType[]` - Custom resource types
-- `isolator?: IsolatorType` - Sandbox isolation level
-
-**Returns**: `Registry`
-
-```typescript
-// Client mode
-const registry = createRegistry({
-  path: "~/.resourcex",
-  mirror: "https://registry.deepractice.ai/v1",
-  types: [promptType],
-  isolator: "srt",
-});
-
-// Server mode
-const registry = createRegistry({
-  storage: new LocalStorage({ path: "./data" }),
-  types: [promptType],
-});
-```
-
-### `discoverRegistry(domain)`
-
-Discover registry endpoints for a domain via well-known.
-
-**Parameters:**
-
-- `domain: string` - Domain to discover (e.g., "deepractice.ai")
-
-**Returns**: `Promise<DiscoveryResult>`
-
-```typescript
-const result = await discoverRegistry("deepractice.ai");
-// { domain: "deepractice.ai", registries: ["https://..."] }
-```
-
-### Registry Interface
-
-#### `supportType(type: BundledType): void`
-
-Add support for a custom resource type at runtime.
-
-#### `link(path: string): Promise<void>`
-
-Create a symlink for development. Changes in the source directory are immediately reflected.
-
-#### `add(source: string | RXR): Promise<void>`
-
-Add resource to storage. Accepts a folder path or RXR object.
-
-#### `get(locator: string): Promise<RXR>`
-
-Get raw RXR by locator without resolving.
-
-#### `resolve<TArgs, TResult>(locator: string): Promise<ResolvedResource<TArgs, TResult>>`
-
-Resolve resource and return structured result with execute function.
-
-#### `exists(locator: string): Promise<boolean>`
-
-Check if resource exists.
-
-#### `delete(locator: string): Promise<void>`
-
-Delete resource from storage.
-
-#### `search(options?: SearchOptions): Promise<RXL[]>`
-
-Search for resources.
-
-- `query?: string` - Filter by locator substring
-- `limit?: number` - Max results
-- `offset?: number` - Skip first N results
-
-### Storage Interface
-
-```typescript
-interface Storage {
-  readonly type: string;
-  get(locator: string): Promise<RXR>;
+interface Registry {
+  get(rxl: RXL): Promise<RXR>;
   put(rxr: RXR): Promise<void>;
-  exists(locator: string): Promise<boolean>;
-  delete(locator: string): Promise<void>;
-  search(options?: SearchOptions): Promise<RXL[]>;
+  has(rxl: RXL): Promise<boolean>;
+  remove(rxl: RXL): Promise<void>;
+  list(options?: SearchOptions): Promise<RXL[]>;
+}
+
+interface SearchOptions {
+  query?: string; // Filter by name/path substring
+  limit?: number; // Max results
+  offset?: number; // Skip first N (pagination)
 }
 ```
 
-### LocalStorage
+## Access Chain
 
-Filesystem-based storage implementation.
+The access chain implements a read-through cache pattern for unified resource access.
+
+### RegistryAccessChain
+
+Iterates through accessors in order. First accessor that can handle returns the result.
 
 ```typescript
-import { LocalStorage } from "@resourcexjs/registry";
+import {
+  RegistryAccessChain,
+  LinkedAccessor,
+  LocalAccessor,
+  CacheAccessor,
+  RemoteAccessor,
+  LocalRegistry,
+  MirrorRegistry,
+  LinkedRegistry,
+} from "@resourcexjs/registry";
+import { FileSystemStorage } from "@resourcexjs/storage";
 
-const storage = new LocalStorage({
-  path: "~/.resourcex", // optional, defaults to ~/.resourcex
-});
+// Create registries
+const linkedRegistry = new LinkedRegistry("~/.resourcex/linked");
+const localRegistry = new LocalRegistry(new FileSystemStorage("~/.resourcex/local"));
+const cacheRegistry = new MirrorRegistry(new FileSystemStorage("~/.resourcex/cache"));
+
+// Create accessor chain
+const chain = new RegistryAccessChain(
+  [
+    new LinkedAccessor(linkedRegistry), // 1. Dev symlinks (highest priority)
+    new LocalAccessor(localRegistry), // 2. Local resources (no domain)
+    new CacheAccessor(cacheRegistry), // 3. Cached remote resources
+    new RemoteAccessor(fetcher, cacheRegistry), // 4. Fetch + auto-cache
+  ],
+  { memCache: true } // Optional in-memory cache
+);
+
+// Get resource (tries each accessor in order)
+const rxr = await chain.get(rxl);
+
+// Check existence
+const exists = await chain.has(rxl);
+
+// Cache management
+chain.invalidate(rxl); // Remove specific resource from memory cache
+chain.clearCache(); // Clear entire memory cache
 ```
 
-## Storage Structure
+### Accessor Types
 
-Resources are stored in two areas:
+| Accessor         | Handles                    | Description                    |
+| ---------------- | -------------------------- | ------------------------------ |
+| `LinkedAccessor` | All (if linked)            | Dev symlinks, highest priority |
+| `LocalAccessor`  | Resources without registry | Local storage                  |
+| `CacheAccessor`  | Resources with registry    | Cached remote resources        |
+| `RemoteAccessor` | Resources with registry    | Fetch + auto-cache             |
 
-```
-~/.resourcex/
-├── local/                              # Development resources
-│   └── {name}.{type}/
-│       └── {version}/
-│           ├── manifest.json
-│           └── archive.tar.gz
-│
-└── cache/                              # Remote cached resources
-    └── {domain}/
-        └── {path}/
-            └── {name}.{type}/
-                └── {version}/
-                    ├── manifest.json
-                    └── archive.tar.gz
-```
+### RemoteFetcher Interface
 
-### Resolution Order
+`RemoteAccessor` requires a fetcher implementation:
 
-1. **local/** is checked first (development resources)
-2. **cache/** is checked second (remote cached resources)
-3. If not found and domain is not localhost, fetches from remote
-
-## Remote Fetch Flow
-
-For non-localhost domains:
-
-1. Check local storage (cache)
-2. If mirror configured, try mirror first
-3. Discover source via `https://{domain}/.well-known/resourcex`
-4. Fetch from discovered endpoint
-5. Cache to local storage
-
-**Well-known format:**
-
-```json
-{
-  "version": "1.0",
-  "registries": ["https://registry.example.com/v1"]
+```typescript
+interface RemoteFetcher {
+  fetch(rxl: RXL): Promise<RXR>;
 }
+
+// Example implementation
+const fetcher: RemoteFetcher = {
+  async fetch(rxl) {
+    const url = `https://${rxl.registry}/api/v1/resources/${rxl.name}/${rxl.tag}`;
+    const response = await fetch(url);
+    // ... parse response to RXR
+    return rxr;
+  },
+};
 ```
 
 ## Middleware
 
 ### RegistryMiddleware
 
-Base class for creating custom middleware:
+Base class for creating custom middleware. Delegates all operations to the inner registry.
 
 ```typescript
 import { RegistryMiddleware } from "@resourcexjs/registry";
+import type { RXL, RXR } from "@resourcexjs/core";
 
 class LoggingMiddleware extends RegistryMiddleware {
-  async get(locator: string) {
-    console.log("Getting:", locator);
-    return this.inner.get(locator);
+  async get(rxl: RXL): Promise<RXR> {
+    console.log("Getting:", rxl);
+    const rxr = await this.inner.get(rxl);
+    console.log("Got:", rxr.manifest.name);
+    return rxr;
   }
 }
+
+const logged = new LoggingMiddleware(registry);
 ```
 
 ### DomainValidation
 
-Built-in middleware for validating resource domains:
+Built-in middleware that validates resource registry matches a trusted registry.
 
 ```typescript
 import { withDomainValidation } from "@resourcexjs/registry";
 
-const validatedRegistry = withDomainValidation(registry, "deepractice.ai");
+const validated = withDomainValidation(registry, "deepractice.ai");
 
-// Throws if resource.manifest.domain !== "deepractice.ai"
-await validatedRegistry.get("deepractice.ai/assistant.text@1.0.0");
+// Throws RegistryError if resource.manifest.registry !== "deepractice.ai"
+await validated.get(rxl);
 ```
 
-## Isolator Types
+**Use cases:**
 
-Sandbox isolation for resolver execution:
+- Server-side validation to prevent registry impersonation
+- Ensuring resources are from trusted sources
 
-| Type           | Description                | Latency |
-| -------------- | -------------------------- | ------- |
-| `"none"`       | No isolation (development) | ~10ms   |
-| `"srt"`        | OS-level isolation         | ~50ms   |
-| `"cloudflare"` | Container isolation        | ~100ms  |
-| `"e2b"`        | MicroVM isolation          | ~150ms  |
+## Discovery
+
+Discover registry endpoints via well-known URL.
 
 ```typescript
-const registry = createRegistry({
-  isolator: "srt",
-});
+import { discoverRegistry } from "@resourcexjs/registry";
+
+const result = await discoverRegistry("deepractice.ai");
+// {
+//   domain: "deepractice.ai",
+//   registries: ["https://registry.deepractice.ai/api/v1"]
+// }
+```
+
+**Well-known format** (`https://{domain}/.well-known/resourcex`):
+
+```json
+{
+  "version": "1.0",
+  "registries": ["https://registry.example.com/api/v1"]
+}
+```
+
+## Storage Structure
+
+```
+~/.resourcex/
+├── local/                          # LocalRegistry - local resources
+│   └── {path/}{name}/
+│       └── {tag}/
+│           ├── manifest.json
+│           └── archive.tar.gz
+│
+├── cache/                          # MirrorRegistry - cached remote
+│   └── {registry}/
+│       └── {path/}{name}/
+│           └── {tag}/
+│               ├── manifest.json
+│               └── archive.tar.gz
+│
+└── linked/                         # LinkedRegistry - dev symlinks
+    └── {registry}/
+        └── {path/}{name}/
+            └── {tag} -> /path/to/dev/folder
 ```
 
 ## Error Handling
@@ -387,7 +280,7 @@ const registry = createRegistry({
 import { RegistryError } from "@resourcexjs/registry";
 
 try {
-  const rxr = await registry.get("localhost/not-exist.text@1.0.0");
+  await registry.get(rxl);
 } catch (error) {
   if (error instanceof RegistryError) {
     console.error("Registry error:", error.message);
@@ -395,54 +288,135 @@ try {
 }
 ```
 
-### Common Errors
+**Common errors:**
 
 - `Resource not found: {locator}`
-- `Unsupported resource type: {type}`
+- `Resource not found in cache: {locator}`
+- `Linked resource not found: {locator}`
+- `LinkedRegistry does not support put(). Use link() instead.`
 - `Well-known discovery failed for {domain}: {status}`
-- `{storage} is read-only: {operation} not supported`
+- `Untrusted registry: resource claims "{claimed}" but registry only trusts "{trusted}"`
 
-## Examples
+## API Reference
 
-### Complete Workflow
+### Registries
+
+#### `LocalRegistry`
 
 ```typescript
-import { loadResource } from "@resourcexjs/loader";
-import { createRegistry } from "@resourcexjs/registry";
-
-// 1. Create registry
-const registry = createRegistry();
-
-// 2. Load and add resource
-const rxr = await loadResource("./my-prompts/assistant");
-await registry.add(rxr);
-
-// 3. Resolve and execute
-const resolved = await registry.resolve("localhost/assistant.text@1.0.0");
-const text = await resolved.execute();
-console.log(text);
+new LocalRegistry(storage: Storage)
 ```
 
-### With Custom Types
+Registry for local resources without registry domain.
+
+#### `MirrorRegistry`
 
 ```typescript
-import { createRegistry } from "@resourcexjs/registry";
-import { bundleResourceType } from "@resourcexjs/type";
+new MirrorRegistry(storage: Storage)
+```
 
-// Bundle custom type
-const promptType = await bundleResourceType("./prompt.type.ts");
+Registry for cached remote resources with registry domain.
 
-// Create registry with type
-const registry = createRegistry({
-  types: [promptType],
-});
+**Additional methods:**
 
-// Add and resolve
-await registry.add("./my-prompt");
-const resolved = await registry.resolve<void, string>("localhost/my-prompt.prompt@1.0.0");
-const text = await resolved.execute();
+- `clear(registry?: string): Promise<void>` - Clear cached resources
+
+#### `LinkedRegistry`
+
+```typescript
+new LinkedRegistry(basePath: string)
+```
+
+Registry for development symlinks.
+
+**Additional methods:**
+
+- `link(devPath: string): Promise<RXL>` - Create symlink to development directory
+- `unlink(rxl: RXL): Promise<void>` - Remove symlink (alias for `remove`)
+
+### Access Chain
+
+#### `RegistryAccessChain`
+
+```typescript
+new RegistryAccessChain(accessors: RegistryAccessor[], options?: { memCache?: boolean })
+```
+
+**Methods:**
+
+- `get(rxl: RXL): Promise<RXR>` - Get resource through chain
+- `has(rxl: RXL): Promise<boolean>` - Check existence
+- `clearCache(): void` - Clear memory cache
+- `invalidate(rxl: RXL): void` - Remove specific resource from memory cache
+
+#### `RegistryAccessor`
+
+```typescript
+interface RegistryAccessor {
+  readonly name: string;
+  canHandle(rxl: RXL): Promise<boolean>;
+  get(rxl: RXL): Promise<RXR>;
+}
+```
+
+### Middleware
+
+#### `RegistryMiddleware`
+
+```typescript
+abstract class RegistryMiddleware implements Registry {
+  constructor(protected readonly inner: Registry)
+}
+```
+
+#### `DomainValidation`
+
+```typescript
+new DomainValidation(inner: Registry, trustedRegistry: string)
+```
+
+Middleware class that validates resource registry matches the trusted registry.
+
+#### `withDomainValidation`
+
+```typescript
+withDomainValidation(registry: Registry, trustedRegistry: string): Registry
+```
+
+Factory function to create `DomainValidation` middleware.
+
+### Discovery
+
+#### `discoverRegistry`
+
+```typescript
+discoverRegistry(domain: string): Promise<DiscoveryResult>
+```
+
+**Types:**
+
+```typescript
+interface DiscoveryResult {
+  domain: string;
+  registries: string[];
+}
+
+interface WellKnownResponse {
+  version?: string;
+  registries: string[];
+}
+```
+
+### Error
+
+#### `RegistryError`
+
+```typescript
+class RegistryError extends ResourceXError {
+  constructor(message: string, options?: ErrorOptions);
+}
 ```
 
 ## License
 
-MIT
+Apache-2.0

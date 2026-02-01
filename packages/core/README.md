@@ -1,8 +1,8 @@
 # @resourcexjs/core
 
-Core data structures for ResourceX.
+Core primitives and types for ResourceX - the resource management protocol for AI Agents.
 
-> **Note**: For most use cases, use the main [`resourcexjs`](https://www.npmjs.com/package/resourcexjs) package. This package is for advanced usage.
+> **Note**: For most use cases, use the main [`resourcexjs`](https://www.npmjs.com/package/resourcexjs) package. This package is for low-level operations.
 
 ## Installation
 
@@ -12,152 +12,310 @@ npm install @resourcexjs/core
 bun add @resourcexjs/core
 ```
 
-## What's Inside
+## Core Concepts
 
-Core building blocks - pure data structures:
+ResourceX uses a layered architecture with five core primitives:
 
-- **RXL** (Locator) - Resource locator string parser
-- **RXM** (Manifest) - Resource metadata
-- **RXA** (Archive) - Archive container for storage/transfer
-- **RXP** (Package) - Extracted files for runtime access
-- **RXR** (Resource) - Complete resource type
-- **Errors** - Error hierarchy
+| Primitive | Description                                              |
+| --------- | -------------------------------------------------------- |
+| **RXD**   | Resource Definition - content of `resource.json`         |
+| **RXL**   | Resource Locator - unique identifier for a resource      |
+| **RXM**   | Resource Manifest - metadata stored within the resource  |
+| **RXA**   | Resource Archive - tar.gz container for storage/transfer |
+| **RXR**   | Resource - complete resource (RXL + RXM + RXA)           |
+
+### Locator Format
+
+Docker-style format: `[registry/][path/]name[:tag]`
+
+```
+hello                           -> name=hello, tag=latest
+hello:1.0.0                     -> name=hello, tag=1.0.0
+prompts/hello:stable            -> path=prompts, name=hello, tag=stable
+localhost:3098/hello:1.0.0      -> registry=localhost:3098, name=hello, tag=1.0.0
+registry.example.com/org/hello  -> registry=registry.example.com, path=org, name=hello, tag=latest
+```
 
 ## API
 
-### RXL - Resource Locator
+### `parse(locator: string): RXL`
 
-Parse resource locator strings. Format: `[domain/path/]name[.type][@version]`
+Parse a locator string into an RXL object.
 
 ```typescript
-import { parseRXL } from "@resourcexjs/core";
+import { parse } from "@resourcexjs/core";
 
-const rxl = parseRXL("deepractice.ai/sean/assistant.prompt@1.0.0");
+const rxl = parse("registry.example.com/prompts/hello:1.0.0");
+// {
+//   registry: "registry.example.com",
+//   path: "prompts",
+//   name: "hello",
+//   tag: "1.0.0"
+// }
 
-rxl.domain; // "deepractice.ai"
-rxl.path; // "sean"
-rxl.name; // "assistant"
-rxl.type; // "prompt"
-rxl.version; // "1.0.0"
-rxl.toString(); // "deepractice.ai/sean/assistant.prompt@1.0.0"
+const simple = parse("hello");
+// { registry: undefined, path: undefined, name: "hello", tag: "latest" }
 ```
 
-**Minimal locator:**
+### `format(rxl: RXL): string`
+
+Format an RXL object back to a locator string.
 
 ```typescript
-parseRXL("name.text@1.0.0");
-// → domain: "localhost", path: undefined, name: "name", type: "text", version: "1.0.0"
+import { format } from "@resourcexjs/core";
+
+format({ name: "hello", tag: "latest" });
+// "hello"
+
+format({ name: "hello", tag: "1.0.0" });
+// "hello:1.0.0"
+
+format({ registry: "localhost:3098", name: "hello", tag: "1.0.0" });
+// "localhost:3098/hello:1.0.0"
+```
+
+### `define(input: unknown): RXD`
+
+Parse and validate a resource definition (from `resource.json`).
+
+```typescript
+import { define } from "@resourcexjs/core";
+
+const rxd = define({
+  name: "my-prompt",
+  type: "text",
+  tag: "1.0.0",
+  description: "A helpful prompt",
+  author: "Alice",
+});
+// {
+//   name: "my-prompt",
+//   type: "text",
+//   tag: "1.0.0",
+//   description: "A helpful prompt",
+//   author: "Alice"
+// }
+```
+
+**Required fields**: `name`, `type`
+
+**Optional fields**: `tag` (defaults to "latest"), `registry`, `path`, `description`, `author`, `license`, `keywords`, `repository`
+
+> Note: `version` is accepted as an alias for `tag` for backward compatibility.
+
+### `manifest(rxd: RXD): RXM`
+
+Create a manifest from a definition. Extracts core metadata fields.
+
+```typescript
+import { define, manifest } from "@resourcexjs/core";
+
+const rxd = define({
+  name: "my-prompt",
+  type: "text",
+  tag: "1.0.0",
+  description: "A helpful prompt", // not included in manifest
+});
+
+const rxm = manifest(rxd);
+// { name: "my-prompt", type: "text", tag: "1.0.0" }
+```
+
+### `locate(rxm: RXM): RXL`
+
+Create a locator from a manifest.
+
+```typescript
+import { locate } from "@resourcexjs/core";
+
+const rxl = locate({
+  registry: "example.com",
+  path: "prompts",
+  name: "hello",
+  type: "text",
+  tag: "1.0.0",
+});
+// { registry: "example.com", path: "prompts", name: "hello", tag: "1.0.0" }
+```
+
+### `archive(files: Record<string, Buffer>): Promise<RXA>`
+
+Create an archive from files. Output is in tar.gz format.
+
+```typescript
+import { archive } from "@resourcexjs/core";
+
+// Single file
+const rxa = await archive({
+  content: Buffer.from("Hello, World!"),
+});
+
+// Multiple files
+const rxa = await archive({
+  "prompt.md": Buffer.from("# System Prompt\nYou are..."),
+  "config.json": Buffer.from('{"temperature": 0.7}'),
+});
+
+// Nested directories
+const rxa = await archive({
+  "src/index.ts": Buffer.from("main code"),
+  "src/utils/helper.ts": Buffer.from("helper code"),
+});
+
+// Access raw archive data
+const buffer = await rxa.buffer(); // tar.gz Buffer
+const stream = rxa.stream; // ReadableStream<Uint8Array>
+```
+
+### `extract(rxa: RXA): Promise<Record<string, Buffer>>`
+
+Extract files from an archive.
+
+```typescript
+import { archive, extract } from "@resourcexjs/core";
+
+const rxa = await archive({
+  "hello.txt": Buffer.from("Hello!"),
+  "world.txt": Buffer.from("World!"),
+});
+
+const files = await extract(rxa);
+// {
+//   "hello.txt": Buffer<...>,
+//   "world.txt": Buffer<...>
+// }
+```
+
+### `wrap(buffer: Buffer): RXA`
+
+Wrap an existing tar.gz buffer as an RXA. Useful for deserializing archives.
+
+```typescript
+import { wrap, extract } from "@resourcexjs/core";
+
+// From storage or network
+const tarGzBuffer = await fetchFromStorage();
+
+const rxa = wrap(tarGzBuffer);
+const files = await extract(rxa);
+```
+
+### `resource(rxm: RXM, rxa: RXA): RXR`
+
+Create a complete resource from manifest and archive.
+
+```typescript
+import { define, manifest, archive, resource } from "@resourcexjs/core";
+
+const rxd = define({ name: "hello", type: "text", tag: "1.0.0" });
+const rxm = manifest(rxd);
+const rxa = await archive({ content: Buffer.from("Hello!") });
+const rxr = resource(rxm, rxa);
+// {
+//   locator: { name: "hello", tag: "1.0.0" },
+//   manifest: { name: "hello", type: "text", tag: "1.0.0" },
+//   archive: RXA
+// }
+```
+
+## Types
+
+### RXD - Resource Definition
+
+The content of `resource.json` file. Contains all metadata for a resource in development.
+
+```typescript
+interface RXD {
+  readonly name: string; // Required
+  readonly type: string; // Required
+  readonly tag?: string; // Optional (defaults to "latest")
+  readonly registry?: string;
+  readonly path?: string;
+  readonly description?: string;
+  readonly author?: string;
+  readonly license?: string;
+  readonly keywords?: string[];
+  readonly repository?: string;
+  readonly [key: string]: unknown; // Additional fields allowed
+}
+```
+
+### RXL - Resource Locator
+
+Unique identifier for a resource.
+
+```typescript
+interface RXL {
+  readonly registry?: string; // e.g., "localhost:3098", "registry.example.com"
+  readonly path?: string; // e.g., "org", "prompts"
+  readonly name: string; // Resource name
+  readonly tag: string; // Tag (defaults to "latest")
+}
 ```
 
 ### RXM - Resource Manifest
 
-Create and validate resource metadata:
+Resource metadata stored within the resource.
 
 ```typescript
-import { createRXM } from "@resourcexjs/core";
-
-const manifest = createRXM({
-  domain: "deepractice.ai",
-  path: "sean", // optional
-  name: "assistant",
-  type: "prompt",
-  version: "1.0.0",
-  description: "Optional description", // optional
-  tags: ["optional", "tags"], // optional
-});
-
-manifest.toLocator(); // → "deepractice.ai/sean/assistant.prompt@1.0.0"
-manifest.toJSON(); // → plain object
+interface RXM {
+  readonly registry?: string;
+  readonly path?: string;
+  readonly name: string;
+  readonly type: string;
+  readonly tag: string;
+  readonly files?: string[]; // Package file structure
+}
 ```
-
-**Required fields**: `name`, `type`, `version`
-
-**Optional fields**: `domain` (default: "localhost"), `path`, `description`, `tags`
 
 ### RXA - Resource Archive
 
-Archive container (tar.gz) for storage/transfer. Extract to RXP for file access:
+Archive container (tar.gz format) for storage and transfer.
 
 ```typescript
-import { createRXA } from "@resourcexjs/core";
-
-// Single file
-const content = await createRXA({ content: "Hello, World!" });
-
-// Multiple files
-const content = await createRXA({
-  "index.ts": "export default 1",
-  "styles.css": "body {}",
-});
-
-// Nested directories
-const content = await createRXA({
-  "src/index.ts": "main code",
-  "src/utils/helper.ts": "helper code",
-});
-
-// From existing tar.gz buffer (for deserialization)
-const content = await createRXA({ buffer: tarGzBuffer });
-
-// Extract to package for file access
-const pkg = await content.extract();
-const buffer = await pkg.file("content"); // → Buffer
-const buffer = await pkg.file("src/index.ts"); // → Buffer
-const files = await pkg.files(); // → Map<string, Buffer>
-const paths = pkg.paths(); // → string[]
-const tree = pkg.tree(); // → PathNode[]
-
-// Archive methods
-const archiveBuffer = await content.buffer(); // → raw tar.gz Buffer
-const stream = content.stream; // → ReadableStream (tar.gz)
+interface RXA {
+  readonly stream: ReadableStream<Uint8Array>;
+  buffer(): Promise<Buffer>;
+}
 ```
 
 ### RXR - Resource
 
-Complete resource object (pure interface):
+Complete resource object combining locator, manifest, and archive.
 
 ```typescript
-import type { RXR } from "@resourcexjs/core";
-
 interface RXR {
-  locator: RXL;
-  manifest: RXM;
-  archive: RXA;
+  readonly locator: RXL;
+  readonly manifest: RXM;
+  readonly archive: RXA;
 }
-
-// Create from literals
-const rxr: RXR = { locator, manifest, archive };
 ```
-
-RXR is a pure DTO (Data Transfer Object) - no factory function needed.
 
 ## Error Handling
 
 ```typescript
-import { ResourceXError, LocatorError, ManifestError, ContentError } from "@resourcexjs/core";
+import {
+  ResourceXError,
+  LocatorError,
+  ManifestError,
+  ContentError,
+  DefinitionError,
+} from "@resourcexjs/core";
 
 try {
-  parseRXL("invalid-locator");
+  parse("invalid@locator");
 } catch (error) {
   if (error instanceof LocatorError) {
-    console.error("Invalid locator format");
+    console.error("Invalid locator format:", error.message);
+    console.error("Locator:", error.locator);
   }
 }
 
 try {
-  createRXM({ name: "test" }); // Missing required fields
+  define({ name: "test" }); // Missing required 'type' field
 } catch (error) {
-  if (error instanceof ManifestError) {
-    console.error("Invalid manifest");
-  }
-}
-
-try {
-  const pkg = await archive.extract();
-  await pkg.file("nonexistent");
-} catch (error) {
-  if (error instanceof ContentError) {
-    console.error("File not found in archive");
+  if (error instanceof DefinitionError) {
+    console.error("Invalid definition:", error.message);
   }
 }
 ```
@@ -166,115 +324,58 @@ try {
 
 ```
 ResourceXError (base)
-├── LocatorError
-├── ManifestError
-└── ContentError
+├── LocatorError     - RXL parsing errors
+├── ManifestError    - RXM validation errors
+├── ContentError     - RXA operations errors
+└── DefinitionError  - RXD validation errors
 ```
 
-## Examples
-
-### Complete Resource Creation
+## Complete Example
 
 ```typescript
-import { parseRXL, createRXM, createRXA } from "@resourcexjs/core";
+import { define, manifest, archive, resource, extract, format, parse } from "@resourcexjs/core";
 import type { RXR } from "@resourcexjs/core";
 
-// Create manifest
-const manifest = createRXM({
-  domain: "deepractice.ai",
-  name: "assistant",
-  type: "prompt",
-  version: "1.0.0",
+// 1. Define resource metadata
+const rxd = define({
+  name: "assistant-prompt",
+  type: "text",
+  tag: "1.0.0",
+  description: "A helpful AI assistant prompt",
+  author: "Example Team",
 });
 
-// Create locator from manifest
-const locator = parseRXL(manifest.toLocator());
+// 2. Create manifest from definition
+const rxm = manifest(rxd);
 
-// Create archive (single file)
-const archive = await createRXA({ content: "You are a helpful assistant." });
-
-// Assemble RXR
-const rxr: RXR = {
-  locator,
-  manifest,
-  archive,
-};
-```
-
-### Multi-file Resource
-
-```typescript
-import { createRXA } from "@resourcexjs/core";
-
-// Create multi-file archive
-const archive = await createRXA({
-  "prompt.md": "# System Prompt\nYou are...",
-  "config.json": '{"temperature": 0.7}',
+// 3. Create archive from files
+const rxa = await archive({
+  content: Buffer.from("You are a helpful AI assistant."),
 });
 
-// Extract to package for file access
-const pkg = await archive.extract();
+// 4. Combine into complete resource
+const rxr: RXR = resource(rxm, rxa);
 
-// Read individual files
-const promptBuffer = await pkg.file("prompt.md");
-const configBuffer = await pkg.file("config.json");
+// 5. Access locator string
+const locatorStr = format(rxr.locator);
+console.log(locatorStr); // "assistant-prompt:1.0.0"
 
-// Read all files
-const allFiles = await pkg.files();
-for (const [path, buffer] of allFiles) {
-  console.log(path, buffer.toString());
-}
-```
-
-### Manifest Serialization
-
-```typescript
-const manifest = createRXM({
-  name: "assistant",
-  type: "prompt",
-  version: "1.0.0",
-});
-
-// To JSON (for storage)
-const json = manifest.toJSON();
-/*
-{
-  "domain": "localhost",
-  "name": "assistant",
-  "type": "prompt",
-  "version": "1.0.0"
-}
-*/
-
-// To locator string
-const locator = manifest.toLocator();
-// "localhost/assistant.prompt@1.0.0"
+// 6. Extract files when needed
+const files = await extract(rxr.archive);
+console.log(files.content.toString()); // "You are a helpful AI assistant."
 ```
 
 ## Related Packages
 
-This package provides only data structures. For full functionality:
-
-- **[@resourcexjs/type](../type)** - Type system and handlers
-- **[@resourcexjs/loader](../loader)** - Resource loading
-- **[@resourcexjs/registry](../registry)** - Storage and retrieval
-- **[@resourcexjs/arp](../arp)** - Low-level I/O
-- **[resourcexjs](../resourcex)** - Main package (all-in-one)
-
-## Type Safety
-
-All types are fully typed with TypeScript:
-
-```typescript
-import type { RXL, RXM, RXA, RXP, RXR } from "@resourcexjs/core";
-import { parseRXL, createRXM, createRXA } from "@resourcexjs/core";
-
-const locator: RXL = parseRXL("localhost/test.text@1.0.0");
-const manifest: RXM = createRXM({ name: "test", type: "text", version: "1.0.0" });
-const archive: RXA = await createRXA({ content: "Hello" });
-const resource: RXR = { locator, manifest, archive };
-```
+| Package                                                                      | Description                |
+| ---------------------------------------------------------------------------- | -------------------------- |
+| [resourcexjs](https://www.npmjs.com/package/resourcexjs)                     | Main package (recommended) |
+| [@resourcexjs/storage](https://www.npmjs.com/package/@resourcexjs/storage)   | Storage layer              |
+| [@resourcexjs/registry](https://www.npmjs.com/package/@resourcexjs/registry) | Registry layer             |
+| [@resourcexjs/type](https://www.npmjs.com/package/@resourcexjs/type)         | Type system                |
+| [@resourcexjs/loader](https://www.npmjs.com/package/@resourcexjs/loader)     | Resource loading           |
+| [@resourcexjs/arp](https://www.npmjs.com/package/@resourcexjs/arp)           | Low-level I/O              |
 
 ## License
 
-MIT
+Apache-2.0
