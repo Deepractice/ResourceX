@@ -18,7 +18,7 @@ rx add ./hello-prompt
 rx list
 
 # 执行
-rx resolve hello-prompt.text@1.0.0
+rx use hello-prompt.text@1.0.0
 
 # 删除
 rx remove hello-prompt.text@1.0.0

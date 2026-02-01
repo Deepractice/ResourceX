@@ -8,7 +8,7 @@
 import { FastMCP } from "fastmcp";
 import { createResourceX } from "resourcexjs";
 import { instructions } from "./instructions.js";
-import { searchTool, resolveTool, infoTool, listTool, addTool, pushTool } from "./tools/index.js";
+import { searchTool, useTool, infoTool, listTool, addTool, pushTool } from "./tools/index.js";
 
 // Configuration from environment
 const registry = process.env.RESOURCEX_REGISTRY;
@@ -39,10 +39,10 @@ server.addTool({
 });
 
 server.addTool({
-  name: resolveTool.name,
-  description: resolveTool.description,
-  parameters: resolveTool.parameters,
-  execute: resolveTool.execute(rx),
+  name: useTool.name,
+  description: useTool.description,
+  parameters: useTool.parameters,
+  execute: useTool.execute(rx),
 });
 
 server.addTool({

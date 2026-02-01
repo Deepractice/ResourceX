@@ -1,5 +1,5 @@
 export { searchTool } from "./search.js";
-export { resolveTool } from "./resolve.js";
+export { useTool } from "./use.js";
 export { infoTool } from "./info.js";
 export { listTool } from "./list.js";
 export { addTool } from "./add.js";

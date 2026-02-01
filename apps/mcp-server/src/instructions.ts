@@ -25,7 +25,7 @@ ResourceX is a package manager for AI resources (prompts, tools, agents), simila
 search("code review")           → Find resources by keyword
                                 → Returns list of locators
 
-resolve("code-review:1.0.0")    → Execute resource, return content
+use("code-review:1.0.0")        → Execute resource, return content
                                 → Auto-pulls from registry if needed
 
 list()                          → List all local resources
@@ -51,7 +51,7 @@ using the resourcex-author skill or CLI commands before pushing.
 \`\`\`
 1. search("translator")         → Find available resources
 2. info("translator:1.0.0")     → Check details (optional)
-3. resolve("translator:1.0.0")  → Use it
+3. use("translator:1.0.0")      → Use it
 \`\`\`
 
 ### Publishing a Resource

@@ -13,7 +13,7 @@ Feature: ResourceX API
       | my-prompt | text | 1.0.0   | Hello World!  |
     When I add the resource directory
     Then the resource "my-prompt:1.0.0" should exist
-    And resolving "my-prompt:1.0.0" should return "Hello World!"
+    And using "my-prompt:1.0.0" should return "Hello World!"
 
   @has
   Scenario: Check if local resource exists
@@ -35,16 +35,16 @@ Feature: ResourceX API
     When I remove "to-remove:1.0.0"
     Then has "to-remove:1.0.0" should return false
 
-  @resolve
-  Scenario: Resolve text resource
+  @use
+  Scenario: Use text resource
     Given I have added resource "greeting:1.0.0" with type "text" and content "Hello!"
-    When I resolve "greeting:1.0.0"
+    When I use "greeting:1.0.0"
     Then execute should return "Hello!"
 
-  @resolve
-  Scenario: Resolve json resource
+  @use
+  Scenario: Use json resource
     Given I have added resource "config:1.0.0" with type "json" and content '{"key": "value"}'
-    When I resolve "config:1.0.0"
+    When I use "config:1.0.0"
     Then execute should return object with key "key"
 
   # ============================================
@@ -56,13 +56,13 @@ Feature: ResourceX API
     Given a dev directory with resource "dev-test:1.0.0" type "text" and content "Dev content"
     When I link the dev directory
     Then the resource "dev-test:1.0.0" should exist
-    And resolving "dev-test:1.0.0" should return "Dev content"
+    And using "dev-test:1.0.0" should return "Dev content"
 
   @link
   Scenario: Linked resources take priority over local
     Given I have added resource "priority:1.0.0" with type "text" and content "Local"
     And a linked dev directory with "priority:1.0.0" type "text" and content "Linked"
-    When I resolve "priority:1.0.0"
+    When I use "priority:1.0.0"
     Then execute should return "Linked"
 
   # ============================================
@@ -87,5 +87,5 @@ Feature: ResourceX API
   Scenario: Support custom type
     Given a custom "upper" type that uppercases content
     When I add resource "test:1.0.0" with type "upper" and content "hello"
-    And I resolve "test:1.0.0"
+    And I use "test:1.0.0"
     Then execute should return "HELLO"

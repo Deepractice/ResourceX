@@ -18,7 +18,7 @@ Feature: Discover and use resources
     # Pull and use the resource (must use full locator after pull)
     When I run consumer command "rx pull helper:1.0.0"
     Then the command should succeed
-    When I run consumer command "rx resolve localhost:3098/helper:1.0.0"
+    When I run consumer command "rx use localhost:3098/helper:1.0.0"
     Then the command should succeed
     And the output should contain "Helper content"
 
@@ -49,7 +49,7 @@ Feature: Discover and use resources
 
     # Should work without network (use full locator)
     Given the registry is unavailable
-    When I run consumer command "rx resolve localhost:3098/offline:1.0.0"
+    When I run consumer command "rx use localhost:3098/offline:1.0.0"
     Then the command should succeed
     And the output should contain "Offline content"
 
@@ -63,10 +63,10 @@ Feature: Discover and use resources
     When I run consumer command "rx pull versioned:1.0.0"
     And I run consumer command "rx pull versioned:3.0.0"
 
-    When I run consumer command "rx resolve localhost:3098/versioned:1.0.0"
+    When I run consumer command "rx use localhost:3098/versioned:1.0.0"
     Then the output should contain "Version 1"
 
-    When I run consumer command "rx resolve localhost:3098/versioned:3.0.0"
+    When I run consumer command "rx use localhost:3098/versioned:3.0.0"
     Then the output should contain "Version 3"
 
   Scenario: Resolve caches automatically
@@ -76,9 +76,9 @@ Feature: Discover and use resources
     When I run consumer command "rx pull cacheable:1.0.0"
     Then the command should succeed
 
-    # Second resolve uses cache (even if registry is down)
+    # Second use uses cache (even if registry is down)
     Given the registry is unavailable
-    When I run consumer command "rx resolve localhost:3098/cacheable:1.0.0"
+    When I run consumer command "rx use localhost:3098/cacheable:1.0.0"
     Then the command should succeed
     And the output should contain "Cached content"
 
@@ -86,6 +86,6 @@ Feature: Discover and use resources
     Given the registry has resource "simple:latest" with content "Latest content"
     When I run consumer command "rx pull simple"
     Then the command should succeed
-    When I run consumer command "rx resolve localhost:3098/simple"
+    When I run consumer command "rx use localhost:3098/simple"
     Then the command should succeed
     And the output should contain "Latest content"

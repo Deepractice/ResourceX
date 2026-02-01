@@ -32,7 +32,7 @@ Feature: Update published resource
     Then the output should contain "my-tool:1.0.0"
     And the output should contain "my-tool:1.1.0"
 
-  Scenario: Users can resolve specific version
+  Scenario: Users can use specific version
     # Setup: Publish two versions
     Given I create a resource directory "versioned" with:
       | file          | content                                            |
@@ -50,10 +50,10 @@ Feature: Update published resource
 
     # Clear local and pull specific version
     Given a fresh local cache
-    When I run "rx resolve versioned:1.0.0"
+    When I run "rx use versioned:1.0.0"
     Then the output should contain "Old version"
 
-    When I run "rx resolve versioned:2.0.0"
+    When I run "rx use versioned:2.0.0"
     Then the output should contain "New version"
 
   Scenario: Patch version for bug fix
@@ -76,5 +76,5 @@ Feature: Update published resource
 
     # User should be able to get the fix
     Given a fresh local cache
-    When I run "rx resolve buggy:1.0.1"
+    When I run "rx use buggy:1.0.1"
     Then the output should contain "Bug fixed!"

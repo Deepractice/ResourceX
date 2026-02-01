@@ -1,15 +1,15 @@
 /**
- * rx resolve <locator> - Resolve and execute resource
+ * rx use <locator> - Use and execute resource
  */
 
 import { defineCommand } from "citty";
 import consola from "consola";
 import { getClient } from "../lib/client.js";
 
-export const resolve = defineCommand({
+export const use = defineCommand({
   meta: {
-    name: "resolve",
-    description: "Resolve and execute resource",
+    name: "use",
+    description: "Use and execute resource",
   },
   args: {
     locator: {
@@ -21,7 +21,7 @@ export const resolve = defineCommand({
   async run({ args }) {
     try {
       const rx = await getClient();
-      const executable = await rx.resolve(args.locator);
+      const executable = await rx.use(args.locator);
       const result = await executable.execute();
 
       // Output the result
@@ -33,7 +33,7 @@ export const resolve = defineCommand({
         console.log(JSON.stringify(result, null, 2));
       }
     } catch (error) {
-      consola.error(error instanceof Error ? error.message : "Failed to resolve resource");
+      consola.error(error instanceof Error ? error.message : "Failed to use resource");
       process.exit(1);
     }
   },

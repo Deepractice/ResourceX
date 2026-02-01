@@ -50,9 +50,9 @@ Feature: Cache management
     Then the command should succeed
 
     # Both versions in cache (use full locator)
-    When I run consumer command "rx resolve localhost:3098/updatable:1.0.0"
+    When I run consumer command "rx use localhost:3098/updatable:1.0.0"
     Then the output should contain "Old content"
-    When I run consumer command "rx resolve localhost:3098/updatable:1.1.0"
+    When I run consumer command "rx use localhost:3098/updatable:1.1.0"
     Then the output should contain "New content"
 
   Scenario: Clear entire cache
@@ -79,10 +79,10 @@ Feature: Cache management
     # Content changes on registry (simulated)
     Given the registry resource "refresh:1.0.0" content changes to "Updated"
 
-    # Normal resolve uses cache
-    When I run consumer command "rx resolve localhost:3098/refresh:1.0.0"
+    # Normal use uses cache
+    When I run consumer command "rx use localhost:3098/refresh:1.0.0"
     Then the output should contain "Original"
 
     # Force refresh fetches new content
-    When I run consumer command "rx resolve localhost:3098/refresh:1.0.0 --force"
+    When I run consumer command "rx use localhost:3098/refresh:1.0.0 --force"
     Then the output should contain "Updated"

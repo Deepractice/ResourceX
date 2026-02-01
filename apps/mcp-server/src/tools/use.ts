@@ -1,8 +1,8 @@
 import { z } from "zod";
 import type { ResourceX } from "resourcexjs";
 
-export const resolveTool = {
-  name: "resolve",
+export const useTool = {
+  name: "use",
   description: `Execute a resource and return its content.
 
 This is the primary way to USE a resource. It:
@@ -12,9 +12,9 @@ This is the primary way to USE a resource. It:
 4. Returns the result
 
 Examples:
-- resolve("hello-prompt:1.0.0") → returns the prompt content
-- resolve("config:latest") → returns the config data
-- resolve("registry.example.com/tool:1.0.0") → pulls from registry and executes`,
+- use("hello-prompt:1.0.0") → returns the prompt content
+- use("config:latest") → returns the config data
+- use("registry.example.com/tool:1.0.0") → pulls from registry and executes`,
 
   parameters: z.object({
     locator: z
@@ -29,7 +29,7 @@ Examples:
   execute:
     (rx: ResourceX) =>
     async ({ locator }: { locator: string }) => {
-      const executable = await rx.resolve(locator);
+      const executable = await rx.use(locator);
       const result = await executable.execute();
 
       if (typeof result === "string") {

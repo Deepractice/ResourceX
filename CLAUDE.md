@@ -163,7 +163,7 @@ await rx.add("./my-prompt"); // Add from directory to local storage
 await rx.link("./dev-prompt"); // Link for live development
 await rx.has("hello.text@1.0.0"); // Check if exists locally
 await rx.remove("hello.text@1.0.0"); // Remove from local
-const result = await rx.resolve("hello.text@1.0.0"); // Resolve & execute
+const result = await rx.use("hello.text@1.0.0"); // Use & execute
 const results = await rx.search("hello"); // Search local resources
 
 // Remote operations
@@ -191,10 +191,10 @@ Two locator formats (Go-style):
 
 ```typescript
 // Local: name.type@version (no registry)
-await rx.resolve("hello.text@1.0.0");
+await rx.use("hello.text@1.0.0");
 
 // Remote: registry/[path/]name.type@version (with registry)
-await rx.resolve("registry.example.com/hello.text@1.0.0");
+await rx.use("registry.example.com/hello.text@1.0.0");
 ```
 
 ### Storage Directory Structure
@@ -218,10 +218,10 @@ await rx.resolve("registry.example.com/hello.text@1.0.0");
             └── 1.0.0 → /path/to/dev
 ```
 
-### Resolution Flow
+### Use Flow
 
 ```
-rx.resolve("hello.text@1.0.0")
+rx.use("hello.text@1.0.0")
   ↓
 1. Parse locator (determine if local or remote)
 2. Check linked (development priority)

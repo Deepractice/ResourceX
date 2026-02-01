@@ -45,7 +45,7 @@ Feature: Publish resource to registry
     Then the command should succeed
     And the output should contain "Pulled"
 
-    # Verify can resolve
-    When I run "rx resolve shared-prompt:1.0.0"
+    # Verify can use
+    When I run "rx use shared-prompt:1.0.0"
     Then the command should succeed
     And the output should contain "A prompt to share with others"

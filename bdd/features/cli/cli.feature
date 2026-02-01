@@ -2,14 +2,14 @@
 Feature: ResourceX CLI
   As a developer
   I want to use rx CLI to manage resources
-  So that I can add, push, pull and resolve resources locally and remotely
+  So that I can add, push, pull and use resources locally and remotely
 
   Background:
     Given a running registry server
     And rx CLI is configured with the test registry
 
   # ============================================
-  # Local operations - add, list, resolve, remove
+  # Local operations - add, list, use, remove
   # ============================================
 
   Scenario: Add resource from directory
@@ -28,9 +28,9 @@ Feature: ResourceX CLI
     Then the command should succeed
     And the output should contain "test:1.0.0"
 
-  Scenario: Resolve local resource
+  Scenario: Use local resource
     Given a local resource "greeting:1.0.0" with content "Hello from CLI!"
-    When I run rx command "resolve greeting:1.0.0"
+    When I run rx command "use greeting:1.0.0"
     Then the command should succeed
     And the output should contain "Hello from CLI!"
 
@@ -62,14 +62,14 @@ Feature: ResourceX CLI
     Then the command should succeed
     And the output should contain "Linked"
 
-  Scenario: Resolve linked resource reflects live changes
+  Scenario: Use linked resource reflects live changes
     Given a CLI resource directory "live-dev" with:
       | file          | content                                            |
       | resource.json | {"name":"livedev","type":"text","version":"1.0.0"} |
       | content       | Original content                                   |
     When I run rx command "link ./live-dev"
     Then the command should succeed
-    When I run rx command "resolve livedev:1.0.0"
+    When I run rx command "use livedev:1.0.0"
     Then the output should contain "Original content"
     # Note: In real test, we would modify the file and verify change is reflected
 
@@ -103,10 +103,10 @@ Feature: ResourceX CLI
     And the output should contain "Pulled"
 
   @pending
-  Scenario: Resolve pulls from remote if not local (auto-pull)
+  Scenario: Use pulls from remote if not local (auto-pull)
     Given a remote resource "autopull:1.0.0" on the registry with content "Auto pulled"
     And the resource is not in local cache
-    When I run rx command "resolve autopull:1.0.0"
+    When I run rx command "use autopull:1.0.0"
     Then the command should succeed
     And the output should contain "Auto pulled"
 
@@ -134,8 +134,8 @@ Feature: ResourceX CLI
     Then the command should fail
     And the output should contain "Cannot load resource"
 
-  Scenario: Resolve non-existent resource fails
-    When I run rx command "resolve notfound:1.0.0"
+  Scenario: Use non-existent resource fails
+    When I run rx command "use notfound:1.0.0"
     Then the command should fail
     And the output should contain "not found"
 

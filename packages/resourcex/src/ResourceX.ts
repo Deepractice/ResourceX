@@ -187,10 +187,10 @@ export interface ResourceX {
   remove(locator: string): Promise<void>;
 
   /**
-   * Resolve resource and return executable.
+   * Use resource and return executable.
    * Checks: linked → local → cache → remote
    */
-  resolve<T = unknown>(locator: string): Promise<Executable<T>>;
+  use<T = unknown>(locator: string): Promise<Executable<T>>;
 
   /**
    * Search local resources.
@@ -384,9 +384,9 @@ class DefaultResourceX implements ResourceX {
     this.chain.invalidate(rxl);
   }
 
-  // ===== Resolve =====
+  // ===== Use =====
 
-  async resolve<T = unknown>(locator: string): Promise<Executable<T>> {
+  async use<T = unknown>(locator: string): Promise<Executable<T>> {
     const rxl = parse(locator);
     let rxr: RXR;
 
@@ -691,8 +691,8 @@ class DefaultResourceX implements ResourceX {
  * // Add from directory to local
  * await rx.add("./my-prompt");
  *
- * // Resolve and execute
- * const result = await rx.resolve("my-prompt.text@1.0.0");
+ * // Use and execute
+ * const result = await rx.use("my-prompt.text@1.0.0");
  * await result.execute();
  *
  * // Push to remote registry

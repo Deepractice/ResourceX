@@ -193,8 +193,8 @@ When("I remove {string}", async function (this: ResourceXWorld, locator: string)
   await this.rx.remove(locator);
 });
 
-When("I resolve {string}", async function (this: ResourceXWorld, locator: string) {
-  this.executable = await this.rx.resolve(locator);
+When("I use {string}", async function (this: ResourceXWorld, locator: string) {
+  this.executable = await this.rx.use(locator);
 });
 
 When("I search for {string}", async function (this: ResourceXWorld, query: string) {
@@ -221,9 +221,9 @@ Then("has {string} should return false", async function (this: ResourceXWorld, l
 });
 
 Then(
-  "resolving {string} should return {string}",
+  "using {string} should return {string}",
   async function (this: ResourceXWorld, locator: string, expected: string) {
-    const executable = await this.rx.resolve(locator);
+    const executable = await this.rx.use(locator);
     const result = await executable.execute();
     assert.equal(result, expected);
   }
