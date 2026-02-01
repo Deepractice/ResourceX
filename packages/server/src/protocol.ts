@@ -9,12 +9,14 @@
 // ============================================
 
 export const API_VERSION = "v1";
+export const API_PREFIX = `/api/${API_VERSION}`;
 
 export const ENDPOINTS = {
-  publish: "/publish",
-  resource: "/resource",
-  content: "/content",
-  search: "/search",
+  publish: `${API_PREFIX}/publish`,
+  resource: `${API_PREFIX}/resource`,
+  content: `${API_PREFIX}/content`,
+  search: `${API_PREFIX}/search`,
+  health: `${API_PREFIX}/health`,
 } as const;
 
 export const CONTENT_TYPES = {

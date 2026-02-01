@@ -56,7 +56,7 @@ export function createRegistryServer(config?: RegistryServerConfig): Hono {
   }
 
   // Health check
-  app.get("/health", (c) => c.json({ status: "ok" }));
+  app.get(ENDPOINTS.health, (c) => c.json({ status: "ok" }));
 
   // POST /publish
   app.post(ENDPOINTS.publish, async (c) => {

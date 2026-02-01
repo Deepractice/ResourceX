@@ -16,7 +16,7 @@ const registry = createRegistry({
 });
 
 function getLocatorFromPath(pathname: string, endpoint: string): string | null {
-  const prefix = `/api${endpoint}/`;
+  const prefix = `${endpoint}/`;
   if (pathname.startsWith(prefix)) {
     return decodeURIComponent(pathname.slice(prefix.length));
   }
@@ -27,25 +27,25 @@ export async function GET(request: Request): Promise<Response> {
   const url = new URL(request.url);
   const pathname = url.pathname;
 
-  // GET /api/health
-  if (pathname === "/api/health") {
+  // GET /api/v1/health
+  if (pathname === ENDPOINTS.health) {
     return Response.json({ status: "ok" });
   }
 
-  // GET /api/resource/:locator
+  // GET /api/v1/resource/:locator
   const resourceLocator = getLocatorFromPath(pathname, ENDPOINTS.resource);
   if (resourceLocator) {
     return handleGetResource(resourceLocator, registry);
   }
 
-  // GET /api/content/:locator
+  // GET /api/v1/content/:locator
   const contentLocator = getLocatorFromPath(pathname, ENDPOINTS.content);
   if (contentLocator) {
     return handleGetContent(contentLocator, registry);
   }
 
-  // GET /api/search
-  if (pathname === `/api${ENDPOINTS.search}`) {
+  // GET /api/v1/search
+  if (pathname === ENDPOINTS.search) {
     const query = url.searchParams.get("q") ?? undefined;
     const limit = parseInt(url.searchParams.get("limit") ?? "100", 10);
     const offset = parseInt(url.searchParams.get("offset") ?? "0", 10);
@@ -58,8 +58,8 @@ export async function GET(request: Request): Promise<Response> {
 export async function POST(request: Request): Promise<Response> {
   const url = new URL(request.url);
 
-  // POST /api/publish
-  if (url.pathname === `/api${ENDPOINTS.publish}`) {
+  // POST /api/v1/publish
+  if (url.pathname === ENDPOINTS.publish) {
     return handlePublish(request, registry);
   }
 

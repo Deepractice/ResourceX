@@ -120,7 +120,7 @@ async function publishResourceToServer(
   // New locator format: registry/name:tag
   const locator = `${registry}/${name}:${tag}`;
   await execAsync(
-    `curl -s -X POST ${serverUrl}/publish ` +
+    `curl -s -X POST ${serverUrl}/api/v1/publish ` +
       `-F "locator=${locator}" ` +
       `-F "manifest=@${manifestPath}" ` +
       `-F "content=@${archivePath}"`
@@ -234,7 +234,7 @@ Given("a registry server with published resources", async function (this: Consum
   // Server is started in BeforeAll, verify it's running
   for (let i = 0; i < 10; i++) {
     try {
-      const response = await fetch(`${REGISTRY_URL}/search`);
+      const response = await fetch(`${REGISTRY_URL}/api/v1/search`);
       if (response.ok) return;
     } catch {
       await new Promise((resolve) => setTimeout(resolve, 200));

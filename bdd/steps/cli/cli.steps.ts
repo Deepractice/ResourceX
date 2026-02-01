@@ -138,7 +138,7 @@ async function publishToServer(
   // Use localhost:PORT to match the normalized registry format
   const locator = `localhost:${SERVER_PORT}/${name}:${version}`;
   const result = await execAsync(
-    `curl -s -X POST ${SERVER_URL}/publish ` +
+    `curl -s -X POST ${SERVER_URL}/api/v1/publish ` +
       `-F "locator=${locator}" ` +
       `-F "manifest=@${manifestPath}" ` +
       `-F "content=@${archivePath}"`
@@ -209,7 +209,7 @@ Given("a running registry server", async function (this: CLIWorld) {
   let lastError: Error | null = null;
   for (let i = 0; i < 10; i++) {
     try {
-      const response = await fetch(`${SERVER_URL}/search`);
+      const response = await fetch(`${SERVER_URL}/api/v1/search`);
       if (response.ok) {
         return; // Server is running
       }

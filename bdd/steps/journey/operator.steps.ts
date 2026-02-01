@@ -183,7 +183,7 @@ async function publishViaAPI(port: number, locator: string, content: string): Pr
 
   const fullLocator = `localhost/${name}:${version}`;
   await execAsync(
-    `curl -s -X POST http://localhost:${port}/publish ` +
+    `curl -s -X POST http://localhost:${port}/api/v1/publish ` +
       `-F "locator=${fullLocator}" ` +
       `-F "manifest=@${manifestPath}" ` +
       `-F "content=@${archivePath}"`

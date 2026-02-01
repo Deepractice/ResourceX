@@ -5,7 +5,7 @@ import { Button } from "~/components/ui/button";
 export default function NotFound() {
   return (
     <div className="min-h-screen bg-background">
-      <Header showSearch={false} />
+      <Header />
 
       <main className="flex flex-col items-center justify-center px-6 py-24">
         <span className="text-7xl font-bold text-muted-foreground mb-4">404</span>

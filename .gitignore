@@ -92,3 +92,4 @@ pnpm-lock.yaml
 # Server Data
 # ============================================
 data/
+.test-*

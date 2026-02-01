@@ -25,6 +25,7 @@
 // Protocol
 export {
   API_VERSION,
+  API_PREFIX,
   ENDPOINTS,
   CONTENT_TYPES,
   PUBLISH_FIELDS,

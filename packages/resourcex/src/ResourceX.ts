@@ -502,11 +502,11 @@ class DefaultResourceX implements ResourceX {
   // ===== Private methods =====
 
   /**
-   * Publish RXR to remote registry via POST /publish.
+   * Publish RXR to remote registry via POST /api/v1/publish.
    */
   private async publishToRegistry(rxr: RXR): Promise<void> {
     const baseUrl = this.registryUrl!.replace(/\/$/, "");
-    const publishUrl = `${baseUrl}/publish`;
+    const publishUrl = `${baseUrl}/api/v1/publish`;
 
     // Create multipart form data
     // eslint-disable-next-line no-undef
@@ -558,7 +558,7 @@ class DefaultResourceX implements ResourceX {
     const registry = normalizedRegistry ?? normalizeRegistryUrl(registryUrl);
 
     // Fetch manifest
-    const manifestUrl = `${baseUrl}/resource/${encodeURIComponent(locator)}`;
+    const manifestUrl = `${baseUrl}/api/v1/resource/${encodeURIComponent(locator)}`;
     const manifestResponse = await fetch(manifestUrl);
 
     if (!manifestResponse.ok) {
@@ -592,7 +592,7 @@ class DefaultResourceX implements ResourceX {
     });
 
     // Fetch content
-    const contentUrl = `${baseUrl}/content/${encodeURIComponent(locator)}`;
+    const contentUrl = `${baseUrl}/api/v1/content/${encodeURIComponent(locator)}`;
     const contentResponse = await fetch(contentUrl);
 
     if (!contentResponse.ok) {

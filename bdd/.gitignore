@@ -7,3 +7,4 @@ reports/*.html
 # Test artifacts
 custom-registry/
 .test-*/
+.tmp

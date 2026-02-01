@@ -113,7 +113,7 @@ Given("a registry server running on port {int}", async function (this: MCPWorld,
 
   // Check if server is already running (from global BDD setup)
   try {
-    const response = await fetch(`http://localhost:${port}/health`);
+    const response = await fetch(`http://localhost:${port}/api/v1/health`);
     if (response.ok) {
       // Server already running, reuse it
       return;
