@@ -1,5 +1,21 @@
 # resourcexjs
 
+## 2.5.1
+
+### Patch Changes
+
+- 74629d7: docs: restructure documentation with Divio system
+  - Remove old docs/ directory
+  - Add new docs structure: tutorials, guides, reference, concepts
+  - Add documentation TOC to main README
+  - Fix CLI type errors (version → tag, add bun-types)
+  - @resourcexjs/core@2.5.1
+  - @resourcexjs/type@2.5.1
+  - @resourcexjs/loader@2.5.1
+  - @resourcexjs/arp@2.5.1
+  - @resourcexjs/registry@2.5.1
+  - @resourcexjs/storage@2.5.1
+
 ## 2.5.0
 
 ### Minor Changes
