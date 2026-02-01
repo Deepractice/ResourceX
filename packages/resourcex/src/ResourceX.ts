@@ -9,7 +9,7 @@
 
 import { homedir } from "node:os";
 import { join } from "node:path";
-import type { RXR, RXL } from "@resourcexjs/core";
+import type { RXR } from "@resourcexjs/core";
 import { parse, format, extract } from "@resourcexjs/core";
 import type { BundledType, IsolatorType } from "@resourcexjs/type";
 import { TypeHandlerChain } from "@resourcexjs/type";

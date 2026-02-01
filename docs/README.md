@@ -1,102 +1,34 @@
 # ResourceX Documentation
 
-Welcome to the ResourceX documentation. ResourceX is a resource management protocol for AI Agents - think of it as **npm for AI resources**.
+## Tutorials
 
-## What is ResourceX?
+Step-by-step lessons for getting started.
 
-ResourceX provides a unified way to manage, version, and share AI resources such as prompts, tools, agents, and configurations. Just like npm revolutionized JavaScript package management, ResourceX aims to standardize how AI resources are created, stored, and distributed.
+- [Quick Start](./tutorials/quick-start.md) - 2 minutes to get started
+- [Create Your First Resource](./tutorials/first-resource.md) - Create, test, and use locally
+- [Publish Your Resource](./tutorials/publish-resource.md) - Share via registry
 
-## Documentation Structure
+## Guides
 
-### Getting Started
+How-to guides for specific tasks.
 
-- [Introduction](./getting-started/introduction.md) - What problem does ResourceX solve and why it exists
-- [Installation](./getting-started/installation.md) - How to install ResourceX packages
-- [Quick Start](./getting-started/quick-start.md) - Create and use your first resource in 5 minutes
+- [MCP Integration](./guides/mcp-integration.md) - Configure for AI agents
+- [Development Workflow](./guides/development-workflow.md) - Rapid iteration with link
+- [Versioning](./guides/versioning.md) - Manage resource versions
+- [Self-Hosting Registry](./guides/self-hosting.md) - Deploy your own registry
 
-### Core Concepts
+## Reference
 
-- [RXL - Resource Locator](./concepts/rxl.md) - Unique resource identifier format
-- [RXM - Resource Manifest](./concepts/rxm.md) - Resource metadata description
-- [RXA - Resource Archive](./concepts/resourcex/rxa-archive.md) - Archive for storage/transfer
-- [RXP - Resource Package](./concepts/resourcex/rxp-package.md) - Extracted files for runtime
-- [RXR - Complete Resource](./concepts/resourcex/rxr-resource.md) - Locator + Manifest + Archive
+Technical reference for CLI, SDK, and MCP tools.
 
-### Guides
+- [CLI Reference](./reference/cli.md) - `rx` command reference
+- [SDK Reference](./reference/sdk.md) - `resourcexjs` API reference
+- [MCP Tools Reference](./reference/mcp-tools.md) - MCP tools reference
 
-- [Registry Usage](./guides/registry.md) - How to use resource registries
-- [Type System](./guides/type-system.md) - Built-in and custom types
-- [ARP Protocol](./guides/arp.md) - Low-level I/O protocol
+## Concepts
 
-### API Reference
+Background and explanations.
 
-- [Core API](./api/core.md) - Core package API
-- [Registry API](./api/registry.md) - Registry package API
-- [ARP API](./api/arp.md) - ARP package API
-
-### Contributing
-
-- [Development Guide](./contributing/development.md) - How to contribute
-- [Design Documents](./design/) - Architecture design documents
-
-## Core Features
-
-| Feature         | Description                                                        |
-| --------------- | ------------------------------------------------------------------ |
-| Unified Locator | `domain/path/name.type@version` format for resource identification |
-| Type System     | Built-in types (text, json, binary) plus custom type support       |
-| Registry        | Local cache + remote publishing, similar to npm registry           |
-| ARP Protocol    | Low-level I/O primitives with file, http, https, rxr transports    |
-
-## Package Structure
-
-```
-resourcexjs           # Main package - includes everything
-@resourcexjs/core     # Core types: RXL, RXM, RXA, RXP, RXR
-@resourcexjs/registry # Registry implementations
-@resourcexjs/arp      # ARP protocol
-```
-
-## Quick Example
-
-```typescript
-import { createRegistry, parseRXL, createRXM, createRXA } from "resourcexjs";
-
-// Create local registry
-const registry = createRegistry();
-
-// Create a resource
-const manifest = createRXM({
-  domain: "localhost",
-  name: "my-prompt",
-  type: "text",
-  version: "1.0.0",
-});
-
-const rxr = {
-  locator: parseRXL(manifest.toLocator()),
-  manifest,
-  archive: await createRXA({ content: "You are a helpful assistant." }),
-};
-
-// Link to local registry
-await registry.add(rxr);
-
-// Resolve the resource
-const resource = await registry.resolve("localhost/my-prompt.text@1.0.0");
-const text = await resource.execute();
-console.log(text); // "You are a helpful assistant."
-```
-
-## Quick Links
-
-- [GitHub Repository](https://github.com/Deepractice/ResourceX)
-- [npm Package](https://www.npmjs.com/package/resourcexjs)
-- [Deepractice Organization](https://github.com/Deepractice)
-
-## Related Projects
-
-ResourceX is part of the Deepractice AI infrastructure:
-
-- **[AgentVM](https://github.com/Deepractice/AgentVM)** - AI Agent runtime environment
-- **[AgentX](https://github.com/Deepractice/AgentX)** - AI Agent execution runtime
+- [Locators](./concepts/locators.md) - Resource identifiers
+- [Resource Types](./concepts/resource-types.md) - Built-in and custom types
+- [Registry](./concepts/registry.md) - How registries work

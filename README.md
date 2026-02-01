@@ -161,6 +161,35 @@ See [Server Documentation](./packages/server/README.md)
 
 ---
 
+## Documentation
+
+**Tutorials** - Step-by-step lessons
+
+- [Quick Start](./docs/tutorials/quick-start.md) - 2 minutes to get started
+- [Create Your First Resource](./docs/tutorials/first-resource.md) - Create, test, and use locally
+- [Publish Your Resource](./docs/tutorials/publish-resource.md) - Share via registry
+
+**Guides** - How-to for specific tasks
+
+- [MCP Integration](./docs/guides/mcp-integration.md) - Configure for AI agents
+- [Development Workflow](./docs/guides/development-workflow.md) - Rapid iteration with link
+- [Versioning](./docs/guides/versioning.md) - Manage resource versions
+- [Self-Hosting Registry](./docs/guides/self-hosting.md) - Deploy your own registry
+
+**Reference** - Technical reference
+
+- [CLI Reference](./docs/reference/cli.md) - `rx` command reference
+- [SDK Reference](./docs/reference/sdk.md) - `resourcexjs` API reference
+- [MCP Tools Reference](./docs/reference/mcp-tools.md) - MCP tools reference
+
+**Concepts** - Background and explanations
+
+- [Locators](./docs/concepts/locators.md) - Resource identifiers
+- [Resource Types](./docs/concepts/resource-types.md) - Built-in and custom types
+- [Registry](./docs/concepts/registry.md) - How registries work
+
+---
+
 ## Packages
 
 | Package                                        | Description                 |

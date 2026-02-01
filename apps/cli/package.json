@@ -23,7 +23,9 @@
     "consola": "^3.4.2",
     "resourcexjs": "workspace:*"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "bun-types": "latest"
+  },
   "publishConfig": {
     "access": "public"
   },

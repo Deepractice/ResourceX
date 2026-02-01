@@ -24,7 +24,7 @@ export const info = defineCommand({
       const resource = await rx.info(args.locator);
 
       console.log();
-      console.log(`  ${resource.name}:${resource.version}`);
+      console.log(`  ${resource.name}:${resource.tag}`);
       console.log(`  ${"─".repeat(40)}`);
       console.log();
       console.log(`  Locator:  ${resource.locator}`);
@@ -36,7 +36,7 @@ export const info = defineCommand({
       }
       console.log(`  Name:     ${resource.name}`);
       console.log(`  Type:     ${resource.type}`);
-      console.log(`  Version:  ${resource.version}`);
+      console.log(`  Tag:      ${resource.tag}`);
       console.log();
 
       if (resource.files?.length) {

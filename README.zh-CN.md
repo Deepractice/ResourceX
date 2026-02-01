@@ -166,6 +166,35 @@ export default app; // 部署到任何支持 Hono 的平台
 
 ---
 
+## 文档
+
+**教程** - 入门指南
+
+- [快速开始](./docs/tutorials/quick-start.md) - 2 分钟上手
+- [创建第一个资源](./docs/tutorials/first-resource.md) - 创建、测试、本地使用
+- [发布资源](./docs/tutorials/publish-resource.md) - 通过 Registry 分享
+
+**指南** - 特定任务
+
+- [MCP 集成](./docs/guides/mcp-integration.md) - 配置 AI Agent
+- [开发工作流](./docs/guides/development-workflow.md) - link 实时开发
+- [版本管理](./docs/guides/versioning.md) - 管理资源版本
+- [自托管 Registry](./docs/guides/self-hosting.md) - 部署自己的 Registry
+
+**参考** - 技术文档
+
+- [CLI 参考](./docs/reference/cli.md) - `rx` 命令参考
+- [SDK 参考](./docs/reference/sdk.md) - `resourcexjs` API 参考
+- [MCP 工具参考](./docs/reference/mcp-tools.md) - MCP 工具参考
+
+**概念** - 原理解释
+
+- [Locators](./docs/concepts/locators.md) - 资源标识符
+- [资源类型](./docs/concepts/resource-types.md) - 内置和自定义类型
+- [Registry](./docs/concepts/registry.md) - Registry 工作原理
+
+---
+
 ## 包
 
 | 包                                             | 描述                           |

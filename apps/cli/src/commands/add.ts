@@ -27,7 +27,7 @@ export const add = defineCommand({
       console.log(`  Locator:  ${resource.locator}`);
       console.log(`  Name:     ${resource.name}`);
       console.log(`  Type:     ${resource.type}`);
-      console.log(`  Version:  ${resource.version}`);
+      console.log(`  Tag:      ${resource.tag}`);
       if (resource.files?.length) {
         console.log(`  Files:    ${resource.files.join(", ")}`);
       }

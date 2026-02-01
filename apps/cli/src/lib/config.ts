@@ -34,7 +34,7 @@ export async function getConfig(): Promise<Config> {
 
 export async function setConfig(key: keyof Config, value: string): Promise<void> {
   const config = await getConfig();
-  (config as Record<string, string>)[key] = value;
+  (config as unknown as Record<string, string>)[key] = value;
 
   // Ensure directory exists
   await Bun.$`mkdir -p ${RX_HOME}`.quiet();
