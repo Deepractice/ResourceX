@@ -313,11 +313,16 @@ class DefaultResourceX implements ResourceX {
           }),
         ],
         { type: "application/json" }
-      )
+      ),
+      "manifest.json"
     );
 
     const archiveBuffer = await rxr.archive.buffer();
-    formData.append("content", new Blob([archiveBuffer], { type: "application/octet-stream" }));
+    formData.append(
+      "content",
+      new Blob([archiveBuffer], { type: "application/octet-stream" }),
+      "archive.tar.gz"
+    );
 
     const response = await fetch(publishUrl, {
       method: "POST",
