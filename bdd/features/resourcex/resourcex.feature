@@ -48,24 +48,6 @@ Feature: ResourceX API
     Then execute should return object with key "key"
 
   # ============================================
-  # Development Link
-  # ============================================
-
-  @link
-  Scenario: Link development directory
-    Given a dev directory with resource "dev-test:1.0.0" type "text" and content "Dev content"
-    When I link the dev directory
-    Then the resource "dev-test:1.0.0" should exist
-    And using "dev-test:1.0.0" should return "Dev content"
-
-  @link
-  Scenario: Linked resources take priority over local
-    Given I have added resource "priority:1.0.0" with type "text" and content "Local"
-    And a linked dev directory with "priority:1.0.0" type "text" and content "Linked"
-    When I use "priority:1.0.0"
-    Then execute should return "Linked"
-
-  # ============================================
   # Search
   # ============================================
 

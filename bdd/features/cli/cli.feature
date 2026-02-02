@@ -50,30 +50,6 @@ Feature: ResourceX CLI
     Then the output should not contain "removeme:1.0.0"
 
   # ============================================
-  # Link operations - for development workflow
-  # ============================================
-
-  Scenario: Link development directory
-    Given a CLI resource directory "dev-resource" with:
-      | file          | content                                             |
-      | resource.json | {"name":"devres","type":"text","version":"1.0.0"}   |
-      | content       | Development content                                 |
-    When I run rx command "link ./dev-resource"
-    Then the command should succeed
-    And the output should contain "Linked"
-
-  Scenario: Use linked resource reflects live changes
-    Given a CLI resource directory "live-dev" with:
-      | file          | content                                            |
-      | resource.json | {"name":"livedev","type":"text","version":"1.0.0"} |
-      | content       | Original content                                   |
-    When I run rx command "link ./live-dev"
-    Then the command should succeed
-    When I run rx command "use livedev:1.0.0"
-    Then the output should contain "Original content"
-    # Note: In real test, we would modify the file and verify change is reflected
-
-  # ============================================
   # Remote operations - push, pull, search
   # ============================================
 

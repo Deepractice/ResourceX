@@ -45,7 +45,6 @@
   "dependencies": {
     "@resourcexjs/arp": "workspace:*",
     "@resourcexjs/core": "workspace:*",
-    "@resourcexjs/storage": "workspace:*",
     "sandboxxjs": "^0.5.1"
   },
   "devDependencies": {},

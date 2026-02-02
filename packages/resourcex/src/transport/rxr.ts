@@ -10,49 +10,29 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { TransportError } from "@resourcexjs/arp";
 import type { TransportHandler, TransportResult, TransportParams } from "@resourcexjs/arp";
-import { extract, parse, LocalRegistry, MirrorRegistry, LinkedRegistry } from "@resourcexjs/core";
+import { extract, parse, CASRegistry } from "@resourcexjs/core";
 import type { RXR } from "@resourcexjs/core";
-import { FileSystemStorage } from "@resourcexjs/storage";
+import { FileSystemRXAStore } from "../stores/FileSystemRXAStore.js";
+import { FileSystemRXMStore } from "../stores/FileSystemRXMStore.js";
 
 const DEFAULT_BASE_PATH = `${homedir()}/.resourcex`;
 
 /**
  * Internal registry access for RxrTransport.
- * Uses the same registry structure as ResourceX.
+ * Uses CASRegistry with same storage paths as ResourceX.
  */
 class InternalRegistryAccess {
-  private readonly local: LocalRegistry;
-  private readonly cache: MirrorRegistry;
-  private readonly linked: LinkedRegistry;
+  private readonly cas: CASRegistry;
 
   constructor(basePath: string = DEFAULT_BASE_PATH) {
-    const localStorage = new FileSystemStorage(join(basePath, "local"));
-    const cacheStorage = new FileSystemStorage(join(basePath, "cache"));
-
-    this.local = new LocalRegistry(localStorage);
-    this.cache = new MirrorRegistry(cacheStorage);
-    this.linked = new LinkedRegistry(join(basePath, "linked"));
+    const rxaStore = new FileSystemRXAStore(join(basePath, "blobs"));
+    const rxmStore = new FileSystemRXMStore(join(basePath, "manifests"));
+    this.cas = new CASRegistry(rxaStore, rxmStore);
   }
 
   async get(locator: string): Promise<RXR> {
     const rxl = parse(locator);
-
-    // Check linked first (development priority)
-    if (await this.linked.has(rxl)) {
-      return this.linked.get(rxl);
-    }
-
-    // Check local (no registry)
-    if (!rxl.registry && (await this.local.has(rxl))) {
-      return this.local.get(rxl);
-    }
-
-    // Check cache (has registry)
-    if (rxl.registry && (await this.cache.has(rxl))) {
-      return this.cache.get(rxl);
-    }
-
-    throw new Error(`Resource not found: ${locator}`);
+    return this.cas.get(rxl);
   }
 }
 
