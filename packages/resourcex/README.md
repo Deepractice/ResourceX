@@ -5,9 +5,9 @@ Resource management protocol for AI Agents. Like npm for AI resources (prompts, 
 ## Installation
 
 ```bash
-npm install resourcexjs
+npm install resourcexjs @resourcexjs/node-provider
 # or
-bun add resourcexjs
+bun add resourcexjs @resourcexjs/node-provider
 ```
 
 **Requirements:** Node.js 22+ or Bun
@@ -15,7 +15,11 @@ bun add resourcexjs
 ## Quick Start
 
 ```typescript
-import { createResourceX } from "resourcexjs";
+import { createResourceX, setProvider } from "resourcexjs";
+import { NodeProvider } from "@resourcexjs/node-provider";
+
+// Configure provider before creating client
+setProvider(new NodeProvider());
 
 const rx = createResourceX();
 
@@ -84,32 +88,53 @@ Example `resource.json`:
 
 ### Storage Layout
 
-Resources are stored in `~/.resourcex/`:
+Resources are stored using content-addressable storage (CAS) in `~/.resourcex/`:
 
 ```
 ~/.resourcex/
-├── local/              # Local resources (no registry)
-│   └── my-prompt/
-│       └── 1.0.0/
-│           ├── manifest.json
-│           └── archive.tar.gz
-├── cache/              # Cached remote resources
-│   └── registry.example.com/
-│       └── hello/
-│           └── 1.0.0/
-└── linked/             # Development symlinks
-    └── dev-prompt/
-        └── 1.0.0 -> /path/to/dev
+├── blobs/                        # Content-addressable blob storage
+│   └── ab/
+│       └── sha256:abcd1234...    # Archive data (tar.gz)
+└── manifests/
+    ├── _local/                   # Local resources (no registry)
+    │   └── my-prompt/
+    │       └── 1.0.0.json        # Manifest with digest reference
+    └── registry.example.com/     # Cached remote resources
+        └── hello/
+            └── 1.0.0.json
+```
+
+## Provider Configuration
+
+ResourceX requires a platform provider to be configured before use. The provider handles platform-specific storage operations.
+
+```typescript
+import { setProvider, hasProvider, clearProvider } from "resourcexjs";
+import { NodeProvider } from "@resourcexjs/node-provider";
+
+// Set provider (required before createResourceX)
+setProvider(new NodeProvider());
+
+// Check if provider is configured
+if (hasProvider()) {
+  const rx = createResourceX();
+}
+
+// Clear provider (useful for testing)
+clearProvider();
 ```
 
 ## API Reference
 
 ### createResourceX(config?)
 
-Create a ResourceX client instance.
+Create a ResourceX client instance. Requires a provider to be set first.
 
 ```typescript
-import { createResourceX } from "resourcexjs";
+import { createResourceX, setProvider } from "resourcexjs";
+import { NodeProvider } from "@resourcexjs/node-provider";
+
+setProvider(new NodeProvider());
 
 const rx = createResourceX({
   path: "~/.resourcex", // Storage path (default: ~/.resourcex)
@@ -128,22 +153,6 @@ Add a resource from a local directory to local storage.
 ```typescript
 const resource = await rx.add("./my-prompt");
 console.log(resource.locator); // "my-prompt:1.0.0"
-```
-
-#### rx.link(path)
-
-Link a directory for live development (symlink). Changes to the directory are immediately available.
-
-```typescript
-await rx.link("./dev-prompt");
-```
-
-#### rx.unlink(locator)
-
-Remove a development link.
-
-```typescript
-await rx.unlink("dev-prompt:1.0.0");
 ```
 
 #### rx.has(locator)
@@ -194,10 +203,9 @@ console.log(executable.schema);
 
 Resolution order:
 
-1. Linked directories (development priority)
-2. Local storage
-3. Cache (previously pulled)
-4. Remote registry (auto-pull if configured)
+1. Local storage
+2. Cache (previously pulled)
+3. Remote registry (auto-pull if configured)
 
 #### rx.search(query?)
 
@@ -219,6 +227,11 @@ const results = await rx.search("prompt");
 Push a local resource to the remote registry.
 
 ```typescript
+import { createResourceX, setProvider } from "resourcexjs";
+import { NodeProvider } from "@resourcexjs/node-provider";
+
+setProvider(new NodeProvider());
+
 const rx = createResourceX({
   registry: "https://registry.example.com",
 });
@@ -340,10 +353,6 @@ await fileArl.exists();
 // HTTP operations
 const httpArl = arp.parse("arp:json:https://api.example.com/data");
 const { content: data } = await httpArl.resolve();
-
-// Access files inside resources (RXR transport)
-const rxrArl = arp.parse("arp:text:rxr://hello:1.0.0/content");
-const { content: fileContent } = await rxrArl.resolve();
 ```
 
 ## Configuration Options
@@ -454,14 +463,12 @@ ARPError (base)
 
 ## Related Packages
 
-| Package                 | Description                            |
-| ----------------------- | -------------------------------------- |
-| `@resourcexjs/core`     | Core primitives (RXL, RXM, RXA, RXR)   |
-| `@resourcexjs/type`     | Type system and bundler                |
-| `@resourcexjs/storage`  | Storage layer (FileSystem, Memory)     |
-| `@resourcexjs/registry` | Registry layer (Local, Mirror, Linked) |
-| `@resourcexjs/loader`   | Resource loading utilities             |
-| `@resourcexjs/arp`      | Low-level I/O protocol                 |
+| Package                      | Description                     |
+| ---------------------------- | ------------------------------- |
+| `@resourcexjs/core`          | Core primitives and CASRegistry |
+| `@resourcexjs/node-provider` | Node.js/Bun platform provider   |
+| `@resourcexjs/server`        | Registry server                 |
+| `@resourcexjs/arp`           | Low-level I/O protocol          |
 
 ## License
 

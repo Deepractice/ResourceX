@@ -365,16 +365,95 @@ const files = await extract(rxr.archive);
 console.log(files.content.toString()); // "You are a helpful AI assistant."
 ```
 
+## Registry Layer
+
+### CASRegistry
+
+Content-addressable storage registry for managing resources.
+
+```typescript
+import { CASRegistry, MemoryRXAStore, MemoryRXMStore } from "@resourcexjs/core";
+
+// Create with memory stores (for testing)
+const cas = new CASRegistry(new MemoryRXAStore(), new MemoryRXMStore());
+
+// Store a resource
+await cas.put(rxr);
+
+// Get a resource
+const rxr = await cas.get(rxl);
+
+// Check existence
+const exists = await cas.has(rxl);
+
+// Remove a resource
+await cas.remove(rxl);
+
+// List resources
+const results = await cas.list({ query: "prompt", limit: 10 });
+
+// Garbage collect orphaned blobs
+await cas.gc();
+
+// Clear cache by registry
+await cas.clearCache("registry.example.com");
+```
+
+### Store Interfaces (SPI)
+
+For implementing custom storage backends:
+
+```typescript
+import type { RXAStore, RXMStore, StoredRXM } from "@resourcexjs/core";
+
+// Blob storage interface
+interface RXAStore {
+  get(digest: string): Promise<Buffer>;
+  put(data: Buffer): Promise<string>; // Returns digest
+  has(digest: string): Promise<boolean>;
+  delete(digest: string): Promise<void>;
+  list(): Promise<string[]>;
+}
+
+// Manifest storage interface
+interface RXMStore {
+  get(name: string, tag: string, registry?: string): Promise<StoredRXM | null>;
+  put(manifest: StoredRXM): Promise<void>;
+  has(name: string, tag: string, registry?: string): Promise<boolean>;
+  delete(name: string, tag: string, registry?: string): Promise<void>;
+  listTags(name: string, registry?: string): Promise<string[]>;
+  search(options?: RXMSearchOptions): Promise<StoredRXM[]>;
+  deleteByRegistry(registry: string): Promise<void>;
+}
+```
+
+### Provider Interface (SPI)
+
+For implementing platform-specific providers:
+
+```typescript
+import type { ResourceXProvider, ProviderConfig, ProviderStores } from "@resourcexjs/core";
+
+interface ResourceXProvider {
+  readonly platform: string;
+  createStores(config: ProviderConfig): ProviderStores;
+  createLoader?(config: ProviderConfig): ResourceLoader;
+}
+
+interface ProviderStores {
+  rxaStore: RXAStore;
+  rxmStore: RXMStore;
+}
+```
+
 ## Related Packages
 
-| Package                                                                      | Description                |
-| ---------------------------------------------------------------------------- | -------------------------- |
-| [resourcexjs](https://www.npmjs.com/package/resourcexjs)                     | Main package (recommended) |
-| [@resourcexjs/storage](https://www.npmjs.com/package/@resourcexjs/storage)   | Storage layer              |
-| [@resourcexjs/registry](https://www.npmjs.com/package/@resourcexjs/registry) | Registry layer             |
-| [@resourcexjs/type](https://www.npmjs.com/package/@resourcexjs/type)         | Type system                |
-| [@resourcexjs/loader](https://www.npmjs.com/package/@resourcexjs/loader)     | Resource loading           |
-| [@resourcexjs/arp](https://www.npmjs.com/package/@resourcexjs/arp)           | Low-level I/O              |
+| Package                                                                                | Description                   |
+| -------------------------------------------------------------------------------------- | ----------------------------- |
+| [resourcexjs](https://www.npmjs.com/package/resourcexjs)                               | Main client package           |
+| [@resourcexjs/node-provider](https://www.npmjs.com/package/@resourcexjs/node-provider) | Node.js/Bun platform provider |
+| [@resourcexjs/server](https://www.npmjs.com/package/@resourcexjs/server)               | Registry server               |
+| [@resourcexjs/arp](https://www.npmjs.com/package/@resourcexjs/arp)                     | Low-level I/O protocol        |
 
 ## License
 

@@ -85,8 +85,4 @@ export {
 } from "~/registry/index.js";
 
 // Provider SPI
-export type {
-  ResourceXProvider,
-  ProviderConfig,
-  ProviderStores,
-} from "~/provider/index.js";
+export type { ResourceXProvider, ProviderConfig, ProviderStores } from "~/provider/index.js";

@@ -12,13 +12,12 @@
 
 import type { BundledType } from "./types.js";
 
-
 /**
  * Plain text content
  */
 export const textType: BundledType = {
   name: "text",
-  aliases: ["txt","plaintext"],
+  aliases: ["txt", "plaintext"],
   description: "Plain text content",
   code: `// @resolver: text_type_default
 // src/builtins/text.type.ts
@@ -33,13 +32,12 @@ var text_type_default = {
 };`,
 };
 
-
 /**
  * JSON content
  */
 export const jsonType: BundledType = {
   name: "json",
-  aliases: ["config","manifest"],
+  aliases: ["config", "manifest"],
   description: "JSON content",
   code: `// @resolver: json_type_default
 // src/builtins/json.type.ts
@@ -54,13 +52,12 @@ var json_type_default = {
 };`,
 };
 
-
 /**
  * Binary content
  */
 export const binaryType: BundledType = {
   name: "binary",
-  aliases: ["bin","blob","raw"],
+  aliases: ["bin", "blob", "raw"],
   description: "Binary content",
   code: `// @resolver: binary_type_default
 // src/builtins/binary.type.ts
@@ -73,7 +70,6 @@ var binary_type_default = {
   }
 };`,
 };
-
 
 /**
  * All built-in types as an array.

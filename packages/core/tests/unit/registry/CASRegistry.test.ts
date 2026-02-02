@@ -74,9 +74,9 @@ describe("CASRegistry", () => {
     });
 
     it("throws error for non-existent resource", async () => {
-      await expect(
-        registry.get({ name: "non-existent", tag: "1.0.0" })
-      ).rejects.toThrow("not found");
+      await expect(registry.get({ name: "non-existent", tag: "1.0.0" })).rejects.toThrow(
+        "not found"
+      );
     });
   });
 

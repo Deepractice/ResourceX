@@ -82,7 +82,7 @@ cat > resource.json << 'EOF'
 {
   "name": "my-prompt",
   "type": "text",
-  "version": "1.0.0"
+  "tag": "1.0.0"
 }
 EOF
 
@@ -119,11 +119,15 @@ See [CLI Documentation](./apps/cli/README.md)
 <summary><b>Use SDK in Code</b></summary>
 
 ```bash
-npm install resourcexjs
+npm install resourcexjs @resourcexjs/node-provider
 ```
 
 ```typescript
-import { createResourceX } from "resourcexjs";
+import { createResourceX, setProvider } from "resourcexjs";
+import { NodeProvider } from "@resourcexjs/node-provider";
+
+// Configure provider
+setProvider(new NodeProvider());
 
 const rx = createResourceX();
 
@@ -132,7 +136,8 @@ await rx.add("./my-prompt");
 
 // Use resource
 const result = await rx.use("my-prompt:1.0.0");
-console.log(result.content);
+const content = await result.execute();
+console.log(content);
 
 // Search resources
 const results = await rx.search("code review");
@@ -147,9 +152,11 @@ See [SDK Documentation](./packages/resourcex/README.md)
 
 ```typescript
 import { createRegistryServer } from "@resourcexjs/server";
+import { FileSystemRXAStore, FileSystemRXMStore } from "@resourcexjs/node-provider";
 
 const app = createRegistryServer({
-  storagePath: "./data",
+  rxaStore: new FileSystemRXAStore("./data/blobs"),
+  rxmStore: new FileSystemRXMStore("./data/manifests"),
 });
 
 export default app; // Deploy to any platform that supports Hono
@@ -202,14 +209,11 @@ See [Server Documentation](./packages/server/README.md)
 <details>
 <summary>Internal Packages (for developers)</summary>
 
-| Package                                        | Description                          |
-| ---------------------------------------------- | ------------------------------------ |
-| [`@resourcexjs/core`](./packages/core)         | Core primitives (RXL, RXM, RXA, RXR) |
-| [`@resourcexjs/storage`](./packages/storage)   | Storage backends                     |
-| [`@resourcexjs/registry`](./packages/registry) | Registry implementations             |
-| [`@resourcexjs/loader`](./packages/loader)     | Resource loading                     |
-| [`@resourcexjs/type`](./packages/type)         | Type system                          |
-| [`@resourcexjs/arp`](./packages/arp)           | Low-level I/O protocol               |
+| Package                                                  | Description                         |
+| -------------------------------------------------------- | ----------------------------------- |
+| [`@resourcexjs/core`](./packages/core)                   | Core primitives, CASRegistry, Types |
+| [`@resourcexjs/node-provider`](./packages/node-provider) | Node.js/Bun platform provider       |
+| [`@resourcexjs/arp`](./packages/arp)                     | Low-level I/O protocol              |
 
 </details>
 

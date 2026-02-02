@@ -64,8 +64,10 @@ export async function handlePublish(request: Request, registry: Registry): Promi
     const manifestText = await manifestFile.text();
     const manifestData = JSON.parse(manifestText);
 
+    // Server stores resources WITHOUT registry prefix
+    // The registry is implicit - resources are stored ON this server
     const rxm = manifest({
-      registry: manifestData.registry ?? rxl.registry,
+      registry: undefined, // Do not store registry - this IS the registry
       path: manifestData.path ?? rxl.path,
       name: manifestData.name ?? rxl.name,
       type: manifestData.type, // Type must come from manifest, not locator
@@ -93,7 +95,9 @@ export async function handlePublish(request: Request, registry: Registry): Promi
 export async function handleGetResource(locator: string, registry: Registry): Promise<Response> {
   try {
     const rxl = parse(locator);
-    const rxr = await registry.get(rxl);
+    // Server lookup without registry - resources stored locally don't have registry prefix
+    const localRxl = { ...rxl, registry: undefined };
+    const rxr = await registry.get(localRxl);
 
     const response: GetResourceResponse = {
       registry: rxr.manifest.registry,
@@ -118,7 +122,8 @@ export async function handleGetResource(locator: string, registry: Registry): Pr
 export async function handleHeadResource(locator: string, registry: Registry): Promise<Response> {
   try {
     const rxl = parse(locator);
-    const exists = await registry.has(rxl);
+    const localRxl = { ...rxl, registry: undefined };
+    const exists = await registry.has(localRxl);
     return new Response(null, { status: exists ? 200 : 404 });
   } catch {
     return new Response(null, { status: 500 });
@@ -131,13 +136,14 @@ export async function handleHeadResource(locator: string, registry: Registry): P
 export async function handleDeleteResource(locator: string, registry: Registry): Promise<Response> {
   try {
     const rxl = parse(locator);
-    const exists = await registry.has(rxl);
+    const localRxl = { ...rxl, registry: undefined };
+    const exists = await registry.has(localRxl);
 
     if (!exists) {
       return errorResponse("Resource not found", ERROR_CODES.RESOURCE_NOT_FOUND, 404);
     }
 
-    await registry.remove(rxl);
+    await registry.remove(localRxl);
     return new Response(null, { status: 204 });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
@@ -151,7 +157,8 @@ export async function handleDeleteResource(locator: string, registry: Registry):
 export async function handleGetContent(locator: string, registry: Registry): Promise<Response> {
   try {
     const rxl = parse(locator);
-    const rxr = await registry.get(rxl);
+    const localRxl = { ...rxl, registry: undefined };
+    const rxr = await registry.get(localRxl);
     const buffer = await rxr.archive.buffer();
 
     return new Response(buffer, {

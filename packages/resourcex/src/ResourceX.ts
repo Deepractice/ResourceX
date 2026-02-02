@@ -7,6 +7,8 @@
  * - locator: resource identifier string
  */
 
+/* global FormData, Blob */
+
 import type { RXR, ResourceXProvider, ProviderConfig } from "@resourcexjs/core";
 import {
   parse,
@@ -156,7 +158,7 @@ class DefaultResourceX implements ResourceX {
   async add(path: string): Promise<Resource> {
     // Use provider's loader if available, otherwise use default
     const loader = this.provider.createLoader?.(this.providerConfig);
-    const rxr = loader ? await loader.load(path) as RXR : await loadResource(path);
+    const rxr = loader ? ((await loader.load(path)) as RXR) : await loadResource(path);
 
     // Local resources should not have registry
     if (rxr.manifest.registry) {

@@ -5,7 +5,9 @@ ResourceX Registry Server - HTTP API server for hosting and serving ResourceX re
 ## Installation
 
 ```bash
-bun add @resourcexjs/server
+bun add @resourcexjs/server @resourcexjs/node-provider
+# or
+npm install @resourcexjs/server @resourcexjs/node-provider
 ```
 
 ## Overview
@@ -20,9 +22,11 @@ This package provides three levels of abstraction for building a ResourceX regis
 
 ```typescript
 import { createRegistryServer } from "@resourcexjs/server";
+import { FileSystemRXAStore, FileSystemRXMStore } from "@resourcexjs/node-provider";
 
 const server = createRegistryServer({
-  storagePath: "./data",
+  rxaStore: new FileSystemRXAStore("./data/blobs"),
+  rxmStore: new FileSystemRXMStore("./data/manifests"),
 });
 
 // Bun
@@ -35,26 +39,31 @@ serve({ fetch: server.fetch, port: 3000 });
 
 ## API
 
-### `createRegistryServer(config?)`
+### `createRegistryServer(config)`
 
 Creates a Hono app with all registry endpoints configured.
 
 ```typescript
-interface RegistryServerConfig {
-  storagePath?: string; // Default: "./data"
-  basePath?: string; // Default: ""
-  cors?: boolean; // Default: true
-}
+import { createRegistryServer } from "@resourcexjs/server";
+import { FileSystemRXAStore, FileSystemRXMStore } from "@resourcexjs/node-provider";
+
+const server = createRegistryServer({
+  rxaStore: new FileSystemRXAStore("./data/blobs"),
+  rxmStore: new FileSystemRXMStore("./data/manifests"),
+  basePath: "", // Optional: API route prefix (default: "")
+  cors: true, // Optional: Enable CORS (default: true)
+});
 ```
 
-### `createRegistry(config)`
-
-Creates a registry instance for use with handlers.
+#### Config Interface
 
 ```typescript
-import { createRegistry } from "@resourcexjs/server";
-
-const registry = createRegistry({ storagePath: "./data" });
+interface RegistryServerConfig {
+  rxaStore: RXAStore; // Content-addressable blob storage
+  rxmStore: RXMStore; // Manifest storage
+  basePath?: string; // API route prefix (default: "")
+  cors?: boolean; // Enable CORS (default: true)
+}
 ```
 
 ## Handlers
@@ -69,10 +78,14 @@ import {
   handleDeleteResource,
   handleGetContent,
   handleSearch,
-  createRegistry,
+  CASRegistry,
 } from "@resourcexjs/server";
+import { FileSystemRXAStore, FileSystemRXMStore } from "@resourcexjs/node-provider";
 
-const registry = createRegistry({ storagePath: "./data" });
+const registry = new CASRegistry(
+  new FileSystemRXAStore("./data/blobs"),
+  new FileSystemRXMStore("./data/manifests")
+);
 
 // Next.js Route Handler example
 export async function POST(request: Request) {
@@ -113,14 +126,14 @@ Publish a resource to the registry.
 
 **Fields:**
 
-- `locator` (string) - Resource locator (e.g., `hello.text@1.0.0`)
+- `locator` (string) - Resource locator (e.g., `hello:1.0.0`)
 - `manifest` (file) - JSON manifest file
 - `content` (file) - Archive file (tar.gz)
 
 **Response (201):**
 
 ```json
-{ "locator": "hello.text@1.0.0" }
+{ "locator": "hello:1.0.0" }
 ```
 
 ### `GET /api/v1/resource/:locator`
@@ -134,7 +147,6 @@ Get resource manifest.
   "name": "hello",
   "type": "text",
   "tag": "1.0.0",
-  "registry": "example.com",
   "path": "prompts"
 }
 ```
@@ -173,7 +185,7 @@ Search for resources.
 {
   "results": [
     {
-      "locator": "hello.text@1.0.0",
+      "locator": "hello:1.0.0",
       "name": "hello",
       "type": "text",
       "tag": "1.0.0"
@@ -218,8 +230,8 @@ import type {
 ```typescript
 import { buildResourceUrl, buildSearchUrl } from "@resourcexjs/server";
 
-const url = buildResourceUrl("https://registry.example.com", "hello.text@1.0.0");
-// "https://registry.example.com/api/v1/resource/hello.text%401.0.0"
+const url = buildResourceUrl("https://registry.example.com", "hello:1.0.0");
+// "https://registry.example.com/api/v1/resource/hello%3A1.0.0"
 
 const searchUrl = buildSearchUrl("https://registry.example.com", {
   q: "prompt",
@@ -256,8 +268,35 @@ All error responses follow a consistent format:
 For convenience, this package re-exports commonly used classes:
 
 ```typescript
-import { LocalRegistry, FileSystemStorage, MemoryStorage } from "@resourcexjs/server";
+import { CASRegistry, FileSystemRXAStore, FileSystemRXMStore } from "@resourcexjs/server";
+
+import type { RXAStore, RXMStore, Registry } from "@resourcexjs/server";
 ```
+
+## Storage Architecture
+
+The server uses content-addressable storage (CAS) for efficient deduplication:
+
+```
+./data/
+├── blobs/                        # Content-addressable blob storage
+│   └── ab/
+│       └── sha256:abcd1234...    # Archive data (tar.gz)
+└── manifests/
+    └── _local/                   # Resources stored on this server
+        └── my-prompt/
+            └── 1.0.0.json        # Manifest with digest reference
+```
+
+**Note:** The server stores resources without registry prefix. When a resource is published to `registry.example.com/hello:1.0.0`, it's stored as `hello:1.0.0` on the server. The registry prefix is added by clients when they pull resources.
+
+## Related Packages
+
+| Package                      | Description                     |
+| ---------------------------- | ------------------------------- |
+| `resourcexjs`                | Client SDK                      |
+| `@resourcexjs/core`          | Core primitives and CASRegistry |
+| `@resourcexjs/node-provider` | Node.js/Bun storage providers   |
 
 ## License
 

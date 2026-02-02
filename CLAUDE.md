@@ -23,18 +23,24 @@ ResourceX is a resource management protocol for AI Agents, similar to npm for pa
    - Format: `arp:{semantic}:{transport}://{location}`
    - Provides: resolve, deposit, exists, delete
 
-2. **Storage Layer** - Pure key-value I/O (`@resourcexjs/storage`)
-   - FileSystemStorage, MemoryStorage, S3Storage (planned)
-   - Simple interface: get, put, delete, exists, list
+2. **Core Layer** - Primitives and CAS Registry (`@resourcexjs/core`)
+   - RXL, RXM, RXA, RXR primitives
+   - CASRegistry: Content-addressable storage for resources
+   - Store interfaces (SPI): RXAStore, RXMStore
+   - TypeHandlerChain: Resource type system
 
-3. **Registry Layer** - Business logic for RXR (`@resourcexjs/registry`)
-   - LocalRegistry: Local resources (no registry in path)
-   - MirrorRegistry: Cached remote resources (with registry)
-   - LinkedRegistry: Development symlinks
+3. **Provider Layer** - Platform-specific implementations (`@resourcexjs/node-provider`)
+   - NodeProvider: Node.js/Bun platform provider
+   - FileSystemRXAStore: Blob storage on filesystem
+   - FileSystemRXMStore: Manifest storage on filesystem
 
 4. **ResourceX API** - Unified client API (`resourcexjs`)
-   - `createResourceX()` - Main entry point
+   - `setProvider()` + `createResourceX()` - Main entry point
    - Combines all layers for seamless resource management
+
+5. **Server** - Registry server (`@resourcexjs/server`)
+   - HTTP API for hosting and distributing resources
+   - Uses CASRegistry with configurable stores
 
 ## Commands
 
@@ -73,23 +79,21 @@ bun run format
 
 ```
 packages/
-├── arp/         # @resourcexjs/arp - ARP protocol (low-level I/O)
-├── core/        # @resourcexjs/core - RXL, RXM, RXA, RXR primitives
-├── type/        # @resourcexjs/type - Type system (BundledType, TypeHandlerChain)
-├── storage/     # @resourcexjs/storage - Storage layer (FileSystem, Memory)
-├── registry/    # @resourcexjs/registry - Registry layer (Hosted, Mirror, Linked)
-├── loader/      # @resourcexjs/loader - Resource loading (FolderLoader)
-└── resourcex/   # resourcexjs - Main package (ResourceX API)
+├── arp/           # @resourcexjs/arp - ARP protocol (low-level I/O)
+├── core/          # @resourcexjs/core - Primitives, CASRegistry, TypeSystem
+├── node-provider/ # @resourcexjs/node-provider - Node.js/Bun provider
+├── server/        # @resourcexjs/server - Registry server
+└── resourcex/     # resourcexjs - Main client package
 ```
 
 ### Core Primitives (`@resourcexjs/core`)
 
 ```typescript
-// Parse locator string to RXL
-const rxl = parse("deepractice.ai/hello.text@1.0.0");
+// Parse locator string to RXL (Docker-style format)
+const rxl = parse("registry.example.com/hello:1.0.0");
 
 // Create manifest from definition
-const rxm = manifest({ name: "hello", type: "text", version: "1.0.0" });
+const rxm = manifest({ name: "hello", type: "text", tag: "1.0.0" });
 
 // Create archive from content
 const rxa = await archive({ content: Buffer.from("Hello!") });
@@ -101,58 +105,84 @@ const rxr = resource(rxm, rxa);
 const files = await extract(rxa); // Record<string, Buffer>
 
 // Format RXL to string
-const locatorStr = format(rxl); // "deepractice.ai/hello.text@1.0.0"
+const locatorStr = format(rxl); // "registry.example.com/hello:1.0.0"
 
 // Wrap raw buffer as RXA
 const rxa = wrap(buffer);
 ```
 
-### Storage Layer (`@resourcexjs/storage`)
+### CASRegistry (`@resourcexjs/core`)
 
-Pure key-value storage abstraction:
+Content-addressable storage for resources:
 
 ```typescript
-interface Storage {
-  get(key: string): Promise<Buffer>;
-  put(key: string, data: Buffer): Promise<void>;
-  delete(key: string): Promise<void>;
-  exists(key: string): Promise<boolean>;
-  list(prefix?: string): Promise<string[]>;
-}
+import { CASRegistry, MemoryRXAStore, MemoryRXMStore } from "@resourcexjs/core";
 
-// Implementations
-FileSystemStorage; // Local filesystem
-MemoryStorage; // In-memory (for testing)
+const cas = new CASRegistry(new MemoryRXAStore(), new MemoryRXMStore());
+
+await cas.put(rxr); // Store resource
+const rxr = await cas.get(rxl); // Get resource
+const exists = await cas.has(rxl); // Check existence
+await cas.remove(rxl); // Remove resource
+const results = await cas.list({ query: "hello" }); // Search
+await cas.gc(); // Garbage collect orphaned blobs
+await cas.clearCache("registry.example.com"); // Clear cached resources
 ```
 
-### Registry Layer (`@resourcexjs/registry`)
+### Store Interfaces (SPI)
 
-Business logic for RXR operations:
+For implementing custom storage backends:
 
 ```typescript
-interface Registry {
-  get(rxl: RXL): Promise<RXR>;
-  put(rxr: RXR): Promise<void>;
-  has(rxl: RXL): Promise<boolean>;
-  remove(rxl: RXL): Promise<void>;
-  list(options?: SearchOptions): Promise<RXL[]>;
+interface RXAStore {
+  get(digest: string): Promise<Buffer>;
+  put(data: Buffer): Promise<string>; // Returns digest
+  has(digest: string): Promise<boolean>;
+  delete(digest: string): Promise<void>;
+  list(): Promise<string[]>;
 }
 
-// Registry types
-HostedRegistry; // Resources you own (authoritative)
-MirrorRegistry; // Cached remote resources (can clear)
-LinkedRegistry; // Development symlinks (live editing)
+interface RXMStore {
+  get(name: string, tag: string, registry?: string): Promise<StoredRXM | null>;
+  put(manifest: StoredRXM): Promise<void>;
+  has(name: string, tag: string, registry?: string): Promise<boolean>;
+  delete(name: string, tag: string, registry?: string): Promise<void>;
+  listTags(name: string, registry?: string): Promise<string[]>;
+  search(options?: RXMSearchOptions): Promise<StoredRXM[]>;
+  deleteByRegistry(registry: string): Promise<void>;
+}
+```
+
+### Provider Layer (`@resourcexjs/node-provider`)
+
+Platform-specific implementations:
+
+```typescript
+import { NodeProvider, FileSystemRXAStore, FileSystemRXMStore } from "@resourcexjs/node-provider";
+
+// Use with ResourceX client
+import { setProvider, createResourceX } from "resourcexjs";
+setProvider(new NodeProvider());
+const rx = createResourceX();
+
+// Use directly with server
+const rxaStore = new FileSystemRXAStore("./data/blobs");
+const rxmStore = new FileSystemRXMStore("./data/manifests");
 ```
 
 ### ResourceX API (`resourcexjs`)
 
-Unified client API combining all layers. Users only interact with:
+Unified client API. Users only interact with:
 
-- **path**: Local directory (for add, push, link)
-- **locator**: Resource identifier string (e.g., `hello.text@1.0.0`)
+- **path**: Local directory (for add)
+- **locator**: Resource identifier string (e.g., `hello:1.0.0`)
 
 ```typescript
-import { createResourceX } from "resourcexjs";
+import { createResourceX, setProvider } from "resourcexjs";
+import { NodeProvider } from "@resourcexjs/node-provider";
+
+// Configure provider first
+setProvider(new NodeProvider());
 
 const rx = createResourceX({
   registry: "https://registry.mycompany.com",
@@ -160,15 +190,15 @@ const rx = createResourceX({
 
 // Local operations
 await rx.add("./my-prompt"); // Add from directory to local storage
-await rx.link("./dev-prompt"); // Link for live development
-await rx.has("hello.text@1.0.0"); // Check if exists locally
-await rx.remove("hello.text@1.0.0"); // Remove from local
-const result = await rx.use("hello.text@1.0.0"); // Use & execute
+await rx.has("hello:1.0.0"); // Check if exists locally
+await rx.remove("hello:1.0.0"); // Remove from local
+const result = await rx.use("hello:1.0.0"); // Use & execute
 const results = await rx.search("hello"); // Search local resources
 
 // Remote operations
-await rx.push("./my-prompt"); // Push directory to remote registry
-await rx.pull("registry.example.com/hello.text@1.0.0"); // Pull from remote to local cache
+await rx.push("my-prompt:1.0.0"); // Push to remote registry
+await rx.pull("hello:1.0.0"); // Pull from remote to local cache
+await rx.clearCache(); // Clear cached remote resources
 
 // Extension
 rx.supportType(myCustomType); // Add custom type
@@ -187,51 +217,52 @@ const rx = createResourceX({
 
 ### Locator Format
 
-Two locator formats (Go-style):
+Docker-style locator format:
+
+```
+[registry/][path/]name[:tag]
+```
 
 ```typescript
-// Local: name.type@version (no registry)
-await rx.use("hello.text@1.0.0");
+// Local: name:tag (no registry)
+await rx.use("hello:1.0.0");
 
-// Remote: registry/[path/]name.type@version (with registry)
-await rx.use("registry.example.com/hello.text@1.0.0");
+// Remote: registry/[path/]name:tag (with registry)
+await rx.use("registry.example.com/hello:1.0.0");
+await rx.use("localhost:3098/org/hello:1.0.0");
 ```
 
 ### Storage Directory Structure
 
+Content-addressable storage (CAS):
+
 ```
 ~/.resourcex/
-├── local/                   # LocalRegistry - local resources (no registry)
-│   └── my-tool.text/
-│       └── 1.0.0/
-│           ├── manifest.json
-│           └── archive.tar.gz
-├── cache/                   # MirrorRegistry - cached remote (with registry)
-│   └── deepractice.ai/
-│       └── hello.text/
-│           └── 1.0.0/
-│               ├── manifest.json
-│               └── archive.tar.gz
-└── linked/                  # LinkedRegistry - dev symlinks
-    └── {registry}/
-        └── dev.text/
-            └── 1.0.0 → /path/to/dev
+├── blobs/                        # Content-addressable blob storage
+│   └── ab/
+│       └── sha256:abcd1234...    # Archive data (tar.gz)
+└── manifests/
+    ├── _local/                   # Local resources (no registry)
+    │   └── my-prompt/
+    │       └── 1.0.0.json        # Manifest with digest reference
+    └── registry.example.com/     # Cached remote resources
+        └── hello/
+            └── 1.0.0.json
 ```
 
 ### Use Flow
 
 ```
-rx.use("hello.text@1.0.0")
+rx.use("hello:1.0.0")
   ↓
 1. Parse locator (determine if local or remote)
-2. Check linked (development priority)
-3. Check local (no registry) or cache (with registry)
-4. If registry configured and has registry in locator:
+2. Check CASRegistry for resource
+3. If not found and registry configured:
    - Fetch from remote registry
    - Cache locally
-5. Get BundledType from TypeHandlerChain
-6. Execute resolver
-7. Return Executable { execute, schema }
+4. Get BundledType from TypeHandlerChain
+5. Execute resolver
+6. Return Executable { execute, schema }
 ```
 
 ### Type System
@@ -308,14 +339,18 @@ await arl.mkdir(); // Create directory
 1. **Only import from `resourcexjs`** - Never use internal packages
 2. **Only test public API** - Never test internal implementation
 3. **User perspective** - Test what users would actually do
+4. **Provider setup** - Always configure provider before creating client
 
 ```typescript
 // ✅ Good
-const { createResourceX } = await import("resourcexjs");
+import { createResourceX, setProvider } from "resourcexjs";
+import { NodeProvider } from "@resourcexjs/node-provider";
+
+setProvider(new NodeProvider());
 const rx = createResourceX();
 
 // ❌ Bad
-const { HostedRegistry } = await import("@resourcexjs/registry");
+import { CASRegistry } from "@resourcexjs/core";
 ```
 
 ## Error Hierarchy
@@ -327,7 +362,6 @@ ResourceXError (base)
 ├── ContentError (RXA operations)
 └── DefinitionError (RXD validation)
 
-StorageError (storage operations)
 RegistryError (registry operations)
 ResourceTypeError (type not found)
 
@@ -339,11 +373,10 @@ ARPError (base)
 
 ## TODO
 
-- [x] Storage layer - FileSystemStorage, MemoryStorage
-- [x] Registry layer - HostedRegistry, MirrorRegistry, LinkedRegistry
-- [x] ResourceX API - createResourceX with unified interface
 - [x] Core primitives - parse, manifest, archive, resource, extract
+- [x] CASRegistry - Content-addressable storage with deduplication
+- [x] Provider architecture - Platform-specific implementations
+- [x] ResourceX API - createResourceX with unified interface
+- [x] ResourceX Server - HTTP API for hosting resources
 - [x] Simplified API - Hide internal objects, users use path/locator only
-- [ ] ResourceX Server - HTTP API for hosting resources
 - [ ] S3Storage, R2Storage - Cloud storage backends
-- [ ] Update BDD tests to match new simplified API

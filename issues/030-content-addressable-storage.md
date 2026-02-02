@@ -29,7 +29,7 @@ interface RXM {
   // RXL 部分（定位）
   name: string;
   tag: string;
-  registry?: string;   // 区分 local 和 cache
+  registry?: string; // 区分 local 和 cache
   path?: string;
 
   // 元数据
@@ -37,7 +37,7 @@ interface RXM {
   description?: string;
 
   // 文件映射（指向 RXA）
-  files: Record<string, string>;  // filename → digest
+  files: Record<string, string>; // filename → digest
 
   // 其他
   createdAt?: Date;
@@ -68,6 +68,7 @@ interface RXM {
 ```
 
 **变化：**
+
 - ❌ 删除 `LocalRegistry`
 - ❌ 删除 `MirrorRegistry`
 - ❌ 删除 `Storage` 包
@@ -89,6 +90,7 @@ interface RXM {
 ```
 
 查询时：
+
 ```typescript
 // 查 local
 rxmStore.search({ registry: null });
@@ -180,7 +182,7 @@ interface RXMStore {
 }
 
 interface RXMSearchOptions {
-  registry?: string | null;  // null = local, string = specific registry
+  registry?: string | null; // null = local, string = specific registry
   query?: string;
   limit?: number;
   offset?: number;
@@ -219,7 +221,7 @@ class CASRegistry implements Registry {
   async get(rxl: RXL): Promise<RXR> {
     // 1. 获取 RXM
     const rxm = await this.rxmStore.get(rxl.name, rxl.tag, rxl.registry);
-    if (!rxm) throw new Error('Not found');
+    if (!rxm) throw new Error("Not found");
 
     // 2. 获取所有文件
     const files: Record<string, Buffer> = {};
@@ -236,31 +238,28 @@ class CASRegistry implements Registry {
 
 RXAStore 和 RXMStore 可以用不同的存储后端：
 
-| 场景 | RXAStore | RXMStore |
-|------|----------|----------|
-| 本地开发 | FileSystem | SQLite |
-| 生产 Server | R2/S3 | PostgreSQL |
-| 测试 | Memory | Memory |
-| 边缘节点 | FileSystem | SQLite |
+| 场景        | RXAStore   | RXMStore   |
+| ----------- | ---------- | ---------- |
+| 本地开发    | FileSystem | SQLite     |
+| 生产 Server | R2/S3      | PostgreSQL |
+| 测试        | Memory     | Memory     |
+| 边缘节点    | FileSystem | SQLite     |
 
 ```typescript
 // 本地开发
 const registry = new CASRegistry(
-  new FileSystemRXAStore('./data/blobs'),
-  new SQLiteRXMStore('./data/metadata.db')
+  new FileSystemRXAStore("./data/blobs"),
+  new SQLiteRXMStore("./data/metadata.db")
 );
 
 // 生产环境
 const registry = new CASRegistry(
-  new R2RXAStore(r2Client, 'resources-bucket'),
+  new R2RXAStore(r2Client, "resources-bucket"),
   new PostgresRXMStore(pgPool)
 );
 
 // 测试
-const registry = new CASRegistry(
-  new MemoryRXAStore(),
-  new MemoryRXMStore()
-);
+const registry = new CASRegistry(new MemoryRXAStore(), new MemoryRXMStore());
 ```
 
 ## 存储结构示例
@@ -409,14 +408,14 @@ packages/
 
 ## 好处总结
 
-| 方面 | 之前 | 现在 |
-|------|------|------|
-| **包数量** | 2 个 (storage + registry) | 1 个 (registry) |
-| **Registry 类** | 3 个 | 2 个 (CAS + Linked) |
-| **存储效率** | 重复存储 | 内容去重 |
-| **Push** | 总是上传 | 秒传支持 |
-| **查询** | 扫描文件 | 数据库索引 |
-| **灵活性** | 固定结构 | RXA/RXM 可用不同后端 |
+| 方面            | 之前                      | 现在                 |
+| --------------- | ------------------------- | -------------------- |
+| **包数量**      | 2 个 (storage + registry) | 1 个 (registry)      |
+| **Registry 类** | 3 个                      | 2 个 (CAS + Linked)  |
+| **存储效率**    | 重复存储                  | 内容去重             |
+| **Push**        | 总是上传                  | 秒传支持             |
+| **查询**        | 扫描文件                  | 数据库索引           |
+| **灵活性**      | 固定结构                  | RXA/RXM 可用不同后端 |
 
 ## 实现步骤
 
@@ -481,24 +480,24 @@ RegistryAccessChain
 
 **结论**：只改 `RXM.files`，其他不变
 
-| 文件 | 改动 |
-|------|------|
-| RXM | ✅ files 改为 `Record<string, string>` |
-| RXR | ❌ 不变 |
-| RXA | ❌ 不变 |
-| RXL | ❌ 不变 |
+| 文件 | 改动                                   |
+| ---- | -------------------------------------- |
+| RXM  | ✅ files 改为 `Record<string, string>` |
+| RXR  | ❌ 不变                                |
+| RXA  | ❌ 不变                                |
+| RXL  | ❌ 不变                                |
 
 ## BDD 影响
 
 **CAS 是内部实现改动，对外 API 不变**：
 
-| API | 用户体验 | BDD |
-|-----|---------|-----|
-| `rx.add()` | 不变 | 不用改 |
-| `rx.use()` | 不变 | 不用改 |
-| `rx.push()` | 不变（可能更快） | 不用改 |
-| `rx.pull()` | 不变 | 不用改 |
-| `rx.search()` | 不变 | 不用改 |
+| API           | 用户体验         | BDD    |
+| ------------- | ---------------- | ------ |
+| `rx.add()`    | 不变             | 不用改 |
+| `rx.use()`    | 不变             | 不用改 |
+| `rx.push()`   | 不变（可能更快） | 不用改 |
+| `rx.pull()`   | 不变             | 不用改 |
+| `rx.search()` | 不变             | 不用改 |
 
 **结论**：现有 BDD 测试作为回归测试，跑通即说明改造成功。
 

@@ -5,22 +5,25 @@
  *
  * @example
  * ```typescript
- * import { createResourceX } from "resourcexjs";
+ * import { createResourceX, setProvider } from "resourcexjs";
+ * import { NodeProvider } from "@resourcexjs/node-provider";
+ *
+ * // Configure provider before creating client
+ * setProvider(new NodeProvider());
  *
  * const rx = createResourceX({
- *   domain: "mycompany.com",
  *   registry: "https://registry.mycompany.com"
  * });
  *
  * // Add from directory
  * await rx.add("./my-prompt");
  *
- * // Resolve and execute
- * const result = await rx.resolve("my-prompt.text@1.0.0");
+ * // Use and execute
+ * const result = await rx.use("my-prompt:1.0.0");
  * await result.execute();
  *
- * // Publish to registry
- * await rx.publish("./my-prompt");
+ * // Push to registry
+ * await rx.push("my-prompt:1.0.0");
  * ```
  *
  * @packageDocumentation

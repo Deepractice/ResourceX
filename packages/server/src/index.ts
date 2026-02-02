@@ -6,7 +6,7 @@
  * @example
  * ```typescript
  * import { createRegistryServer } from "@resourcexjs/server";
- * import { FileSystemRXAStore, FileSystemRXMStore } from "resourcexjs/node";
+ * import { FileSystemRXAStore, FileSystemRXMStore } from "@resourcexjs/node-provider";
  *
  * const server = createRegistryServer({
  *   rxaStore: new FileSystemRXAStore("./data/blobs"),

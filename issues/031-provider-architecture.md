@@ -28,7 +28,7 @@ interface ResourceXProvider {
   /**
    * 平台标识
    */
-  readonly platform: string;  // 'node' | 'bun' | 'cloudflare' | 'deno'
+  readonly platform: string; // 'node' | 'bun' | 'cloudflare' | 'deno'
 
   /**
    * 创建存储
@@ -111,29 +111,29 @@ export type { ResourceX, ResourceXConfig, ResourceXProvider };
 ```typescript
 // ===== 平台入口 (resourcexjs/node.ts) =====
 
-import { setProvider } from './index.js';
-import { NodeProvider } from './providers/node/index.js';
+import { setProvider } from "./index.js";
+import { NodeProvider } from "./providers/node/index.js";
 
 // 自动注入 Node.js Provider
 setProvider(new NodeProvider());
 
 // 重导出所有 API
-export * from './index.js';
+export * from "./index.js";
 ```
 
 ### 用户使用
 
 ```typescript
 // ===== 方式 1: 平台入口（推荐）=====
-import { createResourceX, createResourceXServer } from 'resourcexjs/node';
+import { createResourceX, createResourceXServer } from "resourcexjs/node";
 
 // SDK
 const rx = createResourceX({
-  registry: 'https://registry.example.com',
+  registry: "https://registry.example.com",
 });
 
-await rx.add('./my-resource');
-await rx.use('hello:1.0.0');
+await rx.add("./my-resource");
+await rx.use("hello:1.0.0");
 
 // Server
 const server = createResourceXServer({ port: 3000 });
@@ -172,7 +172,7 @@ const rx = createResourceX({ ... });
 
 ```typescript
 // worker.ts
-import { createResourceXServer } from 'resourcexjs/cloudflare';
+import { createResourceXServer } from "resourcexjs/cloudflare";
 
 export default {
   fetch: createResourceXServer({
@@ -184,7 +184,7 @@ export default {
 ```typescript
 // CloudflareProvider.ts
 class CloudflareProvider implements ResourceXProvider {
-  readonly platform = 'cloudflare';
+  readonly platform = "cloudflare";
 
   constructor(private env: { R2: R2Bucket; D1: D1Database }) {}
 
@@ -232,33 +232,39 @@ packages/
 ```
 
 **删除：**
+
 - `@resourcexjs/storage` → 移到 providers
 - `@resourcexjs/server` → 合并到 resourcexjs
 
 ## 实现步骤
 
 ### Phase 1: 接口定义
+
 - [ ] 在 core 中定义 `ResourceXProvider` 接口
 - [ ] 导出 Provider 相关类型
 
 ### Phase 2: resourcexjs 重构
+
 - [ ] 实现 `setProvider` / `getProvider`
 - [ ] 重构 `createResourceX` 使用 Provider
 - [ ] 合并 server 到 resourcexjs，实现 `createResourceXServer`
 
 ### Phase 3: Node.js Provider
+
 - [ ] 实现 `FileSystemRXAStore`
 - [ ] 实现 `SQLiteRXMStore`（或 FileSystemRXMStore）
 - [ ] 实现 `NodeProvider`
 - [ ] 创建 `resourcexjs/node` 入口
 
 ### Phase 4: 清理
+
 - [ ] 删除 `@resourcexjs/storage` 包
 - [ ] 删除 `@resourcexjs/server` 包
 - [ ] 移除 core 中的平台依赖
 - [ ] 更新文档和示例
 
 ### Phase 5: 其他平台（可选）
+
 - [ ] Memory Provider（测试用）
 - [ ] Cloudflare Provider
 - [ ] Deno Provider
@@ -267,12 +273,13 @@ packages/
 
 - 对外 API 保持不变（`createResourceX`）
 - 用户只需改 import 路径：
+
   ```typescript
   // 之前
-  import { createResourceX } from 'resourcexjs';
+  import { createResourceX } from "resourcexjs";
 
   // 之后
-  import { createResourceX } from 'resourcexjs/node';
+  import { createResourceX } from "resourcexjs/node";
   ```
 
 ## 相关 Issues

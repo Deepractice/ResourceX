@@ -1,12 +1,5 @@
 import { describe, it, expect } from "bun:test";
-import {
-  define,
-  manifest,
-  archive,
-  locate,
-  resource,
-  extract,
-} from "../../../src/model/index.js";
+import { define, manifest, archive, locate, resource, extract } from "../../../src/model/index.js";
 import type { RXD, RXM, RXL, RXA, RXR } from "../../../src/model/index.js";
 
 describe("primitives", () => {
