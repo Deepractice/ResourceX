@@ -28,9 +28,11 @@
       "version": "2.5.4",
       "bin": {
         "rx": "./dist/index.js",
+        "cli": "./dist/index.js",
       },
       "dependencies": {
         "@hono/node-server": "^1.19.9",
+        "@resourcexjs/node-provider": "workspace:*",
         "@resourcexjs/server": "workspace:*",
         "citty": "^0.1.6",
         "consola": "^3.4.2",
@@ -48,6 +50,7 @@
         "mcp-server": "./dist/index.js",
       },
       "dependencies": {
+        "@resourcexjs/node-provider": "workspace:*",
         "fastmcp": "^3.26.9",
         "resourcexjs": "workspace:*",
         "rolexjs": "^0.2.0",
@@ -66,6 +69,7 @@
         "@hono/node-server": "^1.14.3",
         "@modelcontextprotocol/sdk": "^1.11.0",
         "@resourcexjs/mcp-server": "workspace:*",
+        "@resourcexjs/node-provider": "workspace:*",
         "@resourcexjs/server": "workspace:*",
         "@types/node": "^24.9.2",
         "hono": "^4.7.10",
@@ -82,8 +86,14 @@
       "name": "@resourcexjs/core",
       "version": "2.5.4",
       "dependencies": {
-        "@resourcexjs/storage": "workspace:*",
         "modern-tar": "^0.7.3",
+      },
+    },
+    "packages/node-provider": {
+      "name": "@resourcexjs/node-provider",
+      "version": "2.5.4",
+      "dependencies": {
+        "@resourcexjs/core": "workspace:*",
       },
     },
     "packages/resourcex": {
@@ -100,13 +110,9 @@
       "version": "2.5.4",
       "dependencies": {
         "@resourcexjs/core": "workspace:*",
-        "@resourcexjs/storage": "workspace:*",
+        "@resourcexjs/node-provider": "workspace:*",
         "hono": "^4.7.10",
       },
-    },
-    "packages/storage": {
-      "name": "@resourcexjs/storage",
-      "version": "2.5.4",
     },
   },
   "packages": {
@@ -390,11 +396,13 @@
 
     "@resourcexjs/mcp-server": ["@resourcexjs/mcp-server@workspace:apps/mcp-server"],
 
+    "@resourcexjs/node-provider": ["@resourcexjs/node-provider@workspace:packages/node-provider"],
+
     "@resourcexjs/registry": ["@resourcexjs/registry@2.5.3", "", { "dependencies": { "@resourcexjs/core": "^2.5.3", "@resourcexjs/loader": "^2.5.3", "@resourcexjs/storage": "^2.5.3" } }, "sha512-dYK7L1QIoncSRIcr+rO+e6P4O87DwCJXLImoW/KxFXdoynmculUkDldCu+7i1NvHggCxe5LGpScYF8VUO9CcXQ=="],
 
     "@resourcexjs/server": ["@resourcexjs/server@workspace:packages/server"],
 
-    "@resourcexjs/storage": ["@resourcexjs/storage@workspace:packages/storage"],
+    "@resourcexjs/storage": ["@resourcexjs/storage@2.5.3", "", {}, "sha512-+Ql820tbNx7O7UXogZnDweUpNjsAdsDifrDtwrQdeRiNYVLh8HYZHSg0CS2a+3iyWJL57aMXOp9BGXixcTMrhA=="],
 
     "@resourcexjs/type": ["@resourcexjs/type@2.5.3", "", { "dependencies": { "@resourcexjs/core": "^2.5.3" } }, "sha512-Ip9QxcMRptG61b7nmfryB666vJgerLf2h8VVhWXta6QNUD00bPfdg3q1h/66lZFveVzoN5EUsyDw9MOZcmiy0w=="],
 
@@ -1358,8 +1366,6 @@
 
     "@resourcexjs/registry/@resourcexjs/core": ["@resourcexjs/core@2.5.3", "", { "dependencies": { "modern-tar": "^0.7.3" } }, "sha512-lpe/eh7geVA8ZcZgfCoEWwFcmF5CVK+kh7QoeJk8JXytJAJd5UkeJ6qv06l4vQj0bP7Hhfu+3SKuLBwI31YoPw=="],
 
-    "@resourcexjs/registry/@resourcexjs/storage": ["@resourcexjs/storage@2.5.3", "", {}, "sha512-+Ql820tbNx7O7UXogZnDweUpNjsAdsDifrDtwrQdeRiNYVLh8HYZHSg0CS2a+3iyWJL57aMXOp9BGXixcTMrhA=="],
-
     "@resourcexjs/type/@resourcexjs/core": ["@resourcexjs/core@2.5.3", "", { "dependencies": { "modern-tar": "^0.7.3" } }, "sha512-lpe/eh7geVA8ZcZgfCoEWwFcmF5CVK+kh7QoeJk8JXytJAJd5UkeJ6qv06l4vQj0bP7Hhfu+3SKuLBwI31YoPw=="],
 
     "@rolexjs/core/resourcexjs": ["resourcexjs@2.5.3", "", { "dependencies": { "@resourcexjs/arp": "^2.5.3", "@resourcexjs/core": "^2.5.3", "@resourcexjs/loader": "^2.5.3", "@resourcexjs/registry": "^2.5.3", "@resourcexjs/storage": "^2.5.3", "@resourcexjs/type": "^2.5.3", "sandboxxjs": "^0.5.1" } }, "sha512-3QxMztT1O7yjc/BigqfBNwtY7VrIIBGnBgRRwwknLMlZatwp3HiOHyWoAwag1Qd1x5rMGi9il1sRglhcef3Jzw=="],
@@ -1455,8 +1461,6 @@
     "@rolexjs/core/resourcexjs/@resourcexjs/arp": ["@resourcexjs/arp@2.5.3", "", {}, "sha512-sSxAcLtWgwb5B7/LcGsADf93spqGPNrio9WHT8aytNjDsCN/8Z/Bs74PosQVjIz1YxeGRA6on9HgmDXWzOldVw=="],
 
     "@rolexjs/core/resourcexjs/@resourcexjs/core": ["@resourcexjs/core@2.5.3", "", { "dependencies": { "modern-tar": "^0.7.3" } }, "sha512-lpe/eh7geVA8ZcZgfCoEWwFcmF5CVK+kh7QoeJk8JXytJAJd5UkeJ6qv06l4vQj0bP7Hhfu+3SKuLBwI31YoPw=="],
-
-    "@rolexjs/core/resourcexjs/@resourcexjs/storage": ["@resourcexjs/storage@2.5.3", "", {}, "sha512-+Ql820tbNx7O7UXogZnDweUpNjsAdsDifrDtwrQdeRiNYVLh8HYZHSg0CS2a+3iyWJL57aMXOp9BGXixcTMrhA=="],
 
     "@sandboxxjs/state/resourcexjs/@resourcexjs/core": ["@resourcexjs/core@0.5.0", "", {}, "sha512-M3oUkRybg+CU46fx/9r6gnAcOvCRTEOdD7dmxnQ8/S5R0Qy3KgorrOC42SlYRP9lGMVix0xF0U3MdfJBRjpo7Q=="],
 

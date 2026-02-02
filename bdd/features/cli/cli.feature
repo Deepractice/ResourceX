@@ -108,7 +108,7 @@ Feature: ResourceX CLI
   Scenario: Add non-existent directory fails
     When I run rx command "add ./non-existent-dir"
     Then the command should fail
-    And the output should contain "Cannot load resource"
+    And the output should contain "Failed to read resource.json"
 
   Scenario: Use non-existent resource fails
     When I run rx command "use notfound:1.0.0"

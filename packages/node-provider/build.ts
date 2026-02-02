@@ -1,6 +1,5 @@
 /**
- * Bun Build Script for @resourcexjs/storage
- * ESM-only modern build
+ * Bun Build Script for @resourcexjs/node-provider
  */
 
 import { dts } from "bun-dts";
@@ -10,7 +9,7 @@ const outdir = "./dist";
 
 await Bun.$`rm -rf ${outdir}`;
 
-console.log(`Building @resourcexjs/storage v${pkg.version}\n`);
+console.log(`Building @resourcexjs/node-provider v${pkg.version}\n`);
 
 const result = await Bun.build({
   entrypoints: ["src/index.ts"],
@@ -20,9 +19,7 @@ const result = await Bun.build({
   sourcemap: "external",
   minify: false,
   plugins: [dts()],
-  define: {
-    __VERSION__: JSON.stringify(pkg.version),
-  },
+  external: ["@resourcexjs/core"],
 });
 
 if (!result.success) {

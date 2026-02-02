@@ -32,12 +32,16 @@ let server: Server | null = null;
  */
 async function startServer(): Promise<void> {
   const { createRegistryServer } = await import("@resourcexjs/server");
+  const { FileSystemRXAStore, FileSystemRXMStore } = await import("@resourcexjs/node-provider");
   const { serve } = await import("@hono/node-server");
 
   const storagePath = join(TEST_BASE, "server-data");
   await mkdir(storagePath, { recursive: true });
 
-  const app = createRegistryServer({ storagePath });
+  const app = createRegistryServer({
+    rxaStore: new FileSystemRXAStore(join(storagePath, "blobs")),
+    rxmStore: new FileSystemRXMStore(join(storagePath, "manifests")),
+  });
 
   return new Promise((resolve, reject) => {
     try {

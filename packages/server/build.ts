@@ -19,7 +19,7 @@ const result = await Bun.build({
   sourcemap: "external",
   minify: false,
   plugins: [dts()],
-  external: ["@resourcexjs/core", "@resourcexjs/registry", "@resourcexjs/storage", "hono"],
+  external: ["@resourcexjs/core", "hono"],
 });
 
 if (!result.success) {

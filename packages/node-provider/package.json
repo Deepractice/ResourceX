@@ -1,7 +1,7 @@
 {
-  "name": "@resourcexjs/server",
-  "version": "2.5.5",
-  "description": "ResourceX Registry Server - Protocol, Handlers, and Hono Server",
+  "name": "@resourcexjs/node-provider",
+  "version": "2.5.4",
+  "description": "ResourceX Node.js/Bun Provider - FileSystem stores implementation",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -21,9 +21,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@resourcexjs/core": "workspace:*",
-    "@resourcexjs/node-provider": "workspace:*",
-    "hono": "^4.7.10"
+    "@resourcexjs/core": "workspace:*"
   },
   "devDependencies": {},
   "publishConfig": {

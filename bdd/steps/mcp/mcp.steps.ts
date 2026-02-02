@@ -1,8 +1,12 @@
 import { Given, When, Then, Before, After, World } from "@cucumber/cucumber";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
-import { createResourceX } from "resourcexjs";
+import { createResourceX, setProvider } from "resourcexjs";
+import { NodeProvider } from "@resourcexjs/node-provider";
 import { join } from "node:path";
+
+// Register Node.js provider
+setProvider(new NodeProvider());
 import { mkdir, writeFile, rm } from "node:fs/promises";
 import { spawn, type ChildProcess } from "node:child_process";
 

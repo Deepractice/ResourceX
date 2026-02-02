@@ -15,6 +15,7 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
+    "@resourcexjs/node-provider": "workspace:*",
     "fastmcp": "^3.26.9",
     "resourcexjs": "workspace:*",
     "rolexjs": "^0.2.0",

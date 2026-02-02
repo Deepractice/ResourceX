@@ -33,6 +33,12 @@ export { createResourceX } from "./ResourceX.js";
 export type { ResourceX, ResourceXConfig, Resource, Executable } from "./ResourceX.js";
 
 // ============================================
+// Provider API
+// ============================================
+export { setProvider, getProvider, hasProvider, clearProvider } from "./provider.js";
+export type { ResourceXProvider, ProviderConfig, ProviderStores } from "@resourcexjs/core";
+
+// ============================================
 // Core Primitives
 // ============================================
 export { parse, format, manifest, archive, resource, extract, wrap } from "@resourcexjs/core";

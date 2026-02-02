@@ -6,8 +6,8 @@
 
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { FileSystemStorage } from "@resourcexjs/storage";
-import { LocalRegistry } from "@resourcexjs/core";
+import type { RXAStore, RXMStore } from "@resourcexjs/core";
+import { CASRegistry } from "@resourcexjs/core";
 import {
   handlePublish,
   handleGetResource,
@@ -20,10 +20,14 @@ import { ENDPOINTS } from "./protocol.js";
 
 export interface RegistryServerConfig {
   /**
-   * Path for storing resources.
-   * @default "./data"
+   * RXA Store (blob storage).
    */
-  storagePath?: string;
+  rxaStore: RXAStore;
+
+  /**
+   * RXM Store (manifest storage).
+   */
+  rxmStore: RXMStore;
 
   /**
    * Base path for API routes.
@@ -41,13 +45,11 @@ export interface RegistryServerConfig {
 /**
  * Create a registry server Hono app.
  */
-export function createRegistryServer(config?: RegistryServerConfig): Hono {
-  const storagePath = config?.storagePath ?? "./data";
-  const basePath = config?.basePath ?? "";
-  const enableCors = config?.cors ?? true;
+export function createRegistryServer(config: RegistryServerConfig): Hono {
+  const basePath = config.basePath ?? "";
+  const enableCors = config.cors ?? true;
 
-  const storage = new FileSystemStorage(storagePath);
-  const registry = new LocalRegistry(storage);
+  const registry = new CASRegistry(config.rxaStore, config.rxmStore);
 
   const app = new Hono().basePath(basePath);
 

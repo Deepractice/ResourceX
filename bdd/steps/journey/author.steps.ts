@@ -109,10 +109,14 @@ Given("a clean local environment", async function (this: AuthorWorld) {
 Given("a registry server for publishing", async function (this: AuthorWorld) {
   if (!authorServer) {
     const { createRegistryServer } = await import("@resourcexjs/server");
+    const { FileSystemRXAStore, FileSystemRXMStore } = await import("@resourcexjs/node-provider");
     const { serve } = await import("@hono/node-server");
 
     await mkdir(TEST_REGISTRY_STORAGE, { recursive: true });
-    const app = createRegistryServer({ storagePath: TEST_REGISTRY_STORAGE });
+    const app = createRegistryServer({
+      rxaStore: new FileSystemRXAStore(join(TEST_REGISTRY_STORAGE, "blobs")),
+      rxmStore: new FileSystemRXMStore(join(TEST_REGISTRY_STORAGE, "manifests")),
+    });
 
     await new Promise<void>((resolve, reject) => {
       try {

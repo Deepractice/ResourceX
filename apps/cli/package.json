@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@hono/node-server": "^1.19.9",
+    "@resourcexjs/node-provider": "workspace:*",
     "@resourcexjs/server": "workspace:*",
     "citty": "^0.1.6",
     "consola": "^3.4.2",

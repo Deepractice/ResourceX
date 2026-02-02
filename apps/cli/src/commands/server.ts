@@ -7,6 +7,7 @@
 
 import { defineCommand } from "citty";
 import consola from "consola";
+import { join } from "node:path";
 
 export const server = defineCommand({
   meta: {
@@ -29,9 +30,13 @@ export const server = defineCommand({
     const storagePath = args.storage || "./data";
 
     const { createRegistryServer } = await import("@resourcexjs/server");
+    const { FileSystemRXAStore, FileSystemRXMStore } = await import("@resourcexjs/node-provider");
     const { serve } = await import("@hono/node-server");
 
-    const app = createRegistryServer({ storagePath });
+    const app = createRegistryServer({
+      rxaStore: new FileSystemRXAStore(join(storagePath, "blobs")),
+      rxmStore: new FileSystemRXMStore(join(storagePath, "manifests")),
+    });
 
     consola.info(`Starting registry server...`);
     console.log();

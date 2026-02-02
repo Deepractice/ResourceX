@@ -2,8 +2,12 @@
  * ResourceX client wrapper for CLI
  */
 
-import { createResourceX } from "resourcexjs";
+import { createResourceX, setProvider } from "resourcexjs";
+import { NodeProvider } from "@resourcexjs/node-provider";
 import { getConfig } from "./config.js";
+
+// Register Node.js provider
+setProvider(new NodeProvider());
 
 export interface ClientOptions {
   registry?: string;

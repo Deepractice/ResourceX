@@ -57,8 +57,6 @@ export { FolderLoader, loadResource } from "~/loader/index.js";
 export type {
   Registry,
   SearchOptions,
-  RegistryAccessor,
-  RemoteFetcher,
   WellKnownResponse,
   DiscoveryResult,
   // Store SPI interfaces
@@ -78,15 +76,6 @@ export {
   // Memory implementations (for testing)
   MemoryRXAStore,
   MemoryRXMStore,
-  // Legacy registries (to be removed)
-  LocalRegistry,
-  MirrorRegistry,
-  // Access chain
-  RegistryAccessChain,
-  LinkedAccessor,
-  LocalAccessor,
-  CacheAccessor,
-  RemoteAccessor,
   // Discovery & middleware
   discoverRegistry,
   RegistryError,
@@ -94,3 +83,10 @@ export {
   DomainValidation,
   withDomainValidation,
 } from "~/registry/index.js";
+
+// Provider SPI
+export type {
+  ResourceXProvider,
+  ProviderConfig,
+  ProviderStores,
+} from "~/provider/index.js";

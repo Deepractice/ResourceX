@@ -11,6 +11,7 @@
   },
   "devDependencies": {
     "resourcexjs": "workspace:*",
+    "@resourcexjs/node-provider": "workspace:*",
     "@resourcexjs/server": "workspace:*",
     "@resourcexjs/mcp-server": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.11.0",

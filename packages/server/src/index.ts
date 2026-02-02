@@ -5,18 +5,15 @@
  *
  * @example
  * ```typescript
- * // Option 1: Use Hono Server directly
  * import { createRegistryServer } from "@resourcexjs/server";
- * const server = createRegistryServer({ storagePath: "./data" });
+ * import { FileSystemRXAStore, FileSystemRXMStore } from "resourcexjs/node";
+ *
+ * const server = createRegistryServer({
+ *   rxaStore: new FileSystemRXAStore("./data/blobs"),
+ *   rxmStore: new FileSystemRXMStore("./data/manifests"),
+ * });
+ *
  * Bun.serve({ fetch: server.fetch, port: 3000 });
- *
- * // Option 2: Use handlers with Next.js Route Handler
- * import { handlePublish, handleSearch, createRegistry } from "@resourcexjs/server";
- * const registry = createRegistry({ storagePath: "./data" });
- * export async function POST(req) { return handlePublish(req, registry); }
- *
- * // Option 3: Use protocol types only
- * import { ENDPOINTS, type PublishResponse } from "@resourcexjs/server";
  * ```
  *
  * @packageDocumentation
@@ -58,22 +55,9 @@ export {
 // Hono Server
 export { createRegistryServer, type RegistryServerConfig } from "./hono.js";
 
-// Re-export Registry for convenience
-export { LocalRegistry } from "@resourcexjs/core";
-export { FileSystemStorage, MemoryStorage } from "@resourcexjs/storage";
+// Re-export core types for convenience
+export { CASRegistry } from "@resourcexjs/core";
+export type { RXAStore, RXMStore, Registry } from "@resourcexjs/core";
 
-/**
- * Convenience function to create a registry instance.
- */
-import { FileSystemStorage } from "@resourcexjs/storage";
-import { LocalRegistry } from "@resourcexjs/core";
-import type { Registry } from "@resourcexjs/core";
-
-export interface CreateRegistryConfig {
-  storagePath: string;
-}
-
-export function createRegistry(config: CreateRegistryConfig): Registry {
-  const storage = new FileSystemStorage(config.storagePath);
-  return new LocalRegistry(storage);
-}
+// Re-export node-provider stores for convenience
+export { FileSystemRXAStore, FileSystemRXMStore } from "@resourcexjs/node-provider";

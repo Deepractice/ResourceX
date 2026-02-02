@@ -6,8 +6,12 @@
  */
 
 import { FastMCP } from "fastmcp";
-import { createResourceX } from "resourcexjs";
+import { createResourceX, setProvider } from "resourcexjs";
+import { NodeProvider } from "@resourcexjs/node-provider";
 import { roleType } from "rolexjs";
+
+// Register Node.js provider
+setProvider(new NodeProvider());
 import { instructions } from "./instructions.js";
 import { searchTool, useTool, infoTool, listTool, addTool, pushTool } from "./tools/index.js";
 

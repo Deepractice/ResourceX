@@ -7,9 +7,7 @@
  * - locator: resource identifier string
  */
 
-import { homedir } from "node:os";
-import { join } from "node:path";
-import type { RXR } from "@resourcexjs/core";
+import type { RXR, ResourceXProvider, ProviderConfig } from "@resourcexjs/core";
 import {
   parse,
   format,
@@ -20,10 +18,7 @@ import {
   loadResource,
 } from "@resourcexjs/core";
 import type { BundledType, IsolatorType } from "@resourcexjs/core";
-import { FileSystemRXAStore } from "./stores/FileSystemRXAStore.js";
-import { FileSystemRXMStore } from "./stores/FileSystemRXMStore.js";
-
-const DEFAULT_BASE_PATH = `${homedir()}/.resourcex`;
+import { getProvider, hasProvider } from "./provider.js";
 
 /**
  * Normalize registry URL to host:port format.
@@ -117,14 +112,16 @@ export interface ResourceX {
  * Default ResourceX implementation using CASRegistry.
  */
 class DefaultResourceX implements ResourceX {
-  private readonly basePath: string;
   private readonly registryUrl?: string;
   private readonly typeHandler: TypeHandlerChain;
   private readonly isolator: IsolatorType;
   private readonly cas: CASRegistry;
+  private readonly provider: ResourceXProvider;
+  private readonly providerConfig: ProviderConfig;
 
   constructor(config?: ResourceXConfig) {
-    this.basePath = config?.path ?? DEFAULT_BASE_PATH;
+    this.provider = getProvider();
+    this.providerConfig = { path: config?.path };
     this.registryUrl = config?.registry;
     this.isolator = config?.isolator ?? "none";
 
@@ -136,11 +133,9 @@ class DefaultResourceX implements ResourceX {
       }
     }
 
-    // Initialize CAS stores
-    const rxaStore = new FileSystemRXAStore(join(this.basePath, "blobs"));
-    const rxmStore = new FileSystemRXMStore(join(this.basePath, "manifests"));
-
-    this.cas = new CASRegistry(rxaStore, rxmStore);
+    // Initialize CAS stores via provider
+    const stores = this.provider.createStores(this.providerConfig);
+    this.cas = new CASRegistry(stores.rxaStore, stores.rxmStore);
   }
 
   /**
@@ -159,7 +154,9 @@ class DefaultResourceX implements ResourceX {
   }
 
   async add(path: string): Promise<Resource> {
-    const rxr = await loadResource(path);
+    // Use provider's loader if available, otherwise use default
+    const loader = this.provider.createLoader?.(this.providerConfig);
+    const rxr = loader ? await loader.load(path) as RXR : await loadResource(path);
 
     // Local resources should not have registry
     if (rxr.manifest.registry) {
@@ -280,6 +277,17 @@ class DefaultResourceX implements ResourceX {
 
   supportType(type: BundledType): void {
     this.typeHandler.register(type);
+  }
+
+  async putResource(rxr: RXR): Promise<Resource> {
+    await this.cas.put(rxr);
+    return this.toResource(rxr);
+  }
+
+  async getArchive(locator: string): Promise<Buffer> {
+    const rxl = parse(locator);
+    const rxr = await this.cas.get(rxl);
+    return rxr.archive.buffer();
   }
 
   // ===== Private methods =====
@@ -437,7 +445,16 @@ class DefaultResourceX implements ResourceX {
 
 /**
  * Create a ResourceX client instance.
+ *
+ * Requires a provider to be set first via setProvider() or by importing
+ * a platform entry point like 'resourcexjs/node'.
  */
 export function createResourceX(config?: ResourceXConfig): ResourceX {
+  if (!hasProvider()) {
+    throw new Error(
+      "No ResourceX provider configured. " +
+        'Import a platform entry point (e.g., "resourcexjs/node") or call setProvider() first.'
+    );
+  }
   return new DefaultResourceX(config);
 }

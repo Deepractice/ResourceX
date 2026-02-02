@@ -2,7 +2,12 @@ import { Given, When, Then, Before, After } from "@cucumber/cucumber";
 import { strict as assert } from "node:assert";
 import { join } from "node:path";
 import { mkdir, writeFile, rm } from "node:fs/promises";
+import { createResourceX, setProvider } from "resourcexjs";
+import { NodeProvider } from "@resourcexjs/node-provider";
 import type { ResourceX, Resource, Executable } from "resourcexjs";
+
+// Register Node.js provider
+setProvider(new NodeProvider());
 
 const TEST_DIR = join(process.cwd(), ".test-bdd-resourcex");
 const DEV_DIR = join(TEST_DIR, "dev");
@@ -22,7 +27,6 @@ interface ResourceXWorld {
 // ============================================
 
 Before({ tags: "@resourcex" }, async function (this: ResourceXWorld) {
-  const { createResourceX } = await import("resourcexjs");
   await mkdir(TEST_DIR, { recursive: true });
   this.rx = createResourceX({ path: TEST_DIR });
   this.tempResourceDir = null;
