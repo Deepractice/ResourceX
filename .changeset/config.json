@@ -6,11 +6,8 @@
     [
       "resourcexjs",
       "@resourcexjs/core",
-      "@resourcexjs/type",
-      "@resourcexjs/loader",
       "@resourcexjs/arp",
-      "@resourcexjs/registry",
-      "@resourcexjs/storage",
+      "@resourcexjs/node-provider",
       "@resourcexjs/server",
       "@resourcexjs/cli",
       "@resourcexjs/mcp-server"
