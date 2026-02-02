@@ -98,7 +98,7 @@ jobs:
 
       - name: Check Build Artifacts
         run: |
-          for pkg in core resourcex registry; do
+          for pkg in arp core node-provider resourcex server; do
             if [ -d "packages/$pkg/dist" ]; then
               echo "✅ packages/$pkg built successfully"
             else
