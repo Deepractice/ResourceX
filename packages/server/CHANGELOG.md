@@ -1,5 +1,28 @@
 # @resourcexjs/server
 
+## 2.5.6
+
+### Patch Changes
+
+- 3c43d76: docs: update documentation for Provider architecture
+  - Update all READMEs to reflect new Provider pattern
+  - Add setProvider() requirement in examples
+  - Update storage layout documentation to CAS structure
+  - Remove references to deleted packages (storage, registry, loader, type)
+  - Add node-provider package documentation
+  - Update CLAUDE.md with current architecture
+
+- 3c43d76: fix(server): store and lookup resources without registry prefix
+
+  Server now correctly stores resources without the registry prefix in the path.
+  When a resource is published to `registry.example.com/hello:1.0.0`, it's stored
+  as `hello:1.0.0` on the server. The registry prefix is added by clients when
+  they pull resources.
+
+- Updated dependencies [3c43d76]
+  - @resourcexjs/core@2.5.6
+  - @resourcexjs/node-provider@2.5.6
+
 ## 2.5.5
 
 ### Patch Changes
