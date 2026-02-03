@@ -1,5 +1,20 @@
 # resourcexjs
 
+## 2.5.7
+
+### Patch Changes
+
+- 4a866e0: fix(resourcex): add filename to FormData Blob for multipart upload
+
+  Some servers require filename in multipart form uploads. Added explicit filenames
+  to manifest.json and archive.tar.gz when publishing to registry.
+
+- b4684d2: fix: add filename to FormData blob when publishing to registry
+
+  FormData.append() without filename causes some environments to return string instead of File object, leading to "Missing manifest file" error on server side.
+  - @resourcexjs/core@2.5.7
+  - @resourcexjs/arp@2.5.7
+
 ## 2.5.6
 
 ### Patch Changes
