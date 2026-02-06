@@ -1,5 +1,57 @@
 import type { RXL } from "./rxl.js";
 import { LocatorError } from "~/errors.js";
+import { normalize } from "node:path";
+
+const MAX_LOCATOR_LENGTH = 256;
+const DANGEROUS_PATTERNS = /[;|&$`\n\0\r]/;
+
+/**
+ * Validate locator security (防止路徑遍歷、注入攻擊)
+ */
+function validateLocatorSecurity(locator: string): void {
+  if (locator.length > MAX_LOCATOR_LENGTH) {
+    throw new LocatorError("Locator too long", locator);
+  }
+
+  // Check for absolute paths
+  if (locator.startsWith("/") || locator.startsWith("\\")) {
+    throw new LocatorError("Absolute paths not allowed", locator);
+  }
+
+  const normalized = locator.normalize("NFC");
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(normalized);
+  } catch {
+    decoded = normalized;
+  }
+
+  // Extract the part before the last colon (which is the tag separator)
+  // We need to check the name/path part, not the tag
+  const lastColonIndex = decoded.lastIndexOf(":");
+  const namePathPart = lastColonIndex !== -1 ? decoded.substring(0, lastColonIndex) : decoded;
+
+  // Check for .. in the name/path part
+  if (namePathPart.includes("..")) {
+    throw new LocatorError("Path traversal detected", locator);
+  }
+
+  // Check for path traversal after normalization
+  const pathNormalized = normalize(decoded);
+  if (
+    pathNormalized.startsWith("..") ||
+    pathNormalized.includes("/..") ||
+    pathNormalized.includes("\\..") ||
+    pathNormalized.startsWith("/") ||
+    pathNormalized.startsWith("\\")
+  ) {
+    throw new LocatorError("Path traversal detected", locator);
+  }
+
+  if (DANGEROUS_PATTERNS.test(decoded)) {
+    throw new LocatorError("Invalid characters detected", locator);
+  }
+}
 
 /**
  * Check if a string looks like a registry (contains port or is a domain).
@@ -40,6 +92,9 @@ export function parse(locator: string): RXL {
   if (!locator || typeof locator !== "string") {
     throw new LocatorError("Locator must be a non-empty string", locator);
   }
+
+  // ✅ Security validation
+  validateLocatorSecurity(locator);
 
   // Validate no invalid characters
   if (locator.includes("@")) {
