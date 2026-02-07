@@ -5,10 +5,12 @@
  * Directory structure: {basePath}/{digest-prefix}/{digest}
  */
 
-import { mkdir, readFile, writeFile, unlink, readdir, stat } from "node:fs/promises";
+import { mkdir, writeFile, unlink, readdir, stat } from "node:fs/promises";
+import { createReadStream } from "node:fs";
+import { createHash } from "node:crypto";
 import { join } from "node:path";
 import type { RXAStore } from "@resourcexjs/core";
-import { computeDigest, RegistryError } from "@resourcexjs/core";
+import { computeDigest, isValidDigest, RegistryError } from "@resourcexjs/core";
 
 export class FileSystemRXAStore implements RXAStore {
   constructor(private readonly basePath: string) {}
@@ -23,12 +25,36 @@ export class FileSystemRXAStore implements RXAStore {
   }
 
   async get(digest: string): Promise<Buffer> {
-    const path = this.getPath(digest);
-    try {
-      return await readFile(path);
-    } catch (error) {
-      throw new RegistryError(`Blob not found: ${digest}`);
+    // Validate digest format
+    if (!isValidDigest(digest)) {
+      throw new RegistryError(`Invalid digest format: ${digest}`);
     }
+
+    const path = this.getPath(digest);
+
+    // Stream-based reading and verification
+    const chunks: Buffer[] = [];
+    const hash = createHash("sha256");
+    const readStream = createReadStream(path);
+
+    await new Promise<void>((resolve, reject) => {
+      readStream.on("data", (chunk: Buffer) => {
+        chunks.push(chunk);
+        hash.update(chunk);
+      });
+      readStream.on("end", resolve);
+      readStream.on("error", () => reject(new RegistryError(`Blob not found: ${digest}`)));
+    });
+
+    // Verify Hash
+    const actualDigest = `sha256:${hash.digest("hex")}`;
+    if (actualDigest !== digest) {
+      throw new RegistryError(
+        `Content integrity check failed: expected ${digest}, got ${actualDigest}`
+      );
+    }
+
+    return Buffer.concat(chunks);
   }
 
   async put(data: Buffer): Promise<string> {

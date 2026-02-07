@@ -1,5 +1,22 @@
 import type { RXD } from "./rxd.js";
 import { DefinitionError } from "~/errors.js";
+import { z } from "zod";
+
+const RXDSchema = z
+  .object({
+    name: z.string().min(1).max(128),
+    type: z.string().min(1).max(64),
+    tag: z.string().max(64).optional(),
+    version: z.string().max(64).optional(),
+    registry: z.string().max(256).optional(),
+    path: z.string().max(256).optional(),
+    description: z.string().max(1024).optional(),
+    author: z.string().max(128).optional(),
+    license: z.string().max(64).optional(),
+    keywords: z.array(z.string().max(64)).max(20).optional(),
+    repository: z.string().max(256).optional(),
+  })
+  .strict();
 
 /**
  * Parse and validate a resource definition (resource.json content).
@@ -13,37 +30,26 @@ export function define(input: unknown): RXD {
     throw new DefinitionError("definition must be an object");
   }
 
-  const obj = input as Record<string, unknown>;
-
-  if (!obj.name || typeof obj.name !== "string") {
-    throw new DefinitionError("name is required");
+  let validated;
+  try {
+    validated = RXDSchema.parse(input);
+  } catch (e) {
+    throw new DefinitionError(`Invalid definition: ${e instanceof Error ? e.message : String(e)}`);
   }
 
-  if (!obj.type || typeof obj.type !== "string") {
-    throw new DefinitionError("type is required");
-  }
-
-  // tag is optional, defaults to "latest"
-  // Also accept "version" as alias for backward compatibility
-  const tagValue = obj.tag ?? obj.version;
-  if (tagValue !== undefined && typeof tagValue !== "string") {
-    throw new DefinitionError("tag must be a string");
-  }
-
-  // Build RXD with defaults
-  const rxd: RXD = {
-    ...obj,
-    name: obj.name,
-    type: obj.type,
-    tag: typeof tagValue === "string" ? tagValue : undefined,
-    registry: typeof obj.registry === "string" ? obj.registry : undefined,
-    path: typeof obj.path === "string" ? obj.path : undefined,
-    description: typeof obj.description === "string" ? obj.description : undefined,
-    author: typeof obj.author === "string" ? obj.author : undefined,
-    license: typeof obj.license === "string" ? obj.license : undefined,
-    keywords: Array.isArray(obj.keywords) ? obj.keywords : undefined,
-    repository: typeof obj.repository === "string" ? obj.repository : undefined,
-  };
+  // Create object without prototype chain (防止 Prototype Pollution)
+  const rxd = Object.assign(Object.create(null), {
+    name: validated.name,
+    type: validated.type,
+    tag: validated.tag ?? validated.version ?? undefined,
+    registry: validated.registry,
+    path: validated.path,
+    description: validated.description,
+    author: validated.author,
+    license: validated.license,
+    keywords: validated.keywords,
+    repository: validated.repository,
+  }) as RXD;
 
   return rxd;
 }
