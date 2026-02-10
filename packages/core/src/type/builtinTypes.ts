@@ -72,6 +72,49 @@ var binary_type_default = {
 };
 
 /**
+ * Skill content (SKILL.md + optional references)
+ */
+export const skillType: BundledType = {
+  name: "skill",
+  aliases: ["agent-skill"],
+  description: "Agent skill package with SKILL.md and optional references",
+  code: `// @resolver: skill_type_default
+// skill type resolver
+var skill_type_default = {
+  name: "skill",
+  aliases: ["agent-skill"],
+  description: "Agent skill package with SKILL.md and optional references",
+  async resolve(ctx, args) {
+    const skillFile = ctx.files["SKILL.md"];
+    if (!skillFile) {
+      throw new Error("Skill resource must contain a SKILL.md file");
+    }
+    const decoder = new TextDecoder();
+    const content = decoder.decode(skillFile);
+    if (args && args.reference) {
+      const refPath = "references/" + args.reference;
+      const refFile = ctx.files[refPath];
+      if (!refFile) {
+        const available = Object.keys(ctx.files).filter(k => k.startsWith("references/")).map(k => k.replace("references/", ""));
+        throw new Error("Reference not found: " + args.reference + ". Available: " + available.join(", "));
+      }
+      return decoder.decode(refFile);
+    }
+    return content;
+  }
+};`,
+  schema: {
+    type: "object",
+    properties: {
+      reference: {
+        type: "string",
+        description: "Optional reference file name to load instead of SKILL.md",
+      },
+    },
+  },
+};
+
+/**
  * All built-in types as an array.
  */
-export const builtinTypes: BundledType[] = [textType, jsonType, binaryType];
+export const builtinTypes: BundledType[] = [textType, jsonType, binaryType, skillType];

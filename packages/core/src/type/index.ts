@@ -24,4 +24,4 @@ export { ResourceTypeError } from "./errors.js";
 export { TypeHandlerChain } from "./TypeHandlerChain.js";
 
 // Builtin types
-export { textType, jsonType, binaryType, builtinTypes } from "./builtinTypes.js";
+export { textType, jsonType, binaryType, skillType, builtinTypes } from "./builtinTypes.js";
