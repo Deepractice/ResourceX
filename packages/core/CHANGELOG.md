@@ -1,5 +1,13 @@
 # @resourcexjs/core
 
+## 2.6.0
+
+### Minor Changes
+
+- 1f7cf72: feat(core): add skill resource type for agent skill packages
+
+  Add built-in `skill` type that resolves SKILL.md content from resource archives. Supports optional `references/` directory for progressive disclosure — pass `{ reference: "filename.md" }` to load a specific reference file instead of the main SKILL.md.
+
 ## 2.5.7
 
 ## 2.5.6
