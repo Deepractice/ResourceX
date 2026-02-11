@@ -21,8 +21,21 @@ export class CASRegistry implements Registry {
     private readonly rxmStore: RXMStore
   ) {}
 
+  private async resolveTag(name: string, tag: string, registry?: string): Promise<string> {
+    if (tag === "latest") {
+      // 1. Try pointer file
+      const resolved = await this.rxmStore.getLatest(name, registry);
+      if (resolved) return resolved;
+
+      // 2. Backward compat: if only one tag exists, use it
+      const tags = await this.rxmStore.listTags(name, registry);
+      if (tags.length === 1) return tags[0];
+    }
+    return tag;
+  }
+
   async get(rxl: RXL): Promise<RXR> {
-    const tag = rxl.tag ?? "latest";
+    const tag = await this.resolveTag(rxl.name, rxl.tag ?? "latest", rxl.registry);
 
     // 1. Get manifest
     const storedRxm = await this.rxmStore.get(rxl.name, tag, rxl.registry);
@@ -76,10 +89,13 @@ export class CASRegistry implements Registry {
     };
 
     await this.rxmStore.put(storedRxm);
+
+    // Update "latest" pointer
+    await this.rxmStore.setLatest(rxr.manifest.name, rxr.manifest.tag, rxr.manifest.registry);
   }
 
   async has(rxl: RXL): Promise<boolean> {
-    const tag = rxl.tag ?? "latest";
+    const tag = await this.resolveTag(rxl.name, rxl.tag ?? "latest", rxl.registry);
     return this.rxmStore.has(rxl.name, tag, rxl.registry);
   }
 

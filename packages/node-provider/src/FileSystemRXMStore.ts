@@ -10,6 +10,7 @@ import { join } from "node:path";
 import type { RXMStore, StoredRXM, RXMSearchOptions } from "@resourcexjs/core";
 
 const LOCAL_DIR = "_local";
+const LATEST_FILE = ".latest";
 
 export class FileSystemRXMStore implements RXMStore {
   constructor(private readonly basePath: string) {}
@@ -82,6 +83,21 @@ export class FileSystemRXMStore implements RXMStore {
     }
 
     return tags;
+  }
+
+  async setLatest(name: string, tag: string, registry?: string): Promise<void> {
+    const dir = this.getDir(name, registry);
+    await mkdir(dir, { recursive: true });
+    await writeFile(join(dir, LATEST_FILE), tag, "utf-8");
+  }
+
+  async getLatest(name: string, registry?: string): Promise<string | null> {
+    const dir = this.getDir(name, registry);
+    try {
+      return (await readFile(join(dir, LATEST_FILE), "utf-8")).trim();
+    } catch {
+      return null;
+    }
   }
 
   async listNames(registry?: string, query?: string): Promise<string[]> {

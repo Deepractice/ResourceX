@@ -8,6 +8,7 @@ import type { RXMStore, StoredRXM, RXMSearchOptions } from "./RXMStore.js";
 
 export class MemoryRXMStore implements RXMStore {
   private readonly manifests = new Map<string, StoredRXM>();
+  private readonly latestPointers = new Map<string, string>();
 
   /**
    * Build key for manifest lookup.
@@ -98,10 +99,21 @@ export class MemoryRXMStore implements RXMStore {
     }
   }
 
+  async setLatest(name: string, tag: string, registry?: string): Promise<void> {
+    const key = registry ? `${registry}/${name}` : name;
+    this.latestPointers.set(key, tag);
+  }
+
+  async getLatest(name: string, registry?: string): Promise<string | null> {
+    const key = registry ? `${registry}/${name}` : name;
+    return this.latestPointers.get(key) ?? null;
+  }
+
   /**
    * Clear all manifests (for testing).
    */
   clear(): void {
     this.manifests.clear();
+    this.latestPointers.clear();
   }
 }

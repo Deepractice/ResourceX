@@ -89,4 +89,16 @@ export interface RXMStore {
    * Delete all manifests from a registry (clear cache).
    */
   deleteByRegistry(registry: string): Promise<void>;
+
+  /**
+   * Set the "latest" pointer for a resource.
+   * Points to the tag of the most recently added version.
+   */
+  setLatest(name: string, tag: string, registry?: string): Promise<void>;
+
+  /**
+   * Get the "latest" pointer for a resource.
+   * @returns The tag that "latest" points to, or null if no pointer exists.
+   */
+  getLatest(name: string, registry?: string): Promise<string | null>;
 }
