@@ -27,9 +27,9 @@ export class CASRegistry implements Registry {
       const resolved = await this.rxmStore.getLatest(name, registry);
       if (resolved) return resolved;
 
-      // 2. Backward compat: if only one tag exists, use it
+      // 2. Backward compat: pick last available tag (most recently added)
       const tags = await this.rxmStore.listTags(name, registry);
-      if (tags.length === 1) return tags[0];
+      if (tags.length > 0) return tags[tags.length - 1];
     }
     return tag;
   }
