@@ -13,6 +13,7 @@ import { pull } from "./commands/pull.js";
 import { search } from "./commands/search.js";
 import { use } from "./commands/use.js";
 import { config } from "./commands/config.js";
+import { registry } from "./commands/registry.js";
 import { server } from "./commands/server.js";
 import { cache } from "./commands/cache.js";
 
@@ -32,6 +33,7 @@ const main = defineCommand({
     search,
     use,
     config,
+    registry,
     cache,
     server,
   },

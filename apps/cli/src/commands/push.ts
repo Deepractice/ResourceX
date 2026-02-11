@@ -5,7 +5,7 @@
 import { defineCommand } from "citty";
 import consola from "consola";
 import { getClient } from "../lib/client.js";
-import { getConfig } from "../lib/config.js";
+import { getConfig, getRegistryByName } from "../lib/config.js";
 
 export const push = defineCommand({
   meta: {
@@ -21,17 +21,26 @@ export const push = defineCommand({
     registry: {
       type: "string",
       alias: "r",
-      description: "Registry URL (overrides config)",
+      description: "Registry name or URL (overrides default)",
     },
   },
   async run({ args }) {
     try {
-      const config = await getConfig();
-      const registryUrl = args.registry ?? config.registry;
+      let registryUrl: string | undefined;
+
+      if (args.registry) {
+        // Try to resolve as registry name first, fallback to URL
+        const entry = await getRegistryByName(args.registry);
+        registryUrl = entry ? entry.url : args.registry;
+      } else {
+        // Use default registry
+        const config = await getConfig();
+        registryUrl = config.registry;
+      }
 
       if (!registryUrl) {
         consola.error(
-          "No registry configured. Use: rx config set registry <url> or --registry <url>"
+          "No registry configured. Use: rx registry add <name> <url> or --registry <name|url>"
         );
         process.exit(1);
       }

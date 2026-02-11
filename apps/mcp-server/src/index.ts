@@ -9,15 +9,46 @@ import { FastMCP } from "fastmcp";
 import { createResourceX, setProvider } from "resourcexjs";
 import { NodeProvider } from "@resourcexjs/node-provider";
 import { roleType } from "rolexjs";
+import { homedir } from "node:os";
+import { join } from "node:path";
+import { readFileSync, existsSync } from "node:fs";
 
 // Register Node.js provider
 setProvider(new NodeProvider());
 import { instructions } from "./instructions.js";
 import { searchTool, useTool, infoTool, listTool, addTool, pushTool } from "./tools/index.js";
 
-// Configuration from environment
-const registry = process.env.RESOURCEX_REGISTRY;
-const storagePath = process.env.RESOURCEX_PATH;
+// ============================================
+// Configuration: env var > shared config file
+// ============================================
+
+function readSharedConfig(): { registry?: string; path?: string } {
+  try {
+    const rxHome = process.env.RX_HOME || join(homedir(), ".resourcex");
+    const configPath = join(rxHome, "config.json");
+    if (existsSync(configPath)) {
+      const raw = JSON.parse(readFileSync(configPath, "utf-8"));
+
+      // Support multi-registry: find default registry URL
+      if (raw.registries && Array.isArray(raw.registries)) {
+        const defaultEntry = raw.registries.find((r: { default?: boolean }) => r.default);
+        return { registry: defaultEntry?.url, path: raw.path };
+      }
+
+      // Backward compat: old single registry field
+      return { registry: raw.registry, path: raw.path };
+    }
+  } catch {
+    // Ignore
+  }
+  return {};
+}
+
+const sharedConfig = readSharedConfig();
+
+// Environment variables take precedence over shared config
+const registry = process.env.RESOURCEX_REGISTRY ?? sharedConfig.registry;
+const storagePath = process.env.RESOURCEX_PATH ?? sharedConfig.path;
 
 // Initialize ResourceX client
 const rx = createResourceX({

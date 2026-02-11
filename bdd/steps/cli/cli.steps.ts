@@ -79,15 +79,24 @@ async function stopServer(): Promise<void> {
 async function runRxCommand(
   args: string,
   rxHome: string,
-  registry: string
+  registry?: string
 ): Promise<{ output: string; exitCode: number }> {
   return new Promise((resolve) => {
+    const env: Record<string, string> = {
+      ...(process.env as Record<string, string>),
+      RX_HOME: rxHome,
+    };
+    // Only set RX_REGISTRY when explicitly provided.
+    // When undefined, CLI falls through to config.json registries.
+    if (registry !== undefined) {
+      env.RX_REGISTRY = registry;
+    } else {
+      // Ensure parent process env doesn't leak
+      delete env.RX_REGISTRY;
+    }
+
     const proc = spawn("bun", [CLI_PATH, ...args.split(" ")], {
-      env: {
-        ...process.env,
-        RX_HOME: rxHome,
-        RX_REGISTRY: registry,
-      },
+      env,
       stdio: ["ignore", "pipe", "pipe"],
     });
 
@@ -187,10 +196,11 @@ Before({ tags: "@cli" }, async function (this: CLIWorld) {
   this.commandExitCode = 0;
   this.resourceDir = null;
 
-  // Clean rx home directories for each test
+  // Clean rx home directories and config for each test
   await rm(join(TEST_RX_HOME, "hosted"), { recursive: true, force: true });
   await rm(join(TEST_RX_HOME, "cache"), { recursive: true, force: true });
   await rm(join(TEST_RX_HOME, "linked"), { recursive: true, force: true });
+  await rm(join(TEST_RX_HOME, "config.json"), { force: true });
   await mkdir(join(TEST_RX_HOME, "hosted"), { recursive: true });
   await mkdir(join(TEST_RX_HOME, "cache"), { recursive: true });
   await mkdir(join(TEST_RX_HOME, "linked"), { recursive: true });
@@ -325,8 +335,9 @@ When("I run rx command {string}", async function (this: CLIWorld, command: strin
     processedCommand = command.replace(/\.\/([^\s]+)/g, (_, path) => join(TEST_RESOURCES, path));
   }
 
-  // Check if registry should be disabled
-  const registry = (this as any).noRegistryConfigured ? "" : SERVER_URL;
+  // noRegistryConfigured: don't pass RX_REGISTRY at all (let CLI read config file)
+  // Otherwise pass SERVER_URL via env var
+  const registry = (this as any).noRegistryConfigured ? undefined : SERVER_URL;
 
   const { output, exitCode } = await runRxCommand(processedCommand, TEST_RX_HOME, registry);
   this.commandOutput = output;
