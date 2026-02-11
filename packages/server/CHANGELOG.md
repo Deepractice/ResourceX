@@ -1,5 +1,12 @@
 # @resourcexjs/server
 
+## 2.7.0
+
+### Patch Changes
+
+- @resourcexjs/core@2.7.0
+- @resourcexjs/node-provider@2.7.0
+
 ## 2.6.0
 
 ### Patch Changes

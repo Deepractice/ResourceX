@@ -1,5 +1,23 @@
 # @resourcexjs/mcp-server
 
+## 2.7.0
+
+### Minor Changes
+
+- 2166a63: feat: add multi-registry management (Maven-style)
+  - Add `rx registry add/remove/list/default` CLI commands for managing multiple registries
+  - Support named registries with default flag in config.json
+  - Auto-migrate old single `registry` field to `registries[]` array
+  - First added registry automatically becomes the default
+  - Push command resolves `--registry` flag by name or URL
+  - MCP Server reads shared `~/.resourcex/config.json` for default registry
+  - Environment variables still take precedence as override
+
+### Patch Changes
+
+- resourcexjs@2.7.0
+- @resourcexjs/node-provider@2.7.0
+
 ## 2.6.0
 
 ### Patch Changes
