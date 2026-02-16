@@ -1,5 +1,31 @@
 # @resourcexjs/cli
 
+## 2.8.0
+
+### Minor Changes
+
+- adece0b: feat: add auto-detection pipeline, SourceLoaderChain, and API redesign
+
+  - Add RXS intermediate type for raw file representation
+  - Add TypeDetector interface and TypeDetectorChain (Chain of Responsibility)
+  - Add built-in detectors: ResourceJsonDetector, SkillDetector
+  - Add SourceLoader interface and SourceLoaderChain (Chain of Responsibility)
+  - Add built-in loaders: FolderSourceLoader, GitHubSourceLoader
+  - Add resolveSource() pipeline: load → detect → generate RXD → archive → RXR
+  - Split ResourceX API: resolve(locator) + ingest(source) replacing use()
+  - Flatten public API: resolve/ingest return T directly (Executable internalized)
+  - Rename CLI command and MCP tool from "use" to "ingest"
+  - Auto-detect resource type from file patterns (no resource.json required)
+  - Support GitHub URLs as source via GitHubSourceLoader
+
+### Patch Changes
+
+- Updated dependencies [89233d7]
+- Updated dependencies [adece0b]
+  - @resourcexjs/node-provider@2.8.0
+  - resourcexjs@2.8.0
+  - @resourcexjs/server@2.8.0
+
 ## 2.7.0
 
 ### Minor Changes
@@ -83,6 +109,7 @@
 ### Patch Changes
 
 - 74629d7: docs: restructure documentation with Divio system
+
   - Remove old docs/ directory
   - Add new docs structure: tutorials, guides, reference, concepts
   - Add documentation TOC to main README
