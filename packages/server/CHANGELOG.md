@@ -1,5 +1,14 @@
 # @resourcexjs/server
 
+## 2.8.0
+
+### Patch Changes
+
+- Updated dependencies [89233d7]
+- Updated dependencies [adece0b]
+  - @resourcexjs/core@2.8.0
+  - @resourcexjs/node-provider@2.8.0
+
 ## 2.7.0
 
 ### Patch Changes
@@ -27,6 +36,7 @@
 ### Patch Changes
 
 - 3c43d76: docs: update documentation for Provider architecture
+
   - Update all READMEs to reflect new Provider pattern
   - Add setProvider() requirement in examples
   - Update storage layout documentation to CAS structure
