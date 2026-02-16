@@ -6,8 +6,13 @@
 
 import { homedir } from "node:os";
 import { join } from "node:path";
-import type { ResourceXProvider, ProviderConfig, ProviderStores } from "@resourcexjs/core";
-import { FolderLoader } from "@resourcexjs/core";
+import type {
+  ResourceXProvider,
+  ProviderConfig,
+  ProviderStores,
+  SourceLoader,
+} from "@resourcexjs/core";
+import { FolderLoader, FolderSourceLoader } from "@resourcexjs/core";
 import { FileSystemRXAStore } from "./FileSystemRXAStore.js";
 import { FileSystemRXMStore } from "./FileSystemRXMStore.js";
 
@@ -34,5 +39,9 @@ export class NodeProvider implements ResourceXProvider {
 
   createLoader(_config: ProviderConfig): FolderLoader {
     return new FolderLoader();
+  }
+
+  createSourceLoader(_config: ProviderConfig): SourceLoader {
+    return new FolderSourceLoader();
   }
 }

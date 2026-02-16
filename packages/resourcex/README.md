@@ -26,8 +26,8 @@ const rx = createResourceX();
 // Add a resource from local directory
 await rx.add("./my-prompt");
 
-// Use and execute
-const result = await rx.use("my-prompt:1.0.0");
+// Resolve and execute
+const result = await rx.resolve("my-prompt:1.0.0");
 const content = await result.execute();
 console.log(content);
 ```
@@ -187,12 +187,12 @@ Remove a resource from local storage.
 await rx.remove("hello:1.0.0");
 ```
 
-#### rx.use(locator)
+#### rx.resolve(locator)
 
-Load and prepare a resource for execution.
+Load and prepare a resource for execution from RXL locator.
 
 ```typescript
-const executable = await rx.use<string>("hello:1.0.0");
+const executable = await rx.resolve<string>("hello:1.0.0");
 
 // Execute with optional arguments
 const content = await executable.execute();
@@ -285,7 +285,7 @@ rx.supportType({
   })`,
 });
 
-const result = await rx.use("greeting:1.0.0");
+const result = await rx.resolve("greeting:1.0.0");
 const { template, render } = await result.execute();
 console.log(render({ name: "World" }));
 ```
@@ -435,7 +435,7 @@ interface BundledType {
 import { RegistryError, ResourceTypeError } from "resourcexjs";
 
 try {
-  await rx.use("unknown:1.0.0");
+  await rx.resolve("unknown:1.0.0");
 } catch (error) {
   if (error instanceof RegistryError) {
     console.error("Resource not found:", error.message);

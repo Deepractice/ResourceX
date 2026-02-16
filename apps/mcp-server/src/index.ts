@@ -16,7 +16,7 @@ import { readFileSync, existsSync } from "node:fs";
 // Register Node.js provider
 setProvider(new NodeProvider());
 import { instructions } from "./instructions.js";
-import { searchTool, useTool, infoTool, listTool, addTool, pushTool } from "./tools/index.js";
+import { searchTool, ingestTool, infoTool, listTool, addTool, pushTool } from "./tools/index.js";
 
 // ============================================
 // Configuration: env var > shared config file
@@ -78,10 +78,10 @@ server.addTool({
 });
 
 server.addTool({
-  name: useTool.name,
-  description: useTool.description,
-  parameters: useTool.parameters,
-  execute: useTool.execute(rx),
+  name: ingestTool.name,
+  description: ingestTool.description,
+  parameters: ingestTool.parameters,
+  execute: ingestTool.execute(rx),
 });
 
 server.addTool({

@@ -14,7 +14,7 @@ Feature: Error handling for consumers
     And the output should contain "not found"
 
   Scenario: Invalid locator format
-    When I run consumer command "rx use @invalid@locator@"
+    When I run consumer command "rx ingest @invalid@locator@"
     Then the command should fail
     And the output should contain "Invalid"
 
@@ -44,6 +44,6 @@ Feature: Error handling for consumers
     And the registry has resource "network-test:1.0.0" with content "Content"
     And consumer cache is empty
     And consumer network is interrupted
-    When I run consumer command "rx use localhost:3098/network-test:1.0.0"
+    When I run consumer command "rx ingest localhost:3098/network-test:1.0.0"
     Then the command should fail
     And the output should contain a helpful error message

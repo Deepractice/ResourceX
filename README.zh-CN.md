@@ -135,8 +135,8 @@ const rx = createResourceX();
 // 添加资源
 await rx.add("./my-prompt");
 
-// 使用资源
-const result = await rx.use("my-prompt:1.0.0");
+// 解析并执行
+const result = await rx.resolve("my-prompt:1.0.0");
 console.log(result.content);
 
 // 搜索资源

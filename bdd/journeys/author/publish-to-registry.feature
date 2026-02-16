@@ -46,6 +46,6 @@ Feature: Publish resource to registry
     And the output should contain "Pulled"
 
     # Verify can use
-    When I run "rx use shared-prompt:1.0.0"
+    When I run "rx ingest shared-prompt:1.0.0"
     Then the command should succeed
     And the output should contain "A prompt to share with others"

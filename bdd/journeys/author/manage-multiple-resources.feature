@@ -122,9 +122,9 @@ Feature: Manage multiple resources
     When I run "rx add ./changing"
 
     # Verify stable unchanged
-    When I run "rx use stable:1.0.0"
+    When I run "rx ingest stable:1.0.0"
     Then the output should contain "Stable content"
 
     # Verify changing updated
-    When I run "rx use changing:1.1.0"
+    When I run "rx ingest changing:1.1.0"
     Then the output should contain "Updated content"

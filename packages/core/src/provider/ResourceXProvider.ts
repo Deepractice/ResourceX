@@ -11,6 +11,7 @@
 
 import type { RXAStore } from "~/registry/store/RXAStore.js";
 import type { RXMStore } from "~/registry/store/RXMStore.js";
+import type { SourceLoader } from "~/loader/types.js";
 
 /**
  * Provider configuration passed to createStores/createLoader.
@@ -72,4 +73,9 @@ export interface ResourceXProvider {
    * Not all platforms support loading from filesystem.
    */
   createLoader?(config: ProviderConfig): ResourceLoader;
+
+  /**
+   * Create source loader for auto-detection pipeline (optional).
+   */
+  createSourceLoader?(config: ProviderConfig): SourceLoader;
 }

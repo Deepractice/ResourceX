@@ -11,7 +11,7 @@ import { remove } from "./commands/remove.js";
 import { push } from "./commands/push.js";
 import { pull } from "./commands/pull.js";
 import { search } from "./commands/search.js";
-import { use } from "./commands/use.js";
+import { ingest } from "./commands/use.js";
 import { config } from "./commands/config.js";
 import { registry } from "./commands/registry.js";
 import { server } from "./commands/server.js";
@@ -31,7 +31,7 @@ const main = defineCommand({
     push,
     pull,
     search,
-    use,
+    ingest,
     config,
     registry,
     cache,

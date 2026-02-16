@@ -18,9 +18,13 @@
  * // Add from directory
  * await rx.add("./my-prompt");
  *
- * // Use and execute
- * const result = await rx.use("my-prompt:1.0.0");
+ * // Ingest and execute (from any source)
+ * const result = await rx.ingest("my-prompt:1.0.0");
  * await result.execute();
+ *
+ * // Or resolve directly from locator
+ * const result2 = await rx.resolve("my-prompt:1.0.0");
+ * await result2.execute();
  *
  * // Push to registry
  * await rx.push("my-prompt:1.0.0");
@@ -33,7 +37,7 @@
 // Main API
 // ============================================
 export { createResourceX } from "./ResourceX.js";
-export type { ResourceX, ResourceXConfig, Resource, Executable } from "./ResourceX.js";
+export type { ResourceX, ResourceXConfig, Resource } from "./ResourceX.js";
 
 // ============================================
 // Provider API
@@ -45,7 +49,27 @@ export type { ResourceXProvider, ProviderConfig, ProviderStores } from "@resourc
 // Core Primitives
 // ============================================
 export { parse, format, manifest, archive, resource, extract, wrap } from "@resourcexjs/core";
-export type { RXL, RXM, RXA, RXR, RXD } from "@resourcexjs/core";
+export type { RXL, RXM, RXA, RXR, RXD, RXS } from "@resourcexjs/core";
+
+// ============================================
+// Source Loading & Detection
+// ============================================
+export type {
+  SourceLoader,
+  ResolveSourceConfig,
+  TypeDetector,
+  TypeDetectionResult,
+} from "@resourcexjs/core";
+export {
+  FolderSourceLoader,
+  GitHubSourceLoader,
+  SourceLoaderChain,
+  resolveSource,
+  TypeDetectorChain,
+  ResourceJsonDetector,
+  SkillDetector,
+  generateDefinition,
+} from "@resourcexjs/core";
 
 // ============================================
 // Errors

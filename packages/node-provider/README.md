@@ -28,7 +28,7 @@ const rx = createResourceX({
 
 // Now use ResourceX
 await rx.add("./my-prompt");
-const result = await rx.use("my-prompt:1.0.0");
+const result = await rx.resolve("my-prompt:1.0.0");
 ```
 
 ### With ResourceX Server

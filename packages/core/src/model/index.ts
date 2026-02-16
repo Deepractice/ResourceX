@@ -8,6 +8,7 @@ export type { RXL } from "./rxl.js";
 export type { RXM } from "./rxm.js";
 export type { RXA } from "./rxa.js";
 export type { RXR } from "./rxr.js";
+export type { RXS } from "./rxs.js";
 
 // Primitives
 export { define } from "./define.js";

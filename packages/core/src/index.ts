@@ -14,7 +14,7 @@ export {
 } from "~/errors.js";
 
 // Model (Types + Primitives)
-export type { RXD, RXL, RXM, RXA, RXR } from "~/model/index.js";
+export type { RXD, RXL, RXM, RXA, RXR, RXS } from "~/model/index.js";
 export {
   define,
   manifest,
@@ -50,8 +50,29 @@ export {
 } from "~/type/index.js";
 
 // Loader (merged from @resourcexjs/loader)
-export type { ResourceLoader, LoadResourceConfig } from "~/loader/index.js";
-export { FolderLoader, loadResource } from "~/loader/index.js";
+export type {
+  ResourceLoader,
+  SourceLoader,
+  LoadResourceConfig,
+  ResolveSourceConfig,
+} from "~/loader/index.js";
+export {
+  FolderLoader,
+  FolderSourceLoader,
+  GitHubSourceLoader,
+  SourceLoaderChain,
+  loadResource,
+  resolveSource,
+} from "~/loader/index.js";
+
+// Detector
+export type { TypeDetector, TypeDetectionResult } from "~/detector/index.js";
+export {
+  TypeDetectorChain,
+  ResourceJsonDetector,
+  SkillDetector,
+  generateDefinition,
+} from "~/detector/index.js";
 
 // Registry (merged from @resourcexjs/registry)
 export type {

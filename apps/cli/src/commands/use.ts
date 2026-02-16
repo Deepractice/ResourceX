@@ -1,28 +1,27 @@
 /**
- * rx use <locator> - Use and execute resource
+ * rx ingest <source> - Ingest and execute resource from any source
  */
 
 import { defineCommand } from "citty";
 import consola from "consola";
 import { getClient } from "../lib/client.js";
 
-export const use = defineCommand({
+export const ingest = defineCommand({
   meta: {
-    name: "use",
-    description: "Use and execute resource",
+    name: "ingest",
+    description: "Ingest and execute resource from any source (directory path or locator)",
   },
   args: {
-    locator: {
+    source: {
       type: "positional",
-      description: "Resource locator (e.g., hello.text@1.0.0)",
+      description: "Resource source (directory path or locator, e.g., ./my-skill or hello:1.0.0)",
       required: true,
     },
   },
   async run({ args }) {
     try {
       const rx = await getClient();
-      const executable = await rx.use(args.locator);
-      const result = await executable.execute();
+      const result = await rx.ingest(args.source);
 
       // Output the result
       if (typeof result === "string") {
@@ -33,7 +32,7 @@ export const use = defineCommand({
         console.log(JSON.stringify(result, null, 2));
       }
     } catch (error) {
-      consola.error(error instanceof Error ? error.message : "Failed to use resource");
+      consola.error(error instanceof Error ? error.message : "Failed to ingest resource");
       process.exit(1);
     }
   },

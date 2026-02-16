@@ -192,7 +192,8 @@ const rx = createResourceX({
 await rx.add("./my-prompt"); // Add from directory to local storage
 await rx.has("hello:1.0.0"); // Check if exists locally
 await rx.remove("hello:1.0.0"); // Remove from local
-const result = await rx.use("hello:1.0.0"); // Use & execute
+const result = await rx.resolve("hello:1.0.0"); // Resolve locator & execute
+const result2 = await rx.ingest("./my-skill"); // Ingest from any source & execute
 const results = await rx.search("hello"); // Search local resources
 
 // Remote operations
@@ -225,11 +226,11 @@ Docker-style locator format:
 
 ```typescript
 // Local: name:tag (no registry)
-await rx.use("hello:1.0.0");
+await rx.resolve("hello:1.0.0");
 
 // Remote: registry/[path/]name:tag (with registry)
-await rx.use("registry.example.com/hello:1.0.0");
-await rx.use("localhost:3098/org/hello:1.0.0");
+await rx.resolve("registry.example.com/hello:1.0.0");
+await rx.resolve("localhost:3098/org/hello:1.0.0");
 ```
 
 ### Storage Directory Structure
@@ -250,10 +251,10 @@ Content-addressable storage (CAS):
             └── 1.0.0.json
 ```
 
-### Use Flow
+### Resolve Flow
 
 ```
-rx.use("hello:1.0.0")
+rx.resolve("hello:1.0.0")
   ↓
 1. Parse locator (determine if local or remote)
 2. Check CASRegistry for resource
@@ -263,6 +264,18 @@ rx.use("hello:1.0.0")
 4. Get BundledType from TypeHandlerChain
 5. Execute resolver
 6. Return Executable { execute, schema }
+```
+
+### Ingest Flow
+
+```
+rx.ingest("./my-skill")        // directory path
+rx.ingest("hello:1.0.0")       // or RXL locator
+  ↓
+1. Check if input is a loadable source (SourceLoader.canLoad)
+2. If source: add(source) → CAS, then resolve(locator)
+3. If locator: resolve(locator) directly
+4. All paths go through CAS — no shortcut bypasses storage
 ```
 
 ### Type System

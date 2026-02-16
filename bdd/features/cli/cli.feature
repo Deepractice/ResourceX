@@ -30,7 +30,7 @@ Feature: ResourceX CLI
 
   Scenario: Use local resource
     Given a local resource "greeting:1.0.0" with content "Hello from CLI!"
-    When I run rx command "use greeting:1.0.0"
+    When I run rx command "ingest greeting:1.0.0"
     Then the command should succeed
     And the output should contain "Hello from CLI!"
 
@@ -82,7 +82,7 @@ Feature: ResourceX CLI
   Scenario: Use pulls from remote if not local (auto-pull)
     Given a remote resource "autopull:1.0.0" on the registry with content "Auto pulled"
     And the resource is not in local cache
-    When I run rx command "use autopull:1.0.0"
+    When I run rx command "ingest autopull:1.0.0"
     Then the command should succeed
     And the output should contain "Auto pulled"
 
@@ -108,10 +108,10 @@ Feature: ResourceX CLI
   Scenario: Add non-existent directory fails
     When I run rx command "add ./non-existent-dir"
     Then the command should fail
-    And the output should contain "Failed to read resource.json"
+    And the output should contain "Cannot load source"
 
   Scenario: Use non-existent resource fails
-    When I run rx command "use notfound:1.0.0"
+    When I run rx command "ingest notfound:1.0.0"
     Then the command should fail
     And the output should contain "not found"
 

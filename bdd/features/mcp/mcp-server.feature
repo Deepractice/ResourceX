@@ -33,8 +33,8 @@ Feature: MCP Server Tools
 
   Scenario: Use a resource
     Given an MCP local resource "resolvable-prompt:1.0.0" with content "Resolved content here"
-    When I call tool "use" with:
-      | locator | resolvable-prompt:1.0.0 |
+    When I call tool "ingest" with:
+      | source | resolvable-prompt:1.0.0 |
     Then the result should be "Resolved content here"
 
   Scenario: Get resource info
@@ -70,6 +70,6 @@ Feature: MCP Server Tools
   Scenario: Use auto-pulls from registry
     Given a registry server running on port 3099
     And an MCP remote resource "remote-prompt:1.0.0" on the registry with content "Remote content"
-    When I call tool "use" with:
-      | locator | localhost:3099/remote-prompt:1.0.0 |
+    When I call tool "ingest" with:
+      | source | localhost:3099/remote-prompt:1.0.0 |
     Then the result should be "Remote content"

@@ -23,7 +23,7 @@ Feature: Collaboration between authors
     Given a fresh local environment
     When I run "rx pull shared-prompt:1.0.0"
     Then the command should succeed
-    When I run "rx use shared-prompt:1.0.0"
+    When I run "rx ingest shared-prompt:1.0.0"
     Then the output should contain "A useful prompt to share"
 
   Scenario: Fork and modify someone's resource
@@ -91,7 +91,7 @@ Feature: Collaboration between authors
 
     # Fresh user can use without explicit pull
     Given a fresh local environment
-    When I run "rx use direct-access:1.0.0"
+    When I run "rx ingest direct-access:1.0.0"
     Then the command should succeed
     And the output should contain "Directly accessible content"
 
@@ -101,7 +101,7 @@ Feature: Collaboration between authors
   # e.g., push to localhost:3000 -> locator becomes localhost:3000/resource:1.0.0
   # This enables:
   # - rx pull localhost:3000/resource:1.0.0 (no --registry needed)
-  # - rx use localhost:3000/resource:1.0.0 (auto-fetches from registry)
+  # - rx ingest localhost:3000/resource:1.0.0 (auto-fetches from registry)
   # ============================================
 
   @pending @design-issue
@@ -129,6 +129,6 @@ Feature: Collaboration between authors
     Given a remote resource "autofetch:1.0.0" on the registry with content "Fetched content"
     And a fresh local environment
     # Should auto-fetch from registry based on locator prefix
-    When I run "rx use localhost:3099/autofetch:1.0.0"
+    When I run "rx ingest localhost:3099/autofetch:1.0.0"
     Then the command should succeed
     And the output should contain "Fetched content"

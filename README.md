@@ -134,8 +134,8 @@ const rx = createResourceX();
 // Add resource
 await rx.add("./my-prompt");
 
-// Use resource
-const result = await rx.use("my-prompt:1.0.0");
+// Resolve by locator
+const result = await rx.resolve("my-prompt:1.0.0");
 const content = await result.execute();
 console.log(content);
 

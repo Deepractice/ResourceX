@@ -50,10 +50,10 @@ Feature: Update published resource
 
     # Clear local and pull specific version
     Given a fresh local cache
-    When I run "rx use versioned:1.0.0"
+    When I run "rx ingest versioned:1.0.0"
     Then the output should contain "Old version"
 
-    When I run "rx use versioned:2.0.0"
+    When I run "rx ingest versioned:2.0.0"
     Then the output should contain "New version"
 
   Scenario: Patch version for bug fix
@@ -76,5 +76,5 @@ Feature: Update published resource
 
     # User should be able to get the fix
     Given a fresh local cache
-    When I run "rx use buggy:1.0.1"
+    When I run "rx ingest buggy:1.0.1"
     Then the output should contain "Bug fixed!"

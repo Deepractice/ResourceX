@@ -9,7 +9,7 @@
 
 /* global FormData, Blob */
 
-import type { RXR, ResourceXProvider, ProviderConfig } from "@resourcexjs/core";
+import type { RXR, ResourceXProvider, ProviderConfig, TypeDetector } from "@resourcexjs/core";
 import {
   parse,
   format,
@@ -18,6 +18,8 @@ import {
   CASRegistry,
   RegistryError,
   loadResource,
+  resolveSource,
+  SourceLoaderChain,
 } from "@resourcexjs/core";
 import type { BundledType, IsolatorType } from "@resourcexjs/core";
 import { getProvider, hasProvider } from "./provider.js";
@@ -71,6 +73,12 @@ export interface ResourceXConfig {
    * Isolator type for resolver execution.
    */
   isolator?: IsolatorType;
+
+  /**
+   * Custom type detectors for auto-detection.
+   * Built-in detectors (resource.json, SKILL.md) are always included.
+   */
+  detectors?: TypeDetector[];
 }
 
 /**
@@ -87,9 +95,9 @@ export interface Resource {
 }
 
 /**
- * Executable resource - result of use().
+ * Internal executable - lazy execution wrapper.
  */
-export interface Executable<T = unknown> {
+interface Executable<T = unknown> {
   execute: (args?: unknown) => Promise<T>;
   schema?: unknown;
 }
@@ -102,7 +110,8 @@ export interface ResourceX {
   has(locator: string): Promise<boolean>;
   info(locator: string): Promise<Resource>;
   remove(locator: string): Promise<void>;
-  use<T = unknown>(locator: string): Promise<Executable<T>>;
+  resolve<T = unknown>(locator: string, args?: unknown): Promise<T>;
+  ingest<T = unknown>(source: string, args?: unknown): Promise<T>;
   search(query?: string): Promise<string[]>;
   push(locator: string): Promise<void>;
   pull(locator: string): Promise<void>;
@@ -120,12 +129,15 @@ class DefaultResourceX implements ResourceX {
   private readonly cas: CASRegistry;
   private readonly provider: ResourceXProvider;
   private readonly providerConfig: ProviderConfig;
+  private readonly customDetectors: TypeDetector[];
+  private readonly loaderChain: SourceLoaderChain;
 
   constructor(config?: ResourceXConfig) {
     this.provider = getProvider();
     this.providerConfig = { path: config?.path };
     this.registryUrl = config?.registry;
     this.isolator = config?.isolator ?? "none";
+    this.customDetectors = config?.detectors ?? [];
 
     // Initialize type handler
     this.typeHandler = TypeHandlerChain.create();
@@ -133,6 +145,13 @@ class DefaultResourceX implements ResourceX {
       for (const type of config.types) {
         this.typeHandler.register(type);
       }
+    }
+
+    // Initialize loader chain
+    this.loaderChain = SourceLoaderChain.create();
+    const providerLoader = this.provider.createSourceLoader?.(this.providerConfig);
+    if (providerLoader) {
+      this.loaderChain.register(providerLoader);
     }
 
     // Initialize CAS stores via provider
@@ -156,9 +175,11 @@ class DefaultResourceX implements ResourceX {
   }
 
   async add(path: string): Promise<Resource> {
-    // Use provider's loader if available, otherwise use default
-    const loader = this.provider.createLoader?.(this.providerConfig);
-    const rxr = loader ? ((await loader.load(path)) as RXR) : await loadResource(path);
+    // Use resolveSource pipeline with auto-detection
+    const rxr = await resolveSource(path, {
+      loaderChain: this.loaderChain,
+      detectors: this.customDetectors,
+    });
 
     // Local resources should not have registry
     if (rxr.manifest.registry) {
@@ -208,7 +229,37 @@ class DefaultResourceX implements ResourceX {
     await this.cas.remove(rxl);
   }
 
-  async use<T = unknown>(locator: string): Promise<Executable<T>> {
+  async resolve<T = unknown>(locator: string, args?: unknown): Promise<T> {
+    const executable = await this.prepareExecutable<T>(locator);
+    return executable.execute(args);
+  }
+
+  async ingest<T = unknown>(source: string, args?: unknown): Promise<T> {
+    // Check if input is a loadable source (directory, URL, etc.)
+    const isSource = await this.canLoadSource(source);
+
+    if (isSource) {
+      // Source: add to CAS first, then resolve
+      const resource = await this.add(source);
+      return this.resolve<T>(resource.locator, args);
+    }
+
+    // RXL locator: resolve directly
+    return this.resolve<T>(source, args);
+  }
+
+  /**
+   * Check if input is a loadable source (directory, URL, etc.)
+   * by delegating to the loader chain.
+   */
+  private async canLoadSource(source: string): Promise<boolean> {
+    return this.loaderChain.canLoad(source);
+  }
+
+  /**
+   * Internal: prepare an executable from a locator (lazy resolution).
+   */
+  private async prepareExecutable<T = unknown>(locator: string): Promise<Executable<T>> {
     const rxl = parse(locator);
     let rxr: RXR;
 

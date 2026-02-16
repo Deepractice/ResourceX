@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { mkdir, writeFile, rm } from "node:fs/promises";
 import { createResourceX, setProvider } from "resourcexjs";
 import { NodeProvider } from "@resourcexjs/node-provider";
-import type { ResourceX, Resource, Executable } from "resourcexjs";
+import type { ResourceX, Resource } from "resourcexjs";
 
 // Register Node.js provider
 setProvider(new NodeProvider());
@@ -17,7 +17,7 @@ interface ResourceXWorld {
   tempResourceDir: string | null;
   devDir: string | null;
   info: Resource | null;
-  executable: Executable | null;
+  result: unknown;
   searchResults: string[] | null;
   error: Error | null;
 }
@@ -32,7 +32,7 @@ Before({ tags: "@resourcex" }, async function (this: ResourceXWorld) {
   this.tempResourceDir = null;
   this.devDir = null;
   this.info = null;
-  this.executable = null;
+  this.result = null;
   this.searchResults = null;
   this.error = null;
 });
@@ -198,7 +198,11 @@ When("I remove {string}", async function (this: ResourceXWorld, locator: string)
 });
 
 When("I use {string}", async function (this: ResourceXWorld, locator: string) {
-  this.executable = await this.rx.use(locator);
+  this.result = await this.rx.ingest(locator);
+});
+
+When("I resolve {string}", async function (this: ResourceXWorld, locator: string) {
+  this.result = await this.rx.resolve(locator);
 });
 
 When("I search for {string}", async function (this: ResourceXWorld, query: string) {
@@ -227,8 +231,7 @@ Then("has {string} should return false", async function (this: ResourceXWorld, l
 Then(
   "using {string} should return {string}",
   async function (this: ResourceXWorld, locator: string, expected: string) {
-    const executable = await this.rx.use(locator);
-    const result = await executable.execute();
+    const result = await this.rx.ingest(locator);
     assert.equal(result, expected);
   }
 );
@@ -246,16 +249,14 @@ Then("info version should be {string}", function (this: ResourceXWorld, expected
 });
 
 Then("execute should return {string}", async function (this: ResourceXWorld, expected: string) {
-  const result = await this.executable!.execute();
-  assert.equal(result, expected);
+  assert.equal(this.result, expected);
 });
 
 Then(
   "execute should return object with key {string}",
   async function (this: ResourceXWorld, key: string) {
-    const result = await this.executable!.execute();
-    assert.ok(typeof result === "object" && result !== null);
-    assert.ok(key in (result as Record<string, unknown>));
+    assert.ok(typeof this.result === "object" && this.result !== null);
+    assert.ok(key in (this.result as Record<string, unknown>));
   }
 );
 
