@@ -38,7 +38,8 @@ export class FileSystemRXAStore implements RXAStore {
     const readStream = createReadStream(path);
 
     await new Promise<void>((resolve, reject) => {
-      readStream.on("data", (chunk: Buffer) => {
+      readStream.on("data", (chunk: Buffer | string) => {
+        if (typeof chunk === "string") chunk = Buffer.from(chunk);
         chunks.push(chunk);
         hash.update(chunk);
       });
