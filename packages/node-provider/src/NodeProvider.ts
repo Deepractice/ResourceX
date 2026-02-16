@@ -7,9 +7,9 @@
 import { homedir } from "node:os";
 import { join } from "node:path";
 import type {
-  ResourceXProvider,
   ProviderConfig,
   ProviderStores,
+  ResourceXProvider,
   SourceLoader,
 } from "@resourcexjs/core";
 import { FolderLoader, FolderSourceLoader } from "@resourcexjs/core";

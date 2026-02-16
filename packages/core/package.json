@@ -32,7 +32,7 @@
   "scripts": {
     "build": "bun run build.ts",
     "test": "bun test",
-    "lint": "eslint .",
+    "lint": "biome lint .",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist"
   },

@@ -1,9 +1,9 @@
-import { Given, When, Before, After, BeforeAll, AfterAll } from "@cucumber/cucumber";
 import { strict as assert } from "node:assert";
-import { join } from "node:path";
-import { mkdir, rm, writeFile } from "node:fs/promises";
 import { spawn } from "node:child_process";
+import { mkdir, rm, writeFile } from "node:fs/promises";
 import type { Server } from "node:http";
+import { join } from "node:path";
+import { After, AfterAll, Before, BeforeAll, Given, When } from "@cucumber/cucumber";
 
 // Test directories
 const BDD_ROOT = process.cwd();
@@ -174,7 +174,7 @@ async function stopServer(): Promise<void> {
 // Hooks - specific to @consumer tag
 // ============================================
 
-BeforeAll({ tags: "@consumer" }, async function () {
+BeforeAll({ tags: "@consumer" }, async () => {
   // Create test directories
   await mkdir(TEST_BASE, { recursive: true });
   await mkdir(TEST_RX_HOME, { recursive: true });
@@ -185,7 +185,7 @@ BeforeAll({ tags: "@consumer" }, async function () {
   await new Promise((resolve) => setTimeout(resolve, 200));
 });
 
-AfterAll({ tags: "@consumer" }, async function () {
+AfterAll({ tags: "@consumer" }, async () => {
   // Stop server
   await stopServer();
 

@@ -5,9 +5,9 @@
  * Default: ./data (current directory)
  */
 
+import { join } from "node:path";
 import { defineCommand } from "citty";
 import consola from "consola";
-import { join } from "node:path";
 
 export const server = defineCommand({
   meta: {

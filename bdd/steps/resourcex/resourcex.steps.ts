@@ -1,10 +1,10 @@
-import { Given, When, Then, Before, After } from "@cucumber/cucumber";
 import { strict as assert } from "node:assert";
+import { mkdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { mkdir, writeFile, rm } from "node:fs/promises";
-import { createResourceX, setProvider } from "resourcexjs";
+import { After, Before, Given, Then, When } from "@cucumber/cucumber";
 import { NodeProvider } from "@resourcexjs/node-provider";
-import type { ResourceX, Resource } from "resourcexjs";
+import type { Resource, ResourceX } from "resourcexjs";
+import { createResourceX, setProvider } from "resourcexjs";
 
 // Register Node.js provider
 setProvider(new NodeProvider());
@@ -37,7 +37,7 @@ Before({ tags: "@resourcex" }, async function (this: ResourceXWorld) {
   this.error = null;
 });
 
-After({ tags: "@resourcex" }, async function () {
+After({ tags: "@resourcex" }, async () => {
   try {
     await rm(TEST_DIR, { recursive: true, force: true });
   } catch {

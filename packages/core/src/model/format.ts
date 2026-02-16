@@ -18,12 +18,12 @@ export function format(rxl: RXL): string {
 
   // Add registry if present
   if (rxl.registry) {
-    result += rxl.registry + "/";
+    result += `${rxl.registry}/`;
   }
 
   // Add path if present
   if (rxl.path) {
-    result += rxl.path + "/";
+    result += `${rxl.path}/`;
   }
 
   // Add name
@@ -31,7 +31,7 @@ export function format(rxl: RXL): string {
 
   // Add tag (omit if "latest" for cleaner output)
   if (rxl.tag && rxl.tag !== "latest") {
-    result += ":" + rxl.tag;
+    result += `:${rxl.tag}`;
   }
 
   return result;

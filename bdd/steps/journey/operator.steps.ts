@@ -1,8 +1,8 @@
-import { Given, When, Then, Before, After } from "@cucumber/cucumber";
 import { strict as assert } from "node:assert";
-import { join } from "node:path";
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import type { Server } from "node:http";
+import { join } from "node:path";
+import { After, Before, Given, Then, When } from "@cucumber/cucumber";
 
 const BDD_ROOT = process.cwd();
 const TEST_STORAGE = join(BDD_ROOT, ".test-registry");

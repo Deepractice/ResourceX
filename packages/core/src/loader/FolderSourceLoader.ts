@@ -1,8 +1,8 @@
+import { readdir, readFile, stat } from "node:fs/promises";
 import { join, relative } from "node:path";
-import { stat, readFile, readdir } from "node:fs/promises";
-import type { SourceLoader } from "./types.js";
-import type { RXS } from "~/model/index.js";
 import { ResourceXError } from "~/errors.js";
+import type { RXS } from "~/model/index.js";
+import type { SourceLoader } from "./types.js";
 
 /**
  * FolderSourceLoader - Loads raw files from a folder into RXS.

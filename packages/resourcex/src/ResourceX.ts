@@ -9,19 +9,24 @@
 
 /* global FormData, Blob */
 
-import type { RXR, ResourceXProvider, ProviderConfig, TypeDetector } from "@resourcexjs/core";
+import type {
+  BundledType,
+  IsolatorType,
+  ProviderConfig,
+  ResourceXProvider,
+  RXR,
+  TypeDetector,
+} from "@resourcexjs/core";
 import {
-  parse,
-  format,
-  extract,
-  TypeHandlerChain,
   CASRegistry,
+  extract,
+  format,
+  parse,
   RegistryError,
-  loadResource,
   resolveSource,
   SourceLoaderChain,
+  TypeHandlerChain,
 } from "@resourcexjs/core";
-import type { BundledType, IsolatorType } from "@resourcexjs/core";
 import { getProvider, hasProvider } from "./provider.js";
 
 /**
@@ -183,8 +188,9 @@ class DefaultResourceX implements ResourceX {
 
     // Local resources should not have registry
     if (rxr.manifest.registry) {
-      const { manifest: createManifest, resource: createResource } =
-        await import("@resourcexjs/core");
+      const { manifest: createManifest, resource: createResource } = await import(
+        "@resourcexjs/core"
+      );
       const newManifest = createManifest({
         registry: undefined,
         path: rxr.manifest.path,

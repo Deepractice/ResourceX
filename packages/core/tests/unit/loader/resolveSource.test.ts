@@ -1,9 +1,9 @@
-import { describe, test, expect, beforeEach, afterEach } from "bun:test";
+import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import { mkdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { mkdir, writeFile, rm } from "node:fs/promises";
+import type { TypeDetectionResult, TypeDetector } from "~/detector/types.js";
 import { resolveSource } from "~/loader/resolveSource.js";
 import { extract } from "~/model/index.js";
-import type { TypeDetector, TypeDetectionResult } from "~/detector/types.js";
 
 const TEST_DIR = join(import.meta.dir, ".test-resolve-source");
 
@@ -31,7 +31,7 @@ describe("resolveSource", () => {
     expect(rxr.manifest.tag).toBe("1.0.0");
 
     const files = await extract(rxr.archive);
-    expect(new TextDecoder().decode(files["content"])).toBe("Hello World!");
+    expect(new TextDecoder().decode(files.content)).toBe("Hello World!");
     // resource.json should be excluded from archive
     expect(files["resource.json"]).toBeUndefined();
   });
@@ -80,7 +80,7 @@ describe("resolveSource", () => {
 
     const promptDetector: TypeDetector = {
       name: "prompt",
-      detect(files, source): TypeDetectionResult | null {
+      detect(files, _source): TypeDetectionResult | null {
         if (files["prompt.txt"]) {
           return { type: "text", name: "auto-prompt" };
         }

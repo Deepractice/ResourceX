@@ -23,6 +23,6 @@
  * @packageDocumentation
  */
 
-export { NodeProvider } from "./NodeProvider.js";
 export { FileSystemRXAStore } from "./FileSystemRXAStore.js";
 export { FileSystemRXMStore } from "./FileSystemRXMStore.js";
+export { NodeProvider } from "./NodeProvider.js";

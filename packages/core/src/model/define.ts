@@ -1,6 +1,6 @@
-import type { RXD } from "./rxd.js";
-import { DefinitionError } from "~/errors.js";
 import { z } from "zod";
+import { DefinitionError } from "~/errors.js";
+import type { RXD } from "./rxd.js";
 
 const RXDSchema = z
   .object({

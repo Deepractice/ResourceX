@@ -36,11 +36,8 @@ jobs:
       - name: Install Dependencies
         run: bun install --frozen-lockfile
 
-      - name: Run ESLint
-        run: bun run lint
-
-      - name: Check Formatting
-        run: bun run format:check
+      - name: Run Biome Check
+        run: bun run check
 
   typecheck:
     name: Type Check

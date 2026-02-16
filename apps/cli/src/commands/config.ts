@@ -4,7 +4,7 @@
 
 import { defineCommand } from "citty";
 import consola from "consola";
-import { getConfig, setConfig, type Config } from "../lib/config.js";
+import { type Config, getConfig, setConfig } from "../lib/config.js";
 
 const set = defineCommand({
   meta: {

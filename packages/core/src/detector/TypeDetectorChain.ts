@@ -1,7 +1,7 @@
-import type { TypeDetector, TypeDetectionResult } from "./types.js";
+import { ResourceXError } from "~/errors.js";
 import { ResourceJsonDetector } from "./ResourceJsonDetector.js";
 import { SkillDetector } from "./SkillDetector.js";
-import { ResourceXError } from "~/errors.js";
+import type { TypeDetectionResult, TypeDetector } from "./types.js";
 
 /**
  * TypeDetectorChain - Chain of type detectors.

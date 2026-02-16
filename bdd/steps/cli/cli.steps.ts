@@ -1,9 +1,9 @@
-import { Given, When, Before, After, BeforeAll, AfterAll } from "@cucumber/cucumber";
 import { strict as assert } from "node:assert";
-import { join } from "node:path";
-import { mkdir, rm, writeFile } from "node:fs/promises";
 import { spawn } from "node:child_process";
+import { mkdir, rm, writeFile } from "node:fs/promises";
 import type { Server } from "node:http";
+import { join } from "node:path";
+import { After, AfterAll, Before, BeforeAll, Given, When } from "@cucumber/cucumber";
 
 // Test directories (use absolute path to avoid cwd issues)
 const MONOREPO_ROOT = join(process.cwd(), "..");
@@ -150,7 +150,7 @@ async function publishToServer(
   // Publish via curl using new Docker-style locator format: registry/name:tag
   // Use localhost:PORT to match the normalized registry format
   const locator = `localhost:${SERVER_PORT}/${name}:${version}`;
-  const result = await execAsync(
+  const _result = await execAsync(
     `curl -s -X POST ${SERVER_URL}/api/v1/publish ` +
       `-F "locator=${locator}" ` +
       `-F "manifest=@${manifestPath}" ` +
@@ -165,7 +165,7 @@ async function publishToServer(
 // Hooks
 // ============================================
 
-BeforeAll({ tags: "@cli" }, async function () {
+BeforeAll({ tags: "@cli" }, async () => {
   // Create test directories
   await mkdir(TEST_BASE, { recursive: true });
   await mkdir(TEST_RESOURCES, { recursive: true });
@@ -179,7 +179,7 @@ BeforeAll({ tags: "@cli" }, async function () {
   await new Promise((resolve) => setTimeout(resolve, 200));
 });
 
-AfterAll({ tags: "@cli" }, async function () {
+AfterAll({ tags: "@cli" }, async () => {
   // Stop server
   await stopServer();
 

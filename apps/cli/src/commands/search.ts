@@ -2,10 +2,10 @@
  * rx search <query> - Search remote registry
  */
 
+import { buildSearchUrl, type SearchResponse } from "@resourcexjs/server";
 import { defineCommand } from "citty";
 import consola from "consola";
 import { getConfig } from "../lib/config.js";
-import { buildSearchUrl, type SearchResponse } from "@resourcexjs/server";
 
 export const search = defineCommand({
   meta: {

@@ -12,23 +12,17 @@
  * - RXMStore: Manifest storage
  */
 
+export type { DiscoveryResult, WellKnownResponse } from "./discovery.js";
+// Discovery
+export { discoverRegistry } from "./discovery.js";
+// Errors
+export { RegistryError } from "./errors.js";
+// Middleware
+export { DomainValidation, RegistryMiddleware, withDomainValidation } from "./middleware/index.js";
 // Registry layer
 export type { Registry, SearchOptions } from "./registries/index.js";
 export { CASRegistry, LinkedRegistry } from "./registries/index.js";
-
 // Store SPI interfaces
-export type { RXAStore, RXMStore, StoredRXM, RXMSearchOptions } from "./store/index.js";
-export { computeDigest, isValidDigest } from "./store/index.js";
-
+export type { RXAStore, RXMSearchOptions, RXMStore, StoredRXM } from "./store/index.js";
 // Memory implementations (for testing)
-export { MemoryRXAStore, MemoryRXMStore } from "./store/index.js";
-
-// Discovery
-export { discoverRegistry } from "./discovery.js";
-export type { WellKnownResponse, DiscoveryResult } from "./discovery.js";
-
-// Errors
-export { RegistryError } from "./errors.js";
-
-// Middleware
-export { RegistryMiddleware, DomainValidation, withDomainValidation } from "./middleware/index.js";
+export { computeDigest, isValidDigest, MemoryRXAStore, MemoryRXMStore } from "./store/index.js";

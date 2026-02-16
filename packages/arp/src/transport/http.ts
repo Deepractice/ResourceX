@@ -7,7 +7,7 @@
  */
 
 import { TransportError } from "../errors.js";
-import type { TransportHandler, TransportResult, TransportParams } from "./types.js";
+import type { TransportHandler, TransportParams, TransportResult } from "./types.js";
 
 export class HttpTransportHandler implements TransportHandler {
   readonly name: string;

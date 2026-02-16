@@ -1,4 +1,4 @@
-import type { TypeDetector, TypeDetectionResult } from "./types.js";
+import type { TypeDetectionResult, TypeDetector } from "./types.js";
 
 /**
  * ResourceJsonDetector - Detects resources with an explicit resource.json.

@@ -63,14 +63,14 @@ bun run test:bdd
 # Run BDD tests with specific tags
 cd bdd && bun run test:tags "@resourcex"
 
-# Lint
-bun run lint
+# Lint + format check (Biome)
+bun run check
+
+# Auto-fix lint + format
+bun run check:fix
 
 # Type check
 bun run typecheck
-
-# Format code
-bun run format
 ```
 
 ## Architecture

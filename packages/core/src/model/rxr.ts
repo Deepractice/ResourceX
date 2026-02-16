@@ -1,6 +1,6 @@
+import type { RXA } from "./rxa.js";
 import type { RXL } from "./rxl.js";
 import type { RXM } from "./rxm.js";
-import type { RXA } from "./rxa.js";
 
 /**
  * RXR - ResourceX Resource

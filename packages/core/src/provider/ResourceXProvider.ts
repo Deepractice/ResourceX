@@ -9,9 +9,9 @@
  * - etc.
  */
 
+import type { SourceLoader } from "~/loader/types.js";
 import type { RXAStore } from "~/registry/store/RXAStore.js";
 import type { RXMStore } from "~/registry/store/RXMStore.js";
-import type { SourceLoader } from "~/loader/types.js";
 
 /**
  * Provider configuration passed to createStores/createLoader.

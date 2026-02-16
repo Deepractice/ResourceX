@@ -6,7 +6,7 @@
  * Subclasses can override specific methods to add behavior.
  */
 
-import type { RXR, RXL } from "~/model/index.js";
+import type { RXL, RXR } from "~/model/index.js";
 import type { Registry, SearchOptions } from "../registries/index.js";
 
 /**

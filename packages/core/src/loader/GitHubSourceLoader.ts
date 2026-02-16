@@ -1,6 +1,6 @@
-import type { SourceLoader } from "./types.js";
-import type { RXS } from "~/model/index.js";
 import { ResourceXError } from "~/errors.js";
+import type { RXS } from "~/model/index.js";
+import type { SourceLoader } from "./types.js";
 
 /**
  * Parse a GitHub URL into its components.
@@ -95,7 +95,7 @@ export class GitHubSourceLoader implements SourceLoader {
 
     for (const item of items) {
       // Relative path from the base directory
-      const relativePath = item.path.startsWith(basePath + "/")
+      const relativePath = item.path.startsWith(`${basePath}/`)
         ? item.path.slice(basePath.length + 1)
         : item.name;
 

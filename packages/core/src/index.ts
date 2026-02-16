@@ -4,106 +4,98 @@
  * ResourceX Core - Resource primitives, types, type system, loader, and registry
  */
 
+// Detector
+export type { TypeDetectionResult, TypeDetector } from "~/detector/index.js";
+export {
+  generateDefinition,
+  ResourceJsonDetector,
+  SkillDetector,
+  TypeDetectorChain,
+} from "~/detector/index.js";
 // Errors
 export {
-  ResourceXError,
-  LocatorError,
-  ManifestError,
   ContentError,
   DefinitionError,
+  LocatorError,
+  ManifestError,
+  ResourceXError,
 } from "~/errors.js";
-
-// Model (Types + Primitives)
-export type { RXD, RXL, RXM, RXA, RXR, RXS } from "~/model/index.js";
-export {
-  define,
-  manifest,
-  archive,
-  locate,
-  resource,
-  extract,
-  format,
-  parse,
-  wrap,
-} from "~/model/index.js";
-
-// Type System (merged from @resourcexjs/type)
-export type {
-  ResourceType,
-  ResourceResolver,
-  ResolvedResource,
-  ResolveContext,
-  JSONSchema,
-  JSONSchemaProperty,
-  BundledType,
-  IsolatorType,
-} from "~/type/index.js";
-
-export {
-  bundleResourceType,
-  ResourceTypeError,
-  TypeHandlerChain,
-  textType,
-  jsonType,
-  binaryType,
-  builtinTypes,
-} from "~/type/index.js";
-
 // Loader (merged from @resourcexjs/loader)
 export type {
-  ResourceLoader,
-  SourceLoader,
   LoadResourceConfig,
   ResolveSourceConfig,
+  ResourceLoader,
+  SourceLoader,
 } from "~/loader/index.js";
 export {
   FolderLoader,
   FolderSourceLoader,
   GitHubSourceLoader,
-  SourceLoaderChain,
   loadResource,
   resolveSource,
+  SourceLoaderChain,
 } from "~/loader/index.js";
-
-// Detector
-export type { TypeDetector, TypeDetectionResult } from "~/detector/index.js";
+// Model (Types + Primitives)
+export type { RXA, RXD, RXL, RXM, RXR, RXS } from "~/model/index.js";
 export {
-  TypeDetectorChain,
-  ResourceJsonDetector,
-  SkillDetector,
-  generateDefinition,
-} from "~/detector/index.js";
-
+  archive,
+  define,
+  extract,
+  format,
+  locate,
+  manifest,
+  parse,
+  resource,
+  wrap,
+} from "~/model/index.js";
+// Provider SPI
+export type { ProviderConfig, ProviderStores, ResourceXProvider } from "~/provider/index.js";
 // Registry (merged from @resourcexjs/registry)
 export type {
-  Registry,
-  SearchOptions,
-  WellKnownResponse,
   DiscoveryResult,
+  Registry,
   // Store SPI interfaces
   RXAStore,
-  RXMStore,
-  StoredRXM,
   RXMSearchOptions,
+  RXMStore,
+  SearchOptions,
+  StoredRXM,
+  WellKnownResponse,
 } from "~/registry/index.js";
-
 export {
   // CAS Registry (primary)
   CASRegistry,
-  LinkedRegistry,
   // Store utilities
   computeDigest,
+  DomainValidation,
+  // Discovery & middleware
+  discoverRegistry,
   isValidDigest,
+  LinkedRegistry,
   // Memory implementations (for testing)
   MemoryRXAStore,
   MemoryRXMStore,
-  // Discovery & middleware
-  discoverRegistry,
   RegistryError,
   RegistryMiddleware,
-  DomainValidation,
   withDomainValidation,
 } from "~/registry/index.js";
-
-// Provider SPI
-export type { ResourceXProvider, ProviderConfig, ProviderStores } from "~/provider/index.js";
+// Type System (merged from @resourcexjs/type)
+export type {
+  BundledType,
+  IsolatorType,
+  JSONSchema,
+  JSONSchemaProperty,
+  ResolveContext,
+  ResolvedResource,
+  ResourceResolver,
+  ResourceType,
+} from "~/type/index.js";
+export {
+  binaryType,
+  builtinTypes,
+  bundleResourceType,
+  jsonType,
+  ResourceTypeError,
+  TypeHandlerChain,
+  textType,
+} from "~/type/index.js";

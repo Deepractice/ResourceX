@@ -8,12 +8,12 @@
  * Uses RXM.registry field to distinguish local (undefined) from cached (has registry).
  */
 
-import type { RXL, RXR, RXM } from "~/model/index.js";
-import { format, resource, archive, extract } from "~/model/index.js";
-import type { Registry, SearchOptions } from "./Registry.js";
+import type { RXL, RXM, RXR } from "~/model/index.js";
+import { archive, extract, format, resource } from "~/model/index.js";
+import { RegistryError } from "../errors.js";
 import type { RXAStore } from "../store/RXAStore.js";
 import type { RXMStore, StoredRXM } from "../store/RXMStore.js";
-import { RegistryError } from "../errors.js";
+import type { Registry, SearchOptions } from "./Registry.js";
 
 export class CASRegistry implements Registry {
   constructor(

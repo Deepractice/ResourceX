@@ -5,10 +5,10 @@
  * Prevents untrusted registries from impersonating other registries.
  */
 
-import type { RXR, RXL } from "~/model/index.js";
+import type { RXL, RXR } from "~/model/index.js";
+import { RegistryError } from "../errors.js";
 import type { Registry } from "../registries/index.js";
 import { RegistryMiddleware } from "./RegistryMiddleware.js";
-import { RegistryError } from "../errors.js";
 
 /**
  * Registry validation middleware.

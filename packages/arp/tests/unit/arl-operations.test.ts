@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeEach, afterEach } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { createARP, fileTransport, textSemantic, binarySemantic } from "../../src/index.js";
+import { binarySemantic, createARP, fileTransport, textSemantic } from "../../src/index.js";
 
 const TEST_DIR = join(process.cwd(), ".test-arp-operations");
 

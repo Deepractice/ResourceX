@@ -5,17 +5,17 @@
 
 import { defineCommand, runMain } from "citty";
 import { add } from "./commands/add.js";
-import { list } from "./commands/list.js";
-import { info } from "./commands/info.js";
-import { remove } from "./commands/remove.js";
-import { push } from "./commands/push.js";
-import { pull } from "./commands/pull.js";
-import { search } from "./commands/search.js";
-import { ingest } from "./commands/use.js";
-import { config } from "./commands/config.js";
-import { registry } from "./commands/registry.js";
-import { server } from "./commands/server.js";
 import { cache } from "./commands/cache.js";
+import { config } from "./commands/config.js";
+import { info } from "./commands/info.js";
+import { list } from "./commands/list.js";
+import { pull } from "./commands/pull.js";
+import { push } from "./commands/push.js";
+import { registry } from "./commands/registry.js";
+import { remove } from "./commands/remove.js";
+import { search } from "./commands/search.js";
+import { server } from "./commands/server.js";
+import { ingest } from "./commands/use.js";
 
 const main = defineCommand({
   meta: {

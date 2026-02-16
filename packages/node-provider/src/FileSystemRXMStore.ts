@@ -5,9 +5,9 @@
  * Directory structure: {basePath}/{registry|_local}/{name}/{tag}.json
  */
 
-import { mkdir, readFile, writeFile, unlink, readdir, stat, rm } from "node:fs/promises";
+import { mkdir, readdir, readFile, rm, stat, unlink, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import type { RXMStore, StoredRXM, RXMSearchOptions } from "@resourcexjs/core";
+import type { RXMSearchOptions, RXMStore, StoredRXM } from "@resourcexjs/core";
 
 const LOCAL_DIR = "_local";
 const LATEST_FILE = ".latest";

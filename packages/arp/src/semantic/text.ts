@@ -5,7 +5,7 @@
 
 import { SemanticError } from "../errors.js";
 import type { TransportHandler } from "../transport/types.js";
-import type { Resource, SemanticHandler, SemanticContext, ResourceMeta } from "./types.js";
+import type { Resource, ResourceMeta, SemanticContext, SemanticHandler } from "./types.js";
 
 export interface TextResource extends Resource<string> {
   type: "text";

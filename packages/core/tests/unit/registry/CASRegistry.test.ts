@@ -1,12 +1,11 @@
-import { describe, it, expect, beforeEach } from "bun:test";
+import { beforeEach, describe, expect, it } from "bun:test";
 import {
+  archive,
   CASRegistry,
   MemoryRXAStore,
   MemoryRXMStore,
-  archive,
   manifest,
   resource,
-  format,
 } from "../../../src/index.js";
 
 describe("CASRegistry", () => {

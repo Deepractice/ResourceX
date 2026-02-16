@@ -1,4 +1,4 @@
-import { describe, test, expect } from "bun:test";
+import { describe, expect, test } from "bun:test";
 import { ResourceJsonDetector } from "~/detector/ResourceJsonDetector.js";
 
 const detector = new ResourceJsonDetector();

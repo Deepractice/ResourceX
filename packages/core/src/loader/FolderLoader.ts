@@ -1,9 +1,9 @@
+import { readdir, readFile, stat } from "node:fs/promises";
 import { join, relative } from "node:path";
-import { stat, readFile, readdir } from "node:fs/promises";
-import type { ResourceLoader } from "./types.js";
-import type { RXR } from "~/model/index.js";
-import { define, manifest, archive, resource } from "~/model/index.js";
 import { ResourceXError } from "~/errors.js";
+import type { RXR } from "~/model/index.js";
+import { archive, define, manifest, resource } from "~/model/index.js";
+import type { ResourceLoader } from "./types.js";
 
 /**
  * Default ResourceLoader implementation for loading resources from folders.

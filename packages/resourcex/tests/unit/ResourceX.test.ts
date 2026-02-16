@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeEach, afterEach } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import { mkdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { rm, mkdir, writeFile } from "node:fs/promises";
-import { createResourceX, RegistryError } from "../../src/index.js";
 import type { ResourceX } from "../../src/index.js";
+import { createResourceX, RegistryError } from "../../src/index.js";
 
 const TEST_DIR = join(process.cwd(), ".test-resourcex");
 const DEV_DIR = join(process.cwd(), ".test-dev-resource");

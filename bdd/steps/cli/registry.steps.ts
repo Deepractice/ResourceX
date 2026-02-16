@@ -6,10 +6,10 @@
  * which causes CLI to fall through to config.json registries.
  */
 
-import { Given, Before } from "@cucumber/cucumber";
-import { join } from "node:path";
-import { rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { join } from "node:path";
+import { Before, Given } from "@cucumber/cucumber";
 
 const MONOREPO_ROOT = join(process.cwd(), "..");
 const TEST_BASE = join(MONOREPO_ROOT, ".test-bdd-cli");

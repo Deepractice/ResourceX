@@ -1,5 +1,5 @@
-import type { RXM } from "./rxm.js";
 import type { RXL } from "./rxl.js";
+import type { RXM } from "./rxm.js";
 
 /**
  * Create RXL from RXM.

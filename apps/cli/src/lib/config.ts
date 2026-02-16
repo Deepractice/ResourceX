@@ -5,7 +5,7 @@
  * Backward compatible with old single "registry" field.
  */
 
-import { RX_HOME, PATHS } from "./paths.js";
+import { PATHS, RX_HOME } from "./paths.js";
 
 export interface RegistryEntry {
   name: string;

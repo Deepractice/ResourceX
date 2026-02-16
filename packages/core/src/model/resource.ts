@@ -1,7 +1,7 @@
-import type { RXM } from "./rxm.js";
-import type { RXA } from "./rxa.js";
-import type { RXR } from "./rxr.js";
 import { locate } from "./locate.js";
+import type { RXA } from "./rxa.js";
+import type { RXM } from "./rxm.js";
+import type { RXR } from "./rxr.js";
 
 /**
  * Create RXR from RXM and RXA.

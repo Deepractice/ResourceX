@@ -19,45 +19,41 @@
  * @packageDocumentation
  */
 
-// Protocol
-export {
-  API_VERSION,
-  API_PREFIX,
-  ENDPOINTS,
-  CONTENT_TYPES,
-  PUBLISH_FIELDS,
-  ERROR_CODES,
-  ERROR_STATUS,
-  buildResourceUrl,
-  buildContentUrl,
-  buildPublishUrl,
-  buildSearchUrl,
-  type ManifestData,
-  type SearchQuery,
-  type PublishResponse,
-  type GetResourceResponse,
-  type SearchResultItem,
-  type SearchResponse,
-  type ErrorResponse,
-  type ErrorCode,
-} from "./protocol.js";
-
-// Handlers
-export {
-  handlePublish,
-  handleGetResource,
-  handleHeadResource,
-  handleDeleteResource,
-  handleGetContent,
-  handleSearch,
-} from "./handlers.js";
-
-// Hono Server
-export { createRegistryServer, type RegistryServerConfig } from "./hono.js";
-
+export type { Registry, RXAStore, RXMStore } from "@resourcexjs/core";
 // Re-export core types for convenience
 export { CASRegistry } from "@resourcexjs/core";
-export type { RXAStore, RXMStore, Registry } from "@resourcexjs/core";
-
 // Re-export node-provider stores for convenience
 export { FileSystemRXAStore, FileSystemRXMStore } from "@resourcexjs/node-provider";
+// Handlers
+export {
+  handleDeleteResource,
+  handleGetContent,
+  handleGetResource,
+  handleHeadResource,
+  handlePublish,
+  handleSearch,
+} from "./handlers.js";
+// Hono Server
+export { createRegistryServer, type RegistryServerConfig } from "./hono.js";
+// Protocol
+export {
+  API_PREFIX,
+  API_VERSION,
+  buildContentUrl,
+  buildPublishUrl,
+  buildResourceUrl,
+  buildSearchUrl,
+  CONTENT_TYPES,
+  ENDPOINTS,
+  ERROR_CODES,
+  ERROR_STATUS,
+  type ErrorCode,
+  type ErrorResponse,
+  type GetResourceResponse,
+  type ManifestData,
+  PUBLISH_FIELDS,
+  type PublishResponse,
+  type SearchQuery,
+  type SearchResponse,
+  type SearchResultItem,
+} from "./protocol.js";

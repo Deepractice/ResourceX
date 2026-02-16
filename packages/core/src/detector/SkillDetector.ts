@@ -1,5 +1,5 @@
 import { basename } from "node:path";
-import type { TypeDetector, TypeDetectionResult } from "./types.js";
+import type { TypeDetectionResult, TypeDetector } from "./types.js";
 
 /**
  * SkillDetector - Detects Agent Skill resources from SKILL.md.

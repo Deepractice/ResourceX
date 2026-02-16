@@ -1,5 +1,5 @@
-import { build } from "bun";
 import { readFileSync } from "node:fs";
+import { build } from "bun";
 
 const pkg = JSON.parse(readFileSync("./package.json", "utf-8"));
 console.log(`Building ${pkg.name} v${pkg.version}\n`);

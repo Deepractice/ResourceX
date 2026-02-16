@@ -4,16 +4,16 @@
  * Ready-to-use Hono app implementing the ResourceX Registry Protocol.
  */
 
-import { Hono } from "hono";
-import { cors } from "hono/cors";
 import type { RXAStore, RXMStore } from "@resourcexjs/core";
 import { CASRegistry } from "@resourcexjs/core";
+import { Hono } from "hono";
+import { cors } from "hono/cors";
 import {
-  handlePublish,
-  handleGetResource,
-  handleHeadResource,
   handleDeleteResource,
   handleGetContent,
+  handleGetResource,
+  handleHeadResource,
+  handlePublish,
   handleSearch,
 } from "./handlers.js";
 import { ENDPOINTS } from "./protocol.js";

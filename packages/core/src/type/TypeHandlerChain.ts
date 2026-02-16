@@ -1,6 +1,6 @@
-import type { BundledType } from "./types.js";
-import { ResourceTypeError } from "./errors.js";
 import { builtinTypes } from "./builtinTypes.js";
+import { ResourceTypeError } from "./errors.js";
+import type { BundledType } from "./types.js";
 
 /**
  * TypeHandlerChain - Manages resource type registration.

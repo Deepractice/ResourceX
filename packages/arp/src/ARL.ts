@@ -2,10 +2,10 @@
  * ARL - Agent Resource Locator Implementation
  */
 
-import type { ARL as IARL } from "./types.js";
-import type { Resource, SemanticContext, SemanticHandler } from "./semantic/types.js";
-import type { TransportHandler, TransportParams, ListOptions } from "./transport/types.js";
 import { SemanticError, TransportError } from "./errors.js";
+import type { Resource, SemanticContext, SemanticHandler } from "./semantic/types.js";
+import type { ListOptions, TransportHandler, TransportParams } from "./transport/types.js";
+import type { ARL as IARL } from "./types.js";
 
 /**
  * Handler resolver interface (implemented by ARP instance)

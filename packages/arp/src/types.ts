@@ -6,7 +6,7 @@
  */
 
 import type { Resource } from "./semantic/types.js";
-import type { TransportParams, ListOptions } from "./transport/types.js";
+import type { ListOptions, TransportParams } from "./transport/types.js";
 
 /**
  * ARI - Agent Resource Identifier

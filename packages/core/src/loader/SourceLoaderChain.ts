@@ -1,8 +1,8 @@
-import type { SourceLoader } from "./types.js";
+import { ResourceXError } from "~/errors.js";
 import type { RXS } from "~/model/index.js";
 import { FolderSourceLoader } from "./FolderSourceLoader.js";
 import { GitHubSourceLoader } from "./GitHubSourceLoader.js";
-import { ResourceXError } from "~/errors.js";
+import type { SourceLoader } from "./types.js";
 
 /**
  * SourceLoaderChain - Chain of source loaders.

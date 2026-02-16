@@ -1,10 +1,10 @@
+import { lstat, mkdir, readdir, readlink, rm, symlink } from "node:fs/promises";
 import { join, resolve as resolvePath } from "node:path";
-import { symlink, lstat, readlink, rm, mkdir, readdir } from "node:fs/promises";
+import { loadResource } from "~/loader/index.js";
 import type { RXL, RXR } from "~/model/index.js";
 import { format, parse } from "~/model/index.js";
-import { loadResource } from "~/loader/index.js";
-import type { Registry, SearchOptions } from "./Registry.js";
 import { RegistryError } from "../errors.js";
+import type { Registry, SearchOptions } from "./Registry.js";
 
 /**
  * LinkedRegistry - Registry for development symlinks.

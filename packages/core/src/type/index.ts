@@ -2,17 +2,8 @@
  * @resourcexjs/core - Type System
  */
 
-// Types
-export type {
-  ResourceType,
-  ResourceResolver,
-  ResolvedResource,
-  ResolveContext,
-  JSONSchema,
-  JSONSchemaProperty,
-  BundledType,
-  IsolatorType,
-} from "./types.js";
+// Builtin types
+export { binaryType, builtinTypes, jsonType, skillType, textType } from "./builtinTypes.js";
 
 // Bundler
 export { bundleResourceType } from "./bundler.js";
@@ -22,6 +13,14 @@ export { ResourceTypeError } from "./errors.js";
 
 // Type handler chain
 export { TypeHandlerChain } from "./TypeHandlerChain.js";
-
-// Builtin types
-export { textType, jsonType, binaryType, skillType, builtinTypes } from "./builtinTypes.js";
+// Types
+export type {
+  BundledType,
+  IsolatorType,
+  JSONSchema,
+  JSONSchemaProperty,
+  ResolveContext,
+  ResolvedResource,
+  ResourceResolver,
+  ResourceType,
+} from "./types.js";

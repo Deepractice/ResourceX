@@ -1,14 +1,15 @@
-import { Given, When, Then, Before, After, World } from "@cucumber/cucumber";
+import { join } from "node:path";
+import { After, Before, Given, Then, When, type World } from "@cucumber/cucumber";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
-import { createResourceX, setProvider } from "resourcexjs";
 import { NodeProvider } from "@resourcexjs/node-provider";
-import { join } from "node:path";
+import { createResourceX, setProvider } from "resourcexjs";
 
 // Register Node.js provider
 setProvider(new NodeProvider());
-import { mkdir, writeFile, rm } from "node:fs/promises";
-import { spawn, type ChildProcess } from "node:child_process";
+
+import { type ChildProcess, spawn } from "node:child_process";
+import { mkdir, rm, writeFile } from "node:fs/promises";
 
 const PROJECT_ROOT = join(import.meta.dirname, "../../..");
 const MCP_SERVER_PATH = join(PROJECT_ROOT, "apps/mcp-server/src/index.ts");

@@ -1,6 +1,6 @@
-import type { RXL } from "./rxl.js";
-import { LocatorError } from "~/errors.js";
 import { normalize } from "node:path";
+import { LocatorError } from "~/errors.js";
+import type { RXL } from "./rxl.js";
 
 const MAX_LOCATOR_LENGTH = 256;
 const DANGEROUS_PATTERNS = /[;|&$`\n\0\r]/;

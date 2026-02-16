@@ -3,8 +3,8 @@
  */
 
 export type {
-  ResourceXProvider,
   ProviderConfig,
   ProviderStores,
   ResourceLoader,
+  ResourceXProvider,
 } from "./ResourceXProvider.js";

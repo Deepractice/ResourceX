@@ -2,8 +2,8 @@
  * ResourceX client wrapper for CLI
  */
 
-import { createResourceX, setProvider } from "resourcexjs";
 import { NodeProvider } from "@resourcexjs/node-provider";
+import { createResourceX, setProvider } from "resourcexjs";
 import { getConfig } from "./config.js";
 
 // Register Node.js provider

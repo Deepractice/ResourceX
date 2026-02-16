@@ -1,6 +1,6 @@
-import { describe, test, expect } from "bun:test";
+import { describe, expect, test } from "bun:test";
 import { TypeDetectorChain } from "~/detector/TypeDetectorChain.js";
-import type { TypeDetector, TypeDetectionResult } from "~/detector/types.js";
+import type { TypeDetectionResult, TypeDetector } from "~/detector/types.js";
 
 describe("TypeDetectorChain", () => {
   test("create() returns chain with built-in detectors", () => {
@@ -49,7 +49,7 @@ describe("TypeDetectorChain", () => {
 
     const customDetector: TypeDetector = {
       name: "custom",
-      detect(files, source): TypeDetectionResult | null {
+      detect(files, _source): TypeDetectionResult | null {
         if (files["custom.yaml"]) {
           return { type: "custom", name: "detected" };
         }

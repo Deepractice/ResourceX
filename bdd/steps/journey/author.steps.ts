@@ -1,8 +1,8 @@
-import { Given, When, Before, After } from "@cucumber/cucumber";
-import { join } from "node:path";
-import { mkdir, rm, writeFile } from "node:fs/promises";
 import { spawn } from "node:child_process";
+import { mkdir, rm, writeFile } from "node:fs/promises";
 import type { Server } from "node:http";
+import { join } from "node:path";
+import { After, Before, Given, When } from "@cucumber/cucumber";
 
 // Use fixtures directory for resources
 const BDD_ROOT = process.cwd();

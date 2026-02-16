@@ -4,7 +4,7 @@
 
 import { defineCommand } from "citty";
 import consola from "consola";
-import { addRegistry, removeRegistry, setDefaultRegistry, getRegistries } from "../lib/config.js";
+import { addRegistry, getRegistries, removeRegistry, setDefaultRegistry } from "../lib/config.js";
 
 const add = defineCommand({
   meta: {

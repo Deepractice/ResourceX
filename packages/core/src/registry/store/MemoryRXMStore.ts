@@ -4,7 +4,7 @@
  * For testing and development only.
  */
 
-import type { RXMStore, StoredRXM, RXMSearchOptions } from "./RXMStore.js";
+import type { RXMSearchOptions, RXMStore, StoredRXM } from "./RXMStore.js";
 
 export class MemoryRXMStore implements RXMStore {
   private readonly manifests = new Map<string, StoredRXM>();

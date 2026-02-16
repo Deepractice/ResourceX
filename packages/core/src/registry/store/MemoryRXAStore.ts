@@ -4,9 +4,9 @@
  * For testing and development only.
  */
 
-import type { RXAStore } from "./RXAStore.js";
-import { computeDigest } from "./digest.js";
 import { RegistryError } from "../errors.js";
+import { computeDigest } from "./digest.js";
+import type { RXAStore } from "./RXAStore.js";
 
 export class MemoryRXAStore implements RXAStore {
   private readonly blobs = new Map<string, Buffer>();

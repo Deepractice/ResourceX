@@ -1,11 +1,10 @@
-import type { SourceLoader } from "./types.js";
-import type { RXR } from "~/model/index.js";
-import { manifest, archive, resource } from "~/model/index.js";
-import { SourceLoaderChain } from "./SourceLoaderChain.js";
-import { TypeDetectorChain } from "~/detector/index.js";
-import { generateDefinition } from "~/detector/index.js";
 import type { TypeDetector } from "~/detector/index.js";
+import { generateDefinition, TypeDetectorChain } from "~/detector/index.js";
 import { ResourceXError } from "~/errors.js";
+import type { RXR } from "~/model/index.js";
+import { archive, manifest, resource } from "~/model/index.js";
+import { SourceLoaderChain } from "./SourceLoaderChain.js";
+import type { SourceLoader } from "./types.js";
 
 /**
  * Configuration for resolveSource.

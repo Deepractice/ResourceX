@@ -1,5 +1,5 @@
-import { gunzip } from "node:zlib";
 import { promisify } from "node:util";
+import { gunzip } from "node:zlib";
 import { unpackTar } from "modern-tar";
 import type { RXA } from "./rxa.js";
 

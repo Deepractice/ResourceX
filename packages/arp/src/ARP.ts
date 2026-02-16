@@ -4,11 +4,11 @@
  */
 
 import { ARL, type HandlerResolver } from "./ARL.js";
-import { ParseError, TransportError, SemanticError } from "./errors.js";
-import type { TransportHandler } from "./transport/types.js";
+import { ParseError, SemanticError, TransportError } from "./errors.js";
+import { binarySemantic, textSemantic } from "./semantic/index.js";
 import type { SemanticHandler } from "./semantic/types.js";
-import { fileTransport, httpTransport, httpsTransport } from "./transport/index.js";
-import { textSemantic, binarySemantic } from "./semantic/index.js";
+import { fileTransport, httpsTransport, httpTransport } from "./transport/index.js";
+import type { TransportHandler } from "./transport/types.js";
 
 /**
  * ARP Configuration

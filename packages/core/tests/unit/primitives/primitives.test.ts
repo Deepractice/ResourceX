@@ -1,6 +1,6 @@
-import { describe, it, expect } from "bun:test";
-import { define, manifest, archive, locate, resource, extract } from "../../../src/model/index.js";
-import type { RXD, RXM, RXL, RXA, RXR } from "../../../src/model/index.js";
+import { describe, expect, it } from "bun:test";
+import type { RXD } from "../../../src/model/index.js";
+import { archive, define, extract, locate, manifest, resource } from "../../../src/model/index.js";
 
 describe("primitives", () => {
   // Sample RXD for tests

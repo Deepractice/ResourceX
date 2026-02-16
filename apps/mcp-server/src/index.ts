@@ -1,22 +1,24 @@
 #!/usr/bin/env node
+
 /**
  * ResourceX MCP Server
  *
  * Provides AI agents with tools to discover, use, and publish AI resources.
  */
 
-import { FastMCP } from "fastmcp";
-import { createResourceX, setProvider } from "resourcexjs";
-import { NodeProvider } from "@resourcexjs/node-provider";
-import { roleType } from "rolexjs";
+import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { readFileSync, existsSync } from "node:fs";
+import { NodeProvider } from "@resourcexjs/node-provider";
+import { FastMCP } from "fastmcp";
+import { createResourceX, setProvider } from "resourcexjs";
+import { roleType } from "rolexjs";
 
 // Register Node.js provider
 setProvider(new NodeProvider());
+
 import { instructions } from "./instructions.js";
-import { searchTool, ingestTool, infoTool, listTool, addTool, pushTool } from "./tools/index.js";
+import { addTool, infoTool, ingestTool, listTool, pushTool, searchTool } from "./tools/index.js";
 
 // ============================================
 // Configuration: env var > shared config file

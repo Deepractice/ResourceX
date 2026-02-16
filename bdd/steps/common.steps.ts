@@ -1,8 +1,9 @@
 /**
  * Common step definitions shared across all tests
  */
-import { Then } from "@cucumber/cucumber";
+
 import { strict as assert } from "node:assert";
+import { Then } from "@cucumber/cucumber";
 
 interface CommonWorld {
   commandOutput: string;

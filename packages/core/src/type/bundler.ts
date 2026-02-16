@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises";
-import { resolve, isAbsolute } from "node:path";
+import { isAbsolute, resolve } from "node:path";
 import type { BundledType, JSONSchema } from "./types.js";
 
 /**

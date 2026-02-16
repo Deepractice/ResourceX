@@ -34,53 +34,63 @@
  */
 
 // ============================================
-// Main API
-// ============================================
-export { createResourceX } from "./ResourceX.js";
-export type { ResourceX, ResourceXConfig, Resource } from "./ResourceX.js";
-
-// ============================================
-// Provider API
-// ============================================
-export { setProvider, getProvider, hasProvider, clearProvider } from "./provider.js";
-export type { ResourceXProvider, ProviderConfig, ProviderStores } from "@resourcexjs/core";
-
-// ============================================
-// Core Primitives
-// ============================================
-export { parse, format, manifest, archive, resource, extract, wrap } from "@resourcexjs/core";
-export type { RXL, RXM, RXA, RXR, RXD, RXS } from "@resourcexjs/core";
-
-// ============================================
 // Source Loading & Detection
 // ============================================
-export type {
-  SourceLoader,
-  ResolveSourceConfig,
-  TypeDetector,
-  TypeDetectionResult,
-} from "@resourcexjs/core";
-export {
-  FolderSourceLoader,
-  GitHubSourceLoader,
-  SourceLoaderChain,
-  resolveSource,
-  TypeDetectorChain,
-  ResourceJsonDetector,
-  SkillDetector,
-  generateDefinition,
-} from "@resourcexjs/core";
-
-// ============================================
-// Errors
-// ============================================
-export { RegistryError, ResourceTypeError } from "@resourcexjs/core";
-
 // ============================================
 // Extension - Custom Types
 // ============================================
-export type { BundledType, IsolatorType } from "@resourcexjs/core";
-export { bundleResourceType } from "@resourcexjs/core";
+export type {
+  BundledType,
+  IsolatorType,
+  ProviderConfig,
+  ProviderStores,
+  ResolveSourceConfig,
+  ResourceXProvider,
+  RXA,
+  RXD,
+  RXL,
+  RXM,
+  RXR,
+  RXS,
+  SourceLoader,
+  TypeDetectionResult,
+  TypeDetector,
+} from "@resourcexjs/core";
+// ============================================
+// Core Primitives
+// ============================================
+// ============================================
+// Errors
+// ============================================
+export {
+  archive,
+  bundleResourceType,
+  extract,
+  FolderSourceLoader,
+  format,
+  GitHubSourceLoader,
+  generateDefinition,
+  manifest,
+  parse,
+  RegistryError,
+  ResourceJsonDetector,
+  ResourceTypeError,
+  resolveSource,
+  resource,
+  SkillDetector,
+  SourceLoaderChain,
+  TypeDetectorChain,
+  wrap,
+} from "@resourcexjs/core";
+// ============================================
+// Provider API
+// ============================================
+export { clearProvider, getProvider, hasProvider, setProvider } from "./provider.js";
+export type { Resource, ResourceX, ResourceXConfig } from "./ResourceX.js";
+// ============================================
+// Main API
+// ============================================
+export { createResourceX } from "./ResourceX.js";
 
 // ============================================
 // Version
