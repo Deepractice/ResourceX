@@ -1,6 +1,6 @@
 {
   "name": "@resourcexjs/node-provider",
-  "version": "2.8.0",
+  "version": "2.9.0",
   "description": "ResourceX Node.js/Bun Provider - FileSystem stores implementation",
   "type": "module",
   "main": "./dist/index.js",
