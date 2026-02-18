@@ -1,5 +1,12 @@
 # @resourcexjs/node-provider
 
+## 2.9.0
+
+### Patch Changes
+
+- Updated dependencies [8884adf]
+  - @resourcexjs/core@2.9.0
+
 ## 2.8.0
 
 ### Minor Changes
