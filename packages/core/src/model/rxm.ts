@@ -26,6 +26,7 @@ export interface RXMDefinition {
  * RXM Archive — packaging metadata.
  * Placeholder for future fields (digest, size, md5, etc.)
  */
+// biome-ignore lint/complexity/noBannedTypes: intentional empty placeholder for future fields (digest, size, md5)
 export type RXMArchive = {};
 
 /**
