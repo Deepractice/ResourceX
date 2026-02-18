@@ -22,24 +22,26 @@ describe("primitives", () => {
     it("creates RXM from RXD with all fields", () => {
       const rxm = manifest(sampleRXD);
 
-      expect(rxm.registry).toBe("deepractice.ai");
-      expect(rxm.path).toBe("assistants");
-      expect(rxm.name).toBe("my-prompt");
-      expect(rxm.type).toBe("prompt");
-      expect(rxm.tag).toBe("1.0.0");
+      expect(rxm.definition.registry).toBe("deepractice.ai");
+      expect(rxm.definition.path).toBe("assistants");
+      expect(rxm.definition.name).toBe("my-prompt");
+      expect(rxm.definition.type).toBe("prompt");
+      expect(rxm.definition.tag).toBe("1.0.0");
+      expect(rxm.archive).toEqual({});
+      expect(rxm.source).toEqual({});
     });
 
     it("creates RXM from minimal RXD", () => {
       const rxm = manifest(minimalRXD);
 
-      expect(rxm.registry).toBeUndefined();
-      expect(rxm.path).toBeUndefined();
-      expect(rxm.name).toBe("simple");
-      expect(rxm.type).toBe("text");
-      expect(rxm.tag).toBe("0.1.0");
+      expect(rxm.definition.registry).toBeUndefined();
+      expect(rxm.definition.path).toBeUndefined();
+      expect(rxm.definition.name).toBe("simple");
+      expect(rxm.definition.type).toBe("text");
+      expect(rxm.definition.tag).toBe("0.1.0");
     });
 
-    it("ignores extended fields from RXD", () => {
+    it("includes extended fields from RXD in definition", () => {
       const rxd = define({
         name: "tool",
         type: "tool",
@@ -49,10 +51,9 @@ describe("primitives", () => {
       });
       const rxm = manifest(rxd);
 
-      expect(rxm.name).toBe("tool");
-      // RXM should not have description or author
-      expect((rxm as Record<string, unknown>).description).toBeUndefined();
-      expect((rxm as Record<string, unknown>).author).toBeUndefined();
+      expect(rxm.definition.name).toBe("tool");
+      expect(rxm.definition.description).toBe("A tool");
+      expect(rxm.definition.author).toBe("sean");
     });
   });
 
@@ -132,14 +133,14 @@ describe("primitives", () => {
       expect(rxr.locator.name).toBe("my-prompt");
     });
 
-    it("RXR locator matches manifest", async () => {
+    it("RXR locator matches manifest definition", async () => {
       const rxm = manifest(sampleRXD);
       const rxa = await archive({ content: Buffer.from("Hello") });
       const rxr = resource(rxm, rxa);
 
-      expect(rxr.locator.registry).toBe(rxr.manifest.registry);
-      expect(rxr.locator.name).toBe(rxr.manifest.name);
-      expect(rxr.locator.tag).toBe(rxr.manifest.tag);
+      expect(rxr.locator.registry).toBe(rxr.manifest.definition.registry);
+      expect(rxr.locator.name).toBe(rxr.manifest.definition.name);
+      expect(rxr.locator.tag).toBe(rxr.manifest.definition.tag);
     });
   });
 

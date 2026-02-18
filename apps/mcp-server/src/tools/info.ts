@@ -6,11 +6,9 @@ export const infoTool = {
   description: `Get detailed information about a resource.
 
 Returns metadata including:
-- name: Resource name
-- type: Resource type (text, json, binary, etc.)
-- tag: Version tag
-- registry: Source registry (if from remote)
-- files: List of files in the resource archive
+- definition: name, type, tag, description, author, registry
+- source: file tree with sizes, content preview
+- archive: packaging metadata
 
 Use this to inspect a resource before using it.`,
 
@@ -27,25 +25,58 @@ Use this to inspect a resource before using it.`,
     (rx: ResourceX) =>
     async ({ locator }: { locator: string }) => {
       const resource = await rx.info(locator);
+      const { definition, source } = resource;
 
       const lines = [
-        `Name:     ${resource.name}`,
-        `Type:     ${resource.type}`,
-        `Tag:      ${resource.tag}`,
+        `Name:     ${definition.name}`,
+        `Type:     ${definition.type}`,
+        `Tag:      ${definition.tag}`,
       ];
 
-      if (resource.registry) {
-        lines.push(`Registry: ${resource.registry}`);
+      if (definition.registry) {
+        lines.push(`Registry: ${definition.registry}`);
       }
 
-      if (resource.path) {
-        lines.push(`Path:     ${resource.path}`);
+      if (definition.path) {
+        lines.push(`Path:     ${definition.path}`);
       }
 
-      if (resource.files && resource.files.length > 0) {
-        lines.push(`Files:    ${resource.files.join(", ")}`);
+      if (definition.description) {
+        lines.push(`Desc:     ${definition.description}`);
+      }
+
+      if (definition.author) {
+        lines.push(`Author:   ${definition.author}`);
+      }
+
+      if (source.files) {
+        const fileNames = collectFileNames(source.files);
+        if (fileNames.length > 0) {
+          lines.push(`Files:    ${fileNames.join(", ")}`);
+        }
+      }
+
+      if (source.preview) {
+        lines.push("");
+        lines.push(`Preview:`);
+        lines.push(source.preview.split("\n").slice(0, 5).join("\n"));
       }
 
       return lines.join("\n");
     },
 };
+
+/**
+ * Collect flat file names from a FileTree for display.
+ */
+function collectFileNames(tree: Record<string, unknown>, prefix = ""): string[] {
+  const names: string[] = [];
+  for (const [key, value] of Object.entries(tree)) {
+    if (value && typeof value === "object" && "size" in value) {
+      names.push(`${prefix}${key}`);
+    } else if (value && typeof value === "object") {
+      names.push(...collectFileNames(value as Record<string, unknown>, `${prefix}${key}`));
+    }
+  }
+  return names;
+}

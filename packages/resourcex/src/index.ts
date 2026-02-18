@@ -41,6 +41,8 @@
 // ============================================
 export type {
   BundledType,
+  FileEntry,
+  FileTree,
   IsolatorType,
   ProviderConfig,
   ProviderStores,
@@ -50,6 +52,9 @@ export type {
   RXD,
   RXL,
   RXM,
+  RXMArchive,
+  RXMDefinition,
+  RXMSource,
   RXR,
   RXS,
   SourceLoader,

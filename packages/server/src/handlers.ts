@@ -100,11 +100,11 @@ export async function handleGetResource(locator: string, registry: Registry): Pr
     const rxr = await registry.get(localRxl);
 
     const response: GetResourceResponse = {
-      registry: rxr.manifest.registry,
-      path: rxr.manifest.path,
-      name: rxr.manifest.name,
-      type: rxr.manifest.type,
-      tag: rxr.manifest.tag,
+      registry: rxr.manifest.definition.registry,
+      path: rxr.manifest.definition.path,
+      name: rxr.manifest.definition.name,
+      type: rxr.manifest.definition.type,
+      tag: rxr.manifest.definition.tag,
     };
     return jsonResponse(response);
   } catch (error) {

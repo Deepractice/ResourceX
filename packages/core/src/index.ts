@@ -36,7 +36,19 @@ export {
   SourceLoaderChain,
 } from "~/loader/index.js";
 // Model (Types + Primitives)
-export type { RXA, RXD, RXL, RXM, RXR, RXS } from "~/model/index.js";
+export type {
+  FileEntry,
+  FileTree,
+  RXA,
+  RXD,
+  RXL,
+  RXM,
+  RXMArchive,
+  RXMDefinition,
+  RXMSource,
+  RXR,
+  RXS,
+} from "~/model/index.js";
 export {
   archive,
   define,

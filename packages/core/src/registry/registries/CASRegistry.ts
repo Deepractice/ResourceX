@@ -5,7 +5,7 @@
  * resource storage with deduplication.
  *
  * Replaces LocalRegistry and MirrorRegistry.
- * Uses RXM.registry field to distinguish local (undefined) from cached (has registry).
+ * Uses RXM.definition.registry field to distinguish local (undefined) from cached (has registry).
  */
 
 import type { RXL, RXM, RXR } from "~/model/index.js";
@@ -49,14 +49,22 @@ export class CASRegistry implements Registry {
       files[filename] = await this.rxaStore.get(digest);
     }
 
-    // 3. Build RXM (without digest mappings for external interface)
+    // 3. Build RXM from StoredRXM
     const rxm: RXM = {
-      registry: storedRxm.registry,
-      path: storedRxm.path,
-      name: storedRxm.name,
-      type: storedRxm.type,
-      tag: storedRxm.tag,
-      files: Object.keys(storedRxm.files),
+      definition: {
+        registry: storedRxm.registry,
+        path: storedRxm.path,
+        name: storedRxm.name,
+        type: storedRxm.type,
+        tag: storedRxm.tag,
+        description: storedRxm.description,
+        author: storedRxm.author,
+        license: storedRxm.license,
+        keywords: storedRxm.keywords,
+        repository: storedRxm.repository,
+      },
+      archive: {},
+      source: {},
     };
 
     // 4. Create RXA from files
@@ -78,11 +86,16 @@ export class CASRegistry implements Registry {
 
     // 3. Build and store manifest
     const storedRxm: StoredRXM = {
-      registry: rxr.manifest.registry,
-      path: rxr.manifest.path,
-      name: rxr.manifest.name,
-      type: rxr.manifest.type,
-      tag: rxr.manifest.tag,
+      registry: rxr.manifest.definition.registry,
+      path: rxr.manifest.definition.path,
+      name: rxr.manifest.definition.name,
+      type: rxr.manifest.definition.type,
+      tag: rxr.manifest.definition.tag,
+      description: rxr.manifest.definition.description,
+      author: rxr.manifest.definition.author,
+      license: rxr.manifest.definition.license,
+      keywords: rxr.manifest.definition.keywords,
+      repository: rxr.manifest.definition.repository,
       files: fileDigests,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -91,7 +104,11 @@ export class CASRegistry implements Registry {
     await this.rxmStore.put(storedRxm);
 
     // Update "latest" pointer
-    await this.rxmStore.setLatest(rxr.manifest.name, rxr.manifest.tag, rxr.manifest.registry);
+    await this.rxmStore.setLatest(
+      rxr.manifest.definition.name,
+      rxr.manifest.definition.tag,
+      rxr.manifest.definition.registry
+    );
   }
 
   async has(rxl: RXL): Promise<boolean> {

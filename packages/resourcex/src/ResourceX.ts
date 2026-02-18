@@ -11,9 +11,13 @@
 
 import type {
   BundledType,
+  FileTree,
   IsolatorType,
   ProviderConfig,
   ResourceXProvider,
+  RXMArchive,
+  RXMDefinition,
+  RXMSource,
   RXR,
   TypeDetector,
 } from "@resourcexjs/core";
@@ -28,6 +32,66 @@ import {
   TypeHandlerChain,
 } from "@resourcexjs/core";
 import { getProvider, hasProvider } from "./provider.js";
+
+/**
+ * Build a structured file tree from flat file paths.
+ */
+function buildFileTree(files: Record<string, Buffer>): FileTree {
+  const tree: Record<string, any> = {};
+
+  for (const [filePath, buffer] of Object.entries(files)) {
+    const parts = filePath.split("/");
+    let current = tree;
+
+    for (let i = 0; i < parts.length - 1; i++) {
+      const dirKey = `${parts[i]}/`;
+      if (!current[dirKey]) {
+        current[dirKey] = {};
+      }
+      current = current[dirKey];
+    }
+
+    const fileName = parts[parts.length - 1];
+    current[fileName] = { size: buffer.length };
+  }
+
+  return tree as FileTree;
+}
+
+/**
+ * Primary content file names in priority order.
+ */
+const PRIMARY_FILES = ["SKILL.md", "content", "README.md", "index.md"];
+
+/**
+ * Max preview length in characters.
+ */
+const PREVIEW_MAX_LENGTH = 500;
+
+/**
+ * Extract a content preview from the primary file.
+ */
+function extractPreview(files: Record<string, Buffer>): string | null {
+  for (const name of PRIMARY_FILES) {
+    const buffer = files[name];
+    if (buffer) {
+      const text = buffer.toString("utf-8");
+      if (text.length <= PREVIEW_MAX_LENGTH) return text;
+      return text.slice(0, PREVIEW_MAX_LENGTH);
+    }
+  }
+
+  // Fallback: try the first text-like file
+  for (const [name, buffer] of Object.entries(files)) {
+    if (/\.(md|txt|feature|json|ya?ml|toml)$/i.test(name) || !name.includes(".")) {
+      const text = buffer.toString("utf-8");
+      if (text.length <= PREVIEW_MAX_LENGTH) return text;
+      return text.slice(0, PREVIEW_MAX_LENGTH);
+    }
+  }
+
+  return null;
+}
 
 /**
  * Normalize registry URL to host:port format.
@@ -88,15 +152,13 @@ export interface ResourceXConfig {
 
 /**
  * Resource - user-facing resource object.
+ * Structured by RX primitives: definition, archive, source.
  */
 export interface Resource {
   locator: string;
-  registry?: string;
-  path?: string;
-  name: string;
-  type: string;
-  tag: string;
-  files?: string[];
+  definition: RXMDefinition;
+  archive: RXMArchive;
+  source: RXMSource;
 }
 
 /**
@@ -170,12 +232,9 @@ class DefaultResourceX implements ResourceX {
   private toResource(rxr: RXR): Resource {
     return {
       locator: format(rxr.locator),
-      registry: rxr.manifest.registry,
-      path: rxr.manifest.path,
-      name: rxr.manifest.name,
-      type: rxr.manifest.type,
-      tag: rxr.manifest.tag,
-      files: rxr.manifest.files,
+      definition: rxr.manifest.definition,
+      archive: rxr.manifest.archive,
+      source: rxr.manifest.source,
     };
   }
 
@@ -187,16 +246,16 @@ class DefaultResourceX implements ResourceX {
     });
 
     // Local resources should not have registry
-    if (rxr.manifest.registry) {
+    if (rxr.manifest.definition.registry) {
       const { manifest: createManifest, resource: createResource } = await import(
         "@resourcexjs/core"
       );
       const newManifest = createManifest({
         registry: undefined,
-        path: rxr.manifest.path,
-        name: rxr.manifest.name,
-        type: rxr.manifest.type,
-        version: rxr.manifest.tag,
+        path: rxr.manifest.definition.path,
+        name: rxr.manifest.definition.name,
+        type: rxr.manifest.definition.type,
+        version: rxr.manifest.definition.tag,
       });
       const newRxr = createResource(newManifest, rxr.archive);
       await this.cas.put(newRxr);
@@ -217,16 +276,17 @@ class DefaultResourceX implements ResourceX {
     const rxr = await this.cas.get(rxl);
 
     const filesRecord = await extract(rxr.archive);
-    const files = Object.keys(filesRecord);
+    const fileTree = buildFileTree(filesRecord);
+    const preview = extractPreview(filesRecord);
 
     return {
       locator: format(rxr.locator),
-      registry: rxr.manifest.registry,
-      path: rxr.manifest.path,
-      name: rxr.manifest.name,
-      type: rxr.manifest.type,
-      tag: rxr.manifest.tag,
-      files,
+      definition: rxr.manifest.definition,
+      archive: rxr.manifest.archive,
+      source: {
+        files: fileTree,
+        preview: preview ?? undefined,
+      },
     };
   }
 
@@ -295,7 +355,7 @@ class DefaultResourceX implements ResourceX {
       }
     }
 
-    const handler = this.typeHandler.getHandler(rxr.manifest.type);
+    const handler = this.typeHandler.getHandler(rxr.manifest.definition.type);
 
     return {
       schema: handler.schema,
@@ -362,11 +422,11 @@ class DefaultResourceX implements ResourceX {
       new Blob(
         [
           JSON.stringify({
-            registry: rxr.manifest.registry,
-            path: rxr.manifest.path,
-            name: rxr.manifest.name,
-            type: rxr.manifest.type,
-            tag: rxr.manifest.tag,
+            registry: rxr.manifest.definition.registry,
+            path: rxr.manifest.definition.path,
+            name: rxr.manifest.definition.name,
+            type: rxr.manifest.definition.type,
+            tag: rxr.manifest.definition.tag,
           }),
         ],
         { type: "application/json" }
@@ -424,7 +484,7 @@ class DefaultResourceX implements ResourceX {
     } = await import("@resourcexjs/core");
 
     const rxm = createManifest({
-      registry: registry,
+      registry,
       path: manifestData.path,
       name: manifestData.name,
       type: manifestData.type,
@@ -454,11 +514,11 @@ class DefaultResourceX implements ResourceX {
 
     const context = {
       manifest: {
-        registry: rxr.manifest.registry,
-        path: rxr.manifest.path,
-        name: rxr.manifest.name,
-        type: rxr.manifest.type,
-        version: rxr.manifest.tag,
+        registry: rxr.manifest.definition.registry,
+        path: rxr.manifest.definition.path,
+        name: rxr.manifest.definition.name,
+        type: rxr.manifest.definition.type,
+        version: rxr.manifest.definition.tag,
       },
       files,
     };

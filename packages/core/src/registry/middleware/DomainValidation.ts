@@ -26,9 +26,9 @@ export class RegistryValidation extends RegistryMiddleware {
    * Validate that manifest registry matches trusted registry.
    */
   private validateRegistry(rxr: RXR): void {
-    if (rxr.manifest.registry !== this.trustedRegistry) {
+    if (rxr.manifest.definition.registry !== this.trustedRegistry) {
       throw new RegistryError(
-        `Untrusted registry: resource claims "${rxr.manifest.registry}" but registry only trusts "${this.trustedRegistry}"`
+        `Untrusted registry: resource claims "${rxr.manifest.definition.registry}" but registry only trusts "${this.trustedRegistry}"`
       );
     }
   }

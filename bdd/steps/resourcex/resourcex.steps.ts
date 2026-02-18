@@ -237,15 +237,15 @@ Then(
 );
 
 Then("info name should be {string}", function (this: ResourceXWorld, expected: string) {
-  assert.equal(this.info!.name, expected);
+  assert.equal(this.info!.definition.name, expected);
 });
 
 Then("info type should be {string}", function (this: ResourceXWorld, expected: string) {
-  assert.equal(this.info!.type, expected);
+  assert.equal(this.info!.definition.type, expected);
 });
 
 Then("info version should be {string}", function (this: ResourceXWorld, expected: string) {
-  assert.equal(this.info!.tag, expected);
+  assert.equal(this.info!.definition.tag, expected);
 });
 
 Then("execute should return {string}", async function (this: ResourceXWorld, expected: string) {

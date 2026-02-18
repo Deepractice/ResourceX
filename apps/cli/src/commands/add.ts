@@ -25,12 +25,9 @@ export const add = defineCommand({
 
       consola.success(`Added resource:\n`);
       console.log(`  Locator:  ${resource.locator}`);
-      console.log(`  Name:     ${resource.name}`);
-      console.log(`  Type:     ${resource.type}`);
-      console.log(`  Tag:      ${resource.tag}`);
-      if (resource.files?.length) {
-        console.log(`  Files:    ${resource.files.join(", ")}`);
-      }
+      console.log(`  Name:     ${resource.definition.name}`);
+      console.log(`  Type:     ${resource.definition.type}`);
+      console.log(`  Tag:      ${resource.definition.tag}`);
     } catch (error) {
       consola.error(error instanceof Error ? error.message : "Failed to add resource");
       process.exit(1);

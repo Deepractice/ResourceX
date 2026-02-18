@@ -15,6 +15,11 @@ export interface StoredRXM {
   readonly name: string;
   readonly type: string;
   readonly tag: string;
+  readonly description?: string;
+  readonly author?: string;
+  readonly license?: string;
+  readonly keywords?: string[];
+  readonly repository?: string;
   readonly files: Record<string, string>; // filename → digest
   readonly createdAt?: Date;
   readonly updatedAt?: Date;

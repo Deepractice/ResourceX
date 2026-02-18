@@ -9,9 +9,9 @@ import type { RXM } from "./rxm.js";
  */
 export function locate(rxm: RXM): RXL {
   return {
-    registry: rxm.registry,
-    path: rxm.path,
-    name: rxm.name,
-    tag: rxm.tag,
+    registry: rxm.definition.registry,
+    path: rxm.definition.path,
+    name: rxm.definition.name,
+    tag: rxm.definition.tag,
   };
 }

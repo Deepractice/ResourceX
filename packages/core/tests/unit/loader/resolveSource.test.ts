@@ -26,9 +26,9 @@ describe("resolveSource", () => {
     await writeFile(join(dir, "content"), "Hello World!");
 
     const rxr = await resolveSource(dir);
-    expect(rxr.manifest.name).toBe("hello");
-    expect(rxr.manifest.type).toBe("text");
-    expect(rxr.manifest.tag).toBe("1.0.0");
+    expect(rxr.manifest.definition.name).toBe("hello");
+    expect(rxr.manifest.definition.type).toBe("text");
+    expect(rxr.manifest.definition.tag).toBe("1.0.0");
 
     const files = await extract(rxr.archive);
     expect(new TextDecoder().decode(files.content)).toBe("Hello World!");
@@ -42,8 +42,8 @@ describe("resolveSource", () => {
     await writeFile(join(dir, "SKILL.md"), "# My Skill\nDo something useful");
 
     const rxr = await resolveSource(dir);
-    expect(rxr.manifest.name).toBe("my-skill");
-    expect(rxr.manifest.type).toBe("skill");
+    expect(rxr.manifest.definition.name).toBe("my-skill");
+    expect(rxr.manifest.definition.type).toBe("skill");
 
     const files = await extract(rxr.archive);
     // SKILL.md should be IN the archive (it's content)
@@ -57,8 +57,8 @@ describe("resolveSource", () => {
     await writeFile(join(dir, "SKILL.md"), "# Skill\ncontent");
 
     const rxr = await resolveSource(dir);
-    expect(rxr.manifest.name).toBe("explicit");
-    expect(rxr.manifest.type).toBe("text");
+    expect(rxr.manifest.definition.name).toBe("explicit");
+    expect(rxr.manifest.definition.type).toBe("text");
   });
 
   test("throws for non-existent directory", async () => {
@@ -89,7 +89,7 @@ describe("resolveSource", () => {
     };
 
     const rxr = await resolveSource(dir, { detectors: [promptDetector] });
-    expect(rxr.manifest.name).toBe("auto-prompt");
-    expect(rxr.manifest.type).toBe("text");
+    expect(rxr.manifest.definition.name).toBe("auto-prompt");
+    expect(rxr.manifest.definition.type).toBe("text");
   });
 });

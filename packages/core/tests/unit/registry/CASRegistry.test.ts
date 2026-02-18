@@ -41,9 +41,9 @@ describe("CASRegistry", () => {
         tag: "1.0.0",
       });
 
-      expect(retrieved.manifest.name).toBe("test-resource");
-      expect(retrieved.manifest.type).toBe("text");
-      expect(retrieved.manifest.tag).toBe("1.0.0");
+      expect(retrieved.manifest.definition.name).toBe("test-resource");
+      expect(retrieved.manifest.definition.type).toBe("text");
+      expect(retrieved.manifest.definition.tag).toBe("1.0.0");
     });
 
     it("deduplicates identical content", async () => {
@@ -186,7 +186,7 @@ describe("CASRegistry", () => {
       await registry.put(rxr);
 
       const retrieved = await registry.get({ name: "local", tag: "1.0.0" });
-      expect(retrieved.manifest.registry).toBeUndefined();
+      expect(retrieved.manifest.definition.registry).toBeUndefined();
     });
 
     it("stores cached resource (with registry)", async () => {
@@ -206,7 +206,7 @@ describe("CASRegistry", () => {
         tag: "1.0.0",
         registry: "deepractice.ai",
       });
-      expect(retrieved.manifest.registry).toBe("deepractice.ai");
+      expect(retrieved.manifest.definition.registry).toBe("deepractice.ai");
     });
 
     it("clears cache by registry", async () => {

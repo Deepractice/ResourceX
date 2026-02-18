@@ -4,6 +4,7 @@
 
 import { defineCommand } from "citty";
 import consola from "consola";
+import type { FileEntry, FileTree } from "resourcexjs";
 import { getClient } from "../lib/client.js";
 
 export const info = defineCommand({
@@ -22,26 +23,42 @@ export const info = defineCommand({
     try {
       const rx = await getClient();
       const resource = await rx.info(args.locator);
+      const { definition, source } = resource;
 
       console.log();
-      console.log(`  ${resource.name}:${resource.tag}`);
+      console.log(`  ${definition.name}:${definition.tag}`);
       console.log(`  ${"─".repeat(40)}`);
       console.log();
       console.log(`  Locator:  ${resource.locator}`);
-      if (resource.registry) {
-        console.log(`  Registry: ${resource.registry}`);
+      if (definition.registry) {
+        console.log(`  Registry: ${definition.registry}`);
       }
-      if (resource.path) {
-        console.log(`  Path:     ${resource.path}`);
+      if (definition.path) {
+        console.log(`  Path:     ${definition.path}`);
       }
-      console.log(`  Name:     ${resource.name}`);
-      console.log(`  Type:     ${resource.type}`);
-      console.log(`  Tag:      ${resource.tag}`);
+      console.log(`  Name:     ${definition.name}`);
+      console.log(`  Type:     ${definition.type}`);
+      console.log(`  Tag:      ${definition.tag}`);
+      if (definition.description) {
+        console.log(`  Desc:     ${definition.description}`);
+      }
+      if (definition.author) {
+        console.log(`  Author:   ${definition.author}`);
+      }
       console.log();
 
-      if (resource.files?.length) {
+      if (source.files && Object.keys(source.files).length > 0) {
         console.log(`  Files:`);
-        printFileTree(resource.files);
+        printFileTree(source.files);
+      }
+
+      if (source.preview) {
+        console.log();
+        console.log(`  Preview:`);
+        const lines = source.preview.split("\n").slice(0, 5);
+        for (const line of lines) {
+          console.log(`    ${line}`);
+        }
       }
       console.log();
     } catch (error) {
@@ -52,55 +69,35 @@ export const info = defineCommand({
 });
 
 /**
- * Print files as a tree structure
+ * Check if a FileTree value is a FileEntry (leaf node).
  */
-function printFileTree(files: string[]): void {
-  // Sort files for consistent output
-  const sorted = [...files].sort();
+function isFileEntry(value: FileEntry | FileTree): value is FileEntry {
+  return "size" in value && typeof (value as FileEntry).size === "number";
+}
 
-  // Build tree structure
-  const tree: Record<string, string[]> = {};
-  const rootFiles: string[] = [];
+/**
+ * Print structured file tree.
+ */
+function printFileTree(tree: FileTree, indent = ""): void {
+  const entries = Object.entries(tree);
 
-  for (const file of sorted) {
-    const parts = file.split("/");
-    if (parts.length === 1) {
-      rootFiles.push(file);
-    } else {
-      const dir = parts[0];
-      const rest = parts.slice(1).join("/");
-      if (!tree[dir]) {
-        tree[dir] = [];
-      }
-      tree[dir].push(rest);
-    }
-  }
-
-  // Print root files
-  const dirs = Object.keys(tree).sort();
-  const allItems = [...dirs, ...rootFiles];
-
-  for (let i = 0; i < allItems.length; i++) {
-    const item = allItems[i];
-    const isLast = i === allItems.length - 1;
+  for (let i = 0; i < entries.length; i++) {
+    const [name, value] = entries[i];
+    const isLast = i === entries.length - 1;
     const prefix = isLast ? "└── " : "├── ";
+    const childIndent = indent + (isLast ? "    " : "│   ");
 
-    if (tree[item]) {
-      // It's a directory
-      console.log(`      ${prefix}${item}/`);
-      printSubTree(tree[item], isLast ? "    " : "│   ");
+    if (isFileEntry(value)) {
+      console.log(`      ${indent}${prefix}${name} (${formatSize(value.size)})`);
     } else {
-      // It's a file
-      console.log(`      ${prefix}${item}`);
+      console.log(`      ${indent}${prefix}${name}`);
+      printFileTree(value, childIndent);
     }
   }
 }
 
-function printSubTree(files: string[], indent: string): void {
-  for (let i = 0; i < files.length; i++) {
-    const file = files[i];
-    const isLast = i === files.length - 1;
-    const prefix = isLast ? "└── " : "├── ";
-    console.log(`      ${indent}${prefix}${file}`);
-  }
+function formatSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes}B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)}KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
 }
