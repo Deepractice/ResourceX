@@ -1,5 +1,22 @@
 # @resourcexjs/server
 
+## 2.10.0
+
+### Minor Changes
+
+- c197c52: Rename RXL to RXI (identifier) and introduce RXL as unified locator type
+  - `interface RXL` renamed to `interface RXI` (ResourceX Identifier)
+  - `RXR.locator` renamed to `RXR.identifier`
+  - New `type RXL = string` as unified locator (RXI string, directory path, or URL)
+  - `parse()` returns `RXI`, `format()` accepts `RXI`, `locate()` returns `RXI`
+  - Registry interfaces updated to use `RXI` parameter names
+
+### Patch Changes
+
+- Updated dependencies [c197c52]
+  - @resourcexjs/core@2.10.0
+  - @resourcexjs/node-provider@2.10.0
+
 ## 2.9.0
 
 ### Minor Changes
@@ -7,7 +24,6 @@
 - 8884adf: feat: restructure RXM as definition/archive/source context
 
   BREAKING CHANGE: RXM and Resource interfaces restructured from flat to nested.
-
   - RXM now has three sections: `definition`, `archive`, `source`
   - `definition` includes metadata from RXD: description, author, license, keywords, repository
   - `source.files` is a structured FileTree with sizes (replaces flat string array)
@@ -59,7 +75,6 @@
 ### Patch Changes
 
 - 3c43d76: docs: update documentation for Provider architecture
-
   - Update all READMEs to reflect new Provider pattern
   - Add setProvider() requirement in examples
   - Update storage layout documentation to CAS structure

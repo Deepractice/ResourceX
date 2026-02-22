@@ -1,5 +1,14 @@
 # @resourcexjs/cli
 
+## 2.10.0
+
+### Patch Changes
+
+- Updated dependencies [c197c52]
+  - resourcexjs@2.10.0
+  - @resourcexjs/server@2.10.0
+  - @resourcexjs/node-provider@2.10.0
+
 ## 2.9.0
 
 ### Minor Changes
@@ -7,7 +16,6 @@
 - 8884adf: feat: restructure RXM as definition/archive/source context
 
   BREAKING CHANGE: RXM and Resource interfaces restructured from flat to nested.
-
   - RXM now has three sections: `definition`, `archive`, `source`
   - `definition` includes metadata from RXD: description, author, license, keywords, repository
   - `source.files` is a structured FileTree with sizes (replaces flat string array)
@@ -29,7 +37,6 @@
 ### Minor Changes
 
 - adece0b: feat: add auto-detection pipeline, SourceLoaderChain, and API redesign
-
   - Add RXS intermediate type for raw file representation
   - Add TypeDetector interface and TypeDetectorChain (Chain of Responsibility)
   - Add built-in detectors: ResourceJsonDetector, SkillDetector
@@ -133,7 +140,6 @@
 ### Patch Changes
 
 - 74629d7: docs: restructure documentation with Divio system
-
   - Remove old docs/ directory
   - Add new docs structure: tutorials, guides, reference, concepts
   - Add documentation TOC to main README

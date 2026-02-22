@@ -1,5 +1,12 @@
 # @resourcexjs/node-provider
 
+## 2.10.0
+
+### Patch Changes
+
+- Updated dependencies [c197c52]
+  - @resourcexjs/core@2.10.0
+
 ## 2.9.0
 
 ### Patch Changes
@@ -12,7 +19,6 @@
 ### Minor Changes
 
 - 89233d7: feat: add Docker-style "latest" tag resolution
-
   - Add `setLatest`/`getLatest` to RXMStore interface for pointer-based latest tracking
   - FileSystemRXMStore stores `.latest` pointer file alongside version manifests
   - MemoryRXMStore tracks latest pointers in memory map
@@ -22,7 +28,6 @@
   - No server changes needed — CAS abstraction propagates resolution transparently
 
 - adece0b: feat: add auto-detection pipeline, SourceLoaderChain, and API redesign
-
   - Add RXS intermediate type for raw file representation
   - Add TypeDetector interface and TypeDetectorChain (Chain of Responsibility)
   - Add built-in detectors: ResourceJsonDetector, SkillDetector
@@ -65,7 +70,6 @@
 ### Patch Changes
 
 - 3c43d76: docs: update documentation for Provider architecture
-
   - Update all READMEs to reflect new Provider pattern
   - Add setProvider() requirement in examples
   - Update storage layout documentation to CAS structure
