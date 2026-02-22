@@ -14,15 +14,16 @@ bun add @resourcexjs/core
 
 ## Core Concepts
 
-ResourceX uses a layered architecture with five core primitives:
+ResourceX uses a layered architecture with six core primitives:
 
 | Primitive | Description                                              |
 | --------- | -------------------------------------------------------- |
 | **RXD**   | Resource Definition - content of `resource.json`         |
-| **RXL**   | Resource Locator - unique identifier for a resource      |
+| **RXI**   | Resource Identifier - structured identifier `{ registry?, path?, name, tag }` |
+| **RXL**   | Resource Locator - unified locator string (RXI string, directory path, or URL) |
 | **RXM**   | Resource Manifest - metadata stored within the resource  |
 | **RXA**   | Resource Archive - tar.gz container for storage/transfer |
-| **RXR**   | Resource - complete resource (RXL + RXM + RXA)           |
+| **RXR**   | Resource - complete resource (RXI + RXM + RXA)           |
 
 ### Locator Format
 
@@ -38,14 +39,14 @@ registry.example.com/org/hello  -> registry=registry.example.com, path=org, name
 
 ## API
 
-### `parse(locator: string): RXL`
+### `parse(locator: string): RXI`
 
-Parse a locator string into an RXL object.
+Parse a locator string into an RXI object.
 
 ```typescript
 import { parse } from "@resourcexjs/core";
 
-const rxl = parse("registry.example.com/prompts/hello:1.0.0");
+const rxi = parse("registry.example.com/prompts/hello:1.0.0");
 // {
 //   registry: "registry.example.com",
 //   path: "prompts",
@@ -57,9 +58,9 @@ const simple = parse("hello");
 // { registry: undefined, path: undefined, name: "hello", tag: "latest" }
 ```
 
-### `format(rxl: RXL): string`
+### `format(rxi: RXI): string`
 
-Format an RXL object back to a locator string.
+Format an RXI object back to a locator string.
 
 ```typescript
 import { format } from "@resourcexjs/core";
@@ -121,14 +122,14 @@ const rxm = manifest(rxd);
 // { name: "my-prompt", type: "text", tag: "1.0.0" }
 ```
 
-### `locate(rxm: RXM): RXL`
+### `locate(rxm: RXM): RXI`
 
-Create a locator from a manifest.
+Create an identifier from a manifest.
 
 ```typescript
 import { locate } from "@resourcexjs/core";
 
-const rxl = locate({
+const rxi = locate({
   registry: "example.com",
   path: "prompts",
   name: "hello",
@@ -212,7 +213,7 @@ const rxm = manifest(rxd);
 const rxa = await archive({ content: Buffer.from("Hello!") });
 const rxr = resource(rxm, rxa);
 // {
-//   locator: { name: "hello", tag: "1.0.0" },
+//   identifier: { name: "hello", tag: "1.0.0" },
 //   manifest: { name: "hello", type: "text", tag: "1.0.0" },
 //   archive: RXA
 // }
@@ -240,17 +241,25 @@ interface RXD {
 }
 ```
 
-### RXL - Resource Locator
+### RXI - Resource Identifier
 
-Unique identifier for a resource.
+Structured identifier for a resource.
 
 ```typescript
-interface RXL {
+interface RXI {
   readonly registry?: string; // e.g., "localhost:3098", "registry.example.com"
   readonly path?: string; // e.g., "org", "prompts"
   readonly name: string; // Resource name
   readonly tag: string; // Tag (defaults to "latest")
 }
+```
+
+### RXL - Resource Locator
+
+Unified locator string. Can be an RXI string, directory path, or URL.
+
+```typescript
+type RXL = string;
 ```
 
 ### RXM - Resource Manifest
@@ -281,11 +290,11 @@ interface RXA {
 
 ### RXR - Resource
 
-Complete resource object combining locator, manifest, and archive.
+Complete resource object combining identifier, manifest, and archive.
 
 ```typescript
 interface RXR {
-  readonly locator: RXL;
+  readonly identifier: RXI;
   readonly manifest: RXM;
   readonly archive: RXA;
 }
@@ -324,7 +333,7 @@ try {
 
 ```
 ResourceXError (base)
-├── LocatorError     - RXL parsing errors
+├── LocatorError     - RXI parsing errors
 ├── ManifestError    - RXM validation errors
 ├── ContentError     - RXA operations errors
 └── DefinitionError  - RXD validation errors
@@ -357,7 +366,7 @@ const rxa = await archive({
 const rxr: RXR = resource(rxm, rxa);
 
 // 5. Access locator string
-const locatorStr = format(rxr.locator);
+const locatorStr = format(rxr.identifier);
 console.log(locatorStr); // "assistant-prompt:1.0.0"
 
 // 6. Extract files when needed
@@ -381,13 +390,13 @@ const cas = new CASRegistry(new MemoryRXAStore(), new MemoryRXMStore());
 await cas.put(rxr);
 
 // Get a resource
-const rxr = await cas.get(rxl);
+const rxr = await cas.get(rxi);
 
 // Check existence
-const exists = await cas.has(rxl);
+const exists = await cas.has(rxi);
 
 // Remove a resource
-await cas.remove(rxl);
+await cas.remove(rxi);
 
 // List resources
 const results = await cas.list({ query: "prompt", limit: 10 });

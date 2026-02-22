@@ -50,6 +50,7 @@ export type {
   ResourceXProvider,
   RXA,
   RXD,
+  RXI,
   RXL,
   RXM,
   RXMArchive,

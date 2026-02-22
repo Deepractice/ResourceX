@@ -1,7 +1,7 @@
 /**
  * ResourceX - Unified Resource Management API
  *
- * User-facing API that hides internal objects (RXR, RXL, RXM, RXA).
+ * User-facing API that hides internal objects (RXR, RXI, RXM, RXA).
  * Users only interact with:
  * - path: local directory
  * - locator: resource identifier string
@@ -15,6 +15,7 @@ import type {
   IsolatorType,
   ProviderConfig,
   ResourceXProvider,
+  RXL,
   RXMArchive,
   RXMDefinition,
   RXMSource,
@@ -178,7 +179,7 @@ export interface ResourceX {
   info(locator: string): Promise<Resource>;
   remove(locator: string): Promise<void>;
   resolve<T = unknown>(locator: string, args?: unknown): Promise<T>;
-  ingest<T = unknown>(source: string, args?: unknown): Promise<T>;
+  ingest<T = unknown>(locator: RXL, args?: unknown): Promise<T>;
   search(query?: string): Promise<string[]>;
   push(locator: string): Promise<void>;
   pull(locator: string): Promise<void>;
@@ -231,7 +232,7 @@ class DefaultResourceX implements ResourceX {
    */
   private toResource(rxr: RXR): Resource {
     return {
-      locator: format(rxr.locator),
+      locator: format(rxr.identifier),
       definition: rxr.manifest.definition,
       archive: rxr.manifest.archive,
       source: rxr.manifest.source,
@@ -280,7 +281,7 @@ class DefaultResourceX implements ResourceX {
     const preview = extractPreview(filesRecord);
 
     return {
-      locator: format(rxr.locator),
+      locator: format(rxr.identifier),
       definition: rxr.manifest.definition,
       archive: rxr.manifest.archive,
       source: {
@@ -300,18 +301,18 @@ class DefaultResourceX implements ResourceX {
     return executable.execute(args);
   }
 
-  async ingest<T = unknown>(source: string, args?: unknown): Promise<T> {
+  async ingest<T = unknown>(locator: RXL, args?: unknown): Promise<T> {
     // Check if input is a loadable source (directory, URL, etc.)
-    const isSource = await this.canLoadSource(source);
+    const isSource = await this.canLoadSource(locator);
 
     if (isSource) {
-      // Source: add to CAS first, then resolve
-      const resource = await this.add(source);
+      // Source path/URL: add to CAS first, then resolve
+      const resource = await this.add(locator);
       return this.resolve<T>(resource.locator, args);
     }
 
-    // RXL locator: resolve directly
-    return this.resolve<T>(source, args);
+    // RXI identifier: resolve directly
+    return this.resolve<T>(locator, args);
   }
 
   /**
@@ -416,7 +417,7 @@ class DefaultResourceX implements ResourceX {
     const publishUrl = `${baseUrl}/api/v1/publish`;
 
     const formData = new FormData();
-    formData.append("locator", format(rxr.locator));
+    formData.append("locator", format(rxr.identifier));
     formData.append(
       "manifest",
       new Blob(

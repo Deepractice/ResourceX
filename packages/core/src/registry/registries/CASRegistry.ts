@@ -8,7 +8,7 @@
  * Uses RXM.definition.registry field to distinguish local (undefined) from cached (has registry).
  */
 
-import type { RXL, RXM, RXR } from "~/model/index.js";
+import type { RXI, RXM, RXR } from "~/model/index.js";
 import { archive, extract, format, resource } from "~/model/index.js";
 import { RegistryError } from "../errors.js";
 import type { RXAStore } from "../store/RXAStore.js";
@@ -34,13 +34,13 @@ export class CASRegistry implements Registry {
     return tag;
   }
 
-  async get(rxl: RXL): Promise<RXR> {
-    const tag = await this.resolveTag(rxl.name, rxl.tag ?? "latest", rxl.registry);
+  async get(rxi: RXI): Promise<RXR> {
+    const tag = await this.resolveTag(rxi.name, rxi.tag ?? "latest", rxi.registry);
 
     // 1. Get manifest
-    const storedRxm = await this.rxmStore.get(rxl.name, tag, rxl.registry);
+    const storedRxm = await this.rxmStore.get(rxi.name, tag, rxi.registry);
     if (!storedRxm) {
-      throw new RegistryError(`Resource not found: ${format(rxl)}`);
+      throw new RegistryError(`Resource not found: ${format(rxi)}`);
     }
 
     // 2. Get all file contents from RXAStore
@@ -111,18 +111,18 @@ export class CASRegistry implements Registry {
     );
   }
 
-  async has(rxl: RXL): Promise<boolean> {
-    const tag = await this.resolveTag(rxl.name, rxl.tag ?? "latest", rxl.registry);
-    return this.rxmStore.has(rxl.name, tag, rxl.registry);
+  async has(rxi: RXI): Promise<boolean> {
+    const tag = await this.resolveTag(rxi.name, rxi.tag ?? "latest", rxi.registry);
+    return this.rxmStore.has(rxi.name, tag, rxi.registry);
   }
 
-  async remove(rxl: RXL): Promise<void> {
-    const tag = rxl.tag ?? "latest";
-    await this.rxmStore.delete(rxl.name, tag, rxl.registry);
+  async remove(rxi: RXI): Promise<void> {
+    const tag = rxi.tag ?? "latest";
+    await this.rxmStore.delete(rxi.name, tag, rxi.registry);
     // Note: Blobs are not deleted here. Use GC to clean orphaned blobs.
   }
 
-  async list(options?: SearchOptions): Promise<RXL[]> {
+  async list(options?: SearchOptions): Promise<RXI[]> {
     const { query, limit, offset = 0 } = options ?? {};
 
     const manifests = await this.rxmStore.search({

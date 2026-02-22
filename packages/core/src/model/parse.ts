@@ -1,6 +1,6 @@
 import { normalize } from "node:path";
 import { LocatorError } from "~/errors.js";
-import type { RXL } from "./rxl.js";
+import type { RXI } from "./rxi.js";
 
 const MAX_LOCATOR_LENGTH = 256;
 const DANGEROUS_PATTERNS = /[;|&$`\n\0\r]/;
@@ -74,7 +74,7 @@ function looksLikeRegistry(str: string): boolean {
 }
 
 /**
- * Parse locator string to RXL.
+ * Parse locator string to RXI.
  *
  * Docker-style format: [registry/][path/]name[:tag]
  *
@@ -85,10 +85,10 @@ function looksLikeRegistry(str: string): boolean {
  * - localhost:3098/hello:1.0.0 → registry=localhost:3098, name=hello, tag=1.0.0
  *
  * @param locator - Locator string
- * @returns RXL object
+ * @returns RXI object
  * @throws LocatorError if parsing fails
  */
-export function parse(locator: string): RXL {
+export function parse(locator: string): RXI {
   if (!locator || typeof locator !== "string") {
     throw new LocatorError("Locator must be a non-empty string", locator);
   }

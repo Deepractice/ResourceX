@@ -1,28 +1,13 @@
 /**
  * RXL - ResourceX Locator
  *
- * Unique identifier for a resource (pure data object).
- * Docker-style format with optional tag.
+ * Unified locator type for any resource reference.
+ * An RXL can be:
+ * - An RXI identifier string (e.g., "hello:1.0.0", "deepractice/skill-creator:0.1.0")
+ * - A local directory path (e.g., "/home/user/skills/my-skill")
+ * - A URL (e.g., "https://github.com/org/repo/tree/main/skills/my-skill")
  *
- * Format: [registry/][path/]name[:tag]
- *
- * Examples:
- * - hello                    → name=hello, tag=latest (default)
- * - hello:1.0.0             → name=hello, tag=1.0.0
- * - prompts/hello:stable    → path=prompts, name=hello, tag=stable
- * - localhost:3098/hello:1.0.0 → registry=localhost:3098, name=hello, tag=1.0.0
- * - registry.example.com/org/hello:latest → registry=registry.example.com, path=org, name=hello, tag=latest
+ * RXL is the input type for `ingest()` — the unified entry point that
+ * accepts any form of resource reference and resolves it.
  */
-export interface RXL {
-  /** Registry host:port (e.g., "localhost:3098", "registry.example.com") */
-  readonly registry?: string;
-
-  /** Path within registry (e.g., "org", "prompts") */
-  readonly path?: string;
-
-  /** Resource name */
-  readonly name: string;
-
-  /** Tag (version or label). Defaults to "latest" if not specified. */
-  readonly tag: string;
-}
+export type RXL = string;

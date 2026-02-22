@@ -1,7 +1,7 @@
-import type { RXL } from "./rxl.js";
+import type { RXI } from "./rxi.js";
 
 /**
- * Format RXL to locator string.
+ * Format RXI to locator string.
  *
  * Docker-style format: [registry/][path/]name[:tag]
  *
@@ -10,28 +10,28 @@ import type { RXL } from "./rxl.js";
  * - { name: "hello", tag: "1.0.0" } → "hello:1.0.0"
  * - { registry: "localhost:3098", name: "hello", tag: "1.0.0" } → "localhost:3098/hello:1.0.0"
  *
- * @param rxl - Resource locator
+ * @param rxi - Resource identifier
  * @returns Locator string
  */
-export function format(rxl: RXL): string {
+export function format(rxi: RXI): string {
   let result = "";
 
   // Add registry if present
-  if (rxl.registry) {
-    result += `${rxl.registry}/`;
+  if (rxi.registry) {
+    result += `${rxi.registry}/`;
   }
 
   // Add path if present
-  if (rxl.path) {
-    result += `${rxl.path}/`;
+  if (rxi.path) {
+    result += `${rxi.path}/`;
   }
 
   // Add name
-  result += rxl.name;
+  result += rxi.name;
 
   // Add tag (omit if "latest" for cleaner output)
-  if (rxl.tag && rxl.tag !== "latest") {
-    result += `:${rxl.tag}`;
+  if (rxi.tag && rxi.tag !== "latest") {
+    result += `:${rxi.tag}`;
   }
 
   return result;

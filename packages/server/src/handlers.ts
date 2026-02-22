@@ -81,7 +81,7 @@ export async function handlePublish(request: Request, registry: Registry): Promi
 
     await registry.put(rxr);
 
-    const response: PublishResponse = { locator: format(rxr.locator) };
+    const response: PublishResponse = { locator: format(rxr.identifier) };
     return jsonResponse(response, 201);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
@@ -200,7 +200,7 @@ export async function handleSearch(
         registry: rxl.registry,
         path: rxl.path,
         name: rxl.name,
-        type: "", // Type not in RXL anymore, would need to read manifest
+        type: "", // Type not in RXI anymore, would need to read manifest
         tag: rxl.tag ?? "latest",
       })),
       total: results.length,

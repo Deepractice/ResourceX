@@ -209,7 +209,7 @@ export default app; // 部署到任何支持 Hono 的平台
 
 | 包                                             | 描述                          |
 | ---------------------------------------------- | ----------------------------- |
-| [`@resourcexjs/core`](./packages/core)         | 核心原语 (RXL, RXM, RXA, RXR) |
+| [`@resourcexjs/core`](./packages/core)         | 核心原语 (RXI, RXL, RXM, RXA, RXR) |
 | [`@resourcexjs/storage`](./packages/storage)   | 存储后端                      |
 | [`@resourcexjs/registry`](./packages/registry) | Registry 实现                 |
 | [`@resourcexjs/loader`](./packages/loader)     | 资源加载                      |

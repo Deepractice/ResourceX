@@ -14,6 +14,7 @@ export { resource } from "./resource.js";
 export type { RXA } from "./rxa.js";
 // Types
 export type { RXD } from "./rxd.js";
+export type { RXI } from "./rxi.js";
 export type { RXL } from "./rxl.js";
 export type { FileEntry, FileTree, RXM, RXMArchive, RXMDefinition, RXMSource } from "./rxm.js";
 export type { RXR } from "./rxr.js";

@@ -11,10 +11,10 @@ import type { RXR } from "./rxr.js";
  * @returns RXR resource object
  */
 export function resource(rxm: RXM, rxa: RXA): RXR {
-  const rxl = locate(rxm);
+  const rxi = locate(rxm);
 
   return {
-    locator: rxl,
+    identifier: rxi,
     manifest: rxm,
     archive: rxa,
   };

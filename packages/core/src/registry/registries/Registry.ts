@@ -1,4 +1,4 @@
-import type { RXL, RXR } from "~/model/index.js";
+import type { RXI, RXR } from "~/model/index.js";
 
 /**
  * Search options for querying resources.
@@ -29,10 +29,10 @@ export interface SearchOptions {
  */
 export interface Registry {
   /**
-   * Get resource by locator.
+   * Get resource by identifier.
    * @throws RegistryError if not found
    */
-  get(rxl: RXL): Promise<RXR>;
+  get(rxi: RXI): Promise<RXR>;
 
   /**
    * Store resource.
@@ -42,15 +42,15 @@ export interface Registry {
   /**
    * Check if resource exists.
    */
-  has(rxl: RXL): Promise<boolean>;
+  has(rxi: RXI): Promise<boolean>;
 
   /**
    * Delete resource.
    */
-  remove(rxl: RXL): Promise<void>;
+  remove(rxi: RXI): Promise<void>;
 
   /**
    * List resources matching options.
    */
-  list(options?: SearchOptions): Promise<RXL[]>;
+  list(options?: SearchOptions): Promise<RXI[]>;
 }

@@ -34,14 +34,15 @@ console.log(content);
 
 ## Core Concepts
 
-ResourceX uses four core primitives:
+ResourceX uses five core primitives:
 
 | Primitive | Description                                         |
 | --------- | --------------------------------------------------- |
-| **RXL**   | Resource Locator - unique identifier for a resource |
+| **RXI**   | Resource Identifier - structured `{ registry?, path?, name, tag }` |
+| **RXL**   | Resource Locator - unified locator string (RXI string, path, or URL) |
 | **RXM**   | Resource Manifest - metadata (name, type, version)  |
 | **RXA**   | Resource Archive - content container (tar.gz)       |
-| **RXR**   | Resource - complete object (RXL + RXM + RXA)        |
+| **RXR**   | Resource - complete object (RXI + RXM + RXA)        |
 
 ### Locator Format
 
@@ -189,7 +190,7 @@ await rx.remove("hello:1.0.0");
 
 #### rx.resolve(locator)
 
-Load and prepare a resource for execution from RXL locator.
+Load and prepare a resource for execution from an RXL locator string.
 
 ```typescript
 const executable = await rx.resolve<string>("hello:1.0.0");
@@ -305,13 +306,13 @@ For advanced use cases, you can work with core primitives directly:
 ```typescript
 import { parse, format, manifest, archive, resource, extract, wrap } from "resourcexjs";
 
-// Parse locator string to RXL
-const rxl = parse("hello:1.0.0");
-console.log(rxl.name); // "hello"
-console.log(rxl.tag); // "1.0.0"
+// Parse locator string to RXI
+const rxi = parse("hello:1.0.0");
+console.log(rxi.name); // "hello"
+console.log(rxi.tag); // "1.0.0"
 
-// Format RXL back to string
-const str = format(rxl); // "hello:1.0.0"
+// Format RXI back to string
+const str = format(rxi); // "hello:1.0.0"
 
 // Create manifest from definition
 const rxm = manifest({
@@ -447,7 +448,7 @@ Error hierarchy:
 
 ```
 ResourceXError (base)
-├── LocatorError      # RXL parsing errors
+├── LocatorError      # RXI parsing errors
 ├── ManifestError     # RXM validation errors
 ├── ContentError      # RXA operations errors
 └── DefinitionError   # RXD validation errors

@@ -41,6 +41,7 @@ export type {
   FileTree,
   RXA,
   RXD,
+  RXI,
   RXL,
   RXM,
   RXMArchive,

@@ -5,7 +5,7 @@
  * Prevents untrusted registries from impersonating other registries.
  */
 
-import type { RXL, RXR } from "~/model/index.js";
+import type { RXI, RXR } from "~/model/index.js";
 import { RegistryError } from "../errors.js";
 import type { Registry } from "../registries/index.js";
 import { RegistryMiddleware } from "./RegistryMiddleware.js";
@@ -36,8 +36,8 @@ export class RegistryValidation extends RegistryMiddleware {
   /**
    * Get resource and validate registry.
    */
-  override async get(rxl: RXL): Promise<RXR> {
-    const rxr = await this.inner.get(rxl);
+  override async get(rxi: RXI): Promise<RXR> {
+    const rxr = await this.inner.get(rxi);
     this.validateRegistry(rxr);
     return rxr;
   }

@@ -24,7 +24,7 @@ ResourceX is a resource management protocol for AI Agents, similar to npm for pa
    - Provides: resolve, deposit, exists, delete
 
 2. **Core Layer** - Primitives and CAS Registry (`@resourcexjs/core`)
-   - RXL, RXM, RXA, RXR primitives
+   - RXI, RXL, RXM, RXA, RXR primitives
    - CASRegistry: Content-addressable storage for resources
    - Store interfaces (SPI): RXAStore, RXMStore
    - TypeHandlerChain: Resource type system
@@ -89,8 +89,8 @@ packages/
 ### Core Primitives (`@resourcexjs/core`)
 
 ```typescript
-// Parse locator string to RXL (Docker-style format)
-const rxl = parse("registry.example.com/hello:1.0.0");
+// Parse locator string to RXI (Docker-style format)
+const rxi = parse("registry.example.com/hello:1.0.0");
 
 // Create manifest from definition
 const rxm = manifest({ name: "hello", type: "text", tag: "1.0.0" });
@@ -98,14 +98,14 @@ const rxm = manifest({ name: "hello", type: "text", tag: "1.0.0" });
 // Create archive from content
 const rxa = await archive({ content: Buffer.from("Hello!") });
 
-// Create resource (RXR = RXL + RXM + RXA)
+// Create resource (RXR = RXI + RXM + RXA)
 const rxr = resource(rxm, rxa);
 
 // Extract archive to files
 const files = await extract(rxa); // Record<string, Buffer>
 
-// Format RXL to string
-const locatorStr = format(rxl); // "registry.example.com/hello:1.0.0"
+// Format RXI to string
+const locatorStr = format(rxi); // "registry.example.com/hello:1.0.0"
 
 // Wrap raw buffer as RXA
 const rxa = wrap(buffer);
@@ -121,9 +121,9 @@ import { CASRegistry, MemoryRXAStore, MemoryRXMStore } from "@resourcexjs/core";
 const cas = new CASRegistry(new MemoryRXAStore(), new MemoryRXMStore());
 
 await cas.put(rxr); // Store resource
-const rxr = await cas.get(rxl); // Get resource
-const exists = await cas.has(rxl); // Check existence
-await cas.remove(rxl); // Remove resource
+const rxr = await cas.get(rxi); // Get resource
+const exists = await cas.has(rxi); // Check existence
+await cas.remove(rxi); // Remove resource
 const results = await cas.list({ query: "hello" }); // Search
 await cas.gc(); // Garbage collect orphaned blobs
 await cas.clearCache("registry.example.com"); // Clear cached resources
@@ -270,7 +270,7 @@ rx.resolve("hello:1.0.0")
 
 ```
 rx.ingest("./my-skill")        // directory path
-rx.ingest("hello:1.0.0")       // or RXL locator
+rx.ingest("hello:1.0.0")       // or RXL locator string
   ↓
 1. Check if input is a loadable source (SourceLoader.canLoad)
 2. If source: add(source) → CAS, then resolve(locator)
@@ -370,7 +370,7 @@ import { CASRegistry } from "@resourcexjs/core";
 
 ```
 ResourceXError (base)
-├── LocatorError (RXL parsing)
+├── LocatorError (RXI parsing)
 ├── ManifestError (RXM validation)
 ├── ContentError (RXA operations)
 └── DefinitionError (RXD validation)

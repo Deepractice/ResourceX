@@ -99,25 +99,25 @@ describe("primitives", () => {
     });
   });
 
-  describe("locate(rxm) → RXL", () => {
-    it("creates RXL from RXM with all fields", () => {
+  describe("locate(rxm) → RXI", () => {
+    it("creates RXI from RXM with all fields", () => {
       const rxm = manifest(sampleRXD);
-      const rxl = locate(rxm);
+      const rxi = locate(rxm);
 
-      expect(rxl.registry).toBe("deepractice.ai");
-      expect(rxl.path).toBe("assistants");
-      expect(rxl.name).toBe("my-prompt");
-      expect(rxl.tag).toBe("1.0.0");
+      expect(rxi.registry).toBe("deepractice.ai");
+      expect(rxi.path).toBe("assistants");
+      expect(rxi.name).toBe("my-prompt");
+      expect(rxi.tag).toBe("1.0.0");
     });
 
-    it("creates RXL from minimal RXM", () => {
+    it("creates RXI from minimal RXM", () => {
       const rxm = manifest(minimalRXD);
-      const rxl = locate(rxm);
+      const rxi = locate(rxm);
 
-      expect(rxl.registry).toBeUndefined();
-      expect(rxl.path).toBeUndefined();
-      expect(rxl.name).toBe("simple");
-      expect(rxl.tag).toBe("0.1.0");
+      expect(rxi.registry).toBeUndefined();
+      expect(rxi.path).toBeUndefined();
+      expect(rxi.name).toBe("simple");
+      expect(rxi.tag).toBe("0.1.0");
     });
   });
 
@@ -129,18 +129,18 @@ describe("primitives", () => {
 
       expect(rxr.manifest).toBe(rxm);
       expect(rxr.archive).toBe(rxa);
-      expect(rxr.locator).toBeDefined();
-      expect(rxr.locator.name).toBe("my-prompt");
+      expect(rxr.identifier).toBeDefined();
+      expect(rxr.identifier.name).toBe("my-prompt");
     });
 
-    it("RXR locator matches manifest definition", async () => {
+    it("RXR identifier matches manifest definition", async () => {
       const rxm = manifest(sampleRXD);
       const rxa = await archive({ content: Buffer.from("Hello") });
       const rxr = resource(rxm, rxa);
 
-      expect(rxr.locator.registry).toBe(rxr.manifest.definition.registry);
-      expect(rxr.locator.name).toBe(rxr.manifest.definition.name);
-      expect(rxr.locator.tag).toBe(rxr.manifest.definition.tag);
+      expect(rxr.identifier.registry).toBe(rxr.manifest.definition.registry);
+      expect(rxr.identifier.name).toBe(rxr.manifest.definition.name);
+      expect(rxr.identifier.tag).toBe(rxr.manifest.definition.tag);
     });
   });
 

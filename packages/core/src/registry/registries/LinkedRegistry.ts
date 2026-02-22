@@ -1,7 +1,7 @@
 import { lstat, mkdir, readdir, readlink, rm, symlink } from "node:fs/promises";
 import { join, resolve as resolvePath } from "node:path";
 import { loadResource } from "~/loader/index.js";
-import type { RXL, RXR } from "~/model/index.js";
+import type { RXI, RXR } from "~/model/index.js";
 import { format, parse } from "~/model/index.js";
 import { RegistryError } from "../errors.js";
 import type { Registry, SearchOptions } from "./Registry.js";
@@ -22,15 +22,15 @@ export class LinkedRegistry implements Registry {
   /**
    * Build symlink path for a resource.
    */
-  private buildLinkPath(rxl: RXL): string {
-    const registry = rxl.registry ?? "localhost";
-    const tag = rxl.tag ?? "latest";
+  private buildLinkPath(rxi: RXI): string {
+    const registry = rxi.registry ?? "localhost";
+    const tag = rxi.tag ?? "latest";
 
     let linkPath = join(this.basePath, registry);
-    if (rxl.path) {
-      linkPath = join(linkPath, rxl.path);
+    if (rxi.path) {
+      linkPath = join(linkPath, rxi.path);
     }
-    return join(linkPath, rxl.name, tag);
+    return join(linkPath, rxi.name, tag);
   }
 
   /**
@@ -45,11 +45,11 @@ export class LinkedRegistry implements Registry {
     }
   }
 
-  async get(rxl: RXL): Promise<RXR> {
-    const linkPath = this.buildLinkPath(rxl);
+  async get(rxi: RXI): Promise<RXR> {
+    const linkPath = this.buildLinkPath(rxi);
 
     if (!(await this.isSymlink(linkPath))) {
-      throw new RegistryError(`Linked resource not found: ${format(rxl)}`);
+      throw new RegistryError(`Linked resource not found: ${format(rxi)}`);
     }
 
     // Read symlink target and load resource from there
@@ -65,37 +65,37 @@ export class LinkedRegistry implements Registry {
     throw new RegistryError("LinkedRegistry does not support put(). Use link() instead.");
   }
 
-  async has(rxl: RXL): Promise<boolean> {
-    const linkPath = this.buildLinkPath(rxl);
+  async has(rxi: RXI): Promise<boolean> {
+    const linkPath = this.buildLinkPath(rxi);
     return this.isSymlink(linkPath);
   }
 
-  async remove(rxl: RXL): Promise<void> {
-    const linkPath = this.buildLinkPath(rxl);
+  async remove(rxi: RXI): Promise<void> {
+    const linkPath = this.buildLinkPath(rxi);
 
     if (await this.isSymlink(linkPath)) {
       await rm(linkPath);
     }
   }
 
-  async list(options?: SearchOptions): Promise<RXL[]> {
+  async list(options?: SearchOptions): Promise<RXI[]> {
     const { query, limit, offset = 0 } = options ?? {};
-    const locators: RXL[] = [];
+    const identifiers: RXI[] = [];
 
     // Recursively scan for symlinks
     try {
-      await this.scanSymlinks(this.basePath, "", locators);
+      await this.scanSymlinks(this.basePath, "", identifiers);
     } catch {
       // Base directory doesn't exist
       return [];
     }
 
     // Filter by query
-    let filtered = locators;
+    let filtered = identifiers;
     if (query) {
       const lowerQuery = query.toLowerCase();
-      filtered = locators.filter((rxl) => {
-        const searchText = `${rxl.registry ?? ""} ${rxl.path ?? ""} ${rxl.name}`.toLowerCase();
+      filtered = identifiers.filter((rxi) => {
+        const searchText = `${rxi.registry ?? ""} ${rxi.path ?? ""} ${rxi.name}`.toLowerCase();
         return searchText.includes(lowerQuery);
       });
     }
@@ -116,12 +116,12 @@ export class LinkedRegistry implements Registry {
    * Creates a symlink so changes are reflected immediately.
    *
    * @param devPath - Path to development directory (must contain resource.json)
-   * @returns The RXL of the linked resource
+   * @returns The RXI of the linked resource
    */
-  async link(devPath: string): Promise<RXL> {
-    // Load resource to get locator info
+  async link(devPath: string): Promise<RXI> {
+    // Load resource to get identifier info
     const rxr = await loadResource(devPath);
-    const linkPath = this.buildLinkPath(rxr.locator);
+    const linkPath = this.buildLinkPath(rxr.identifier);
 
     // Remove existing if any
     try {
@@ -141,15 +141,15 @@ export class LinkedRegistry implements Registry {
     const absolutePath = resolvePath(devPath);
     await symlink(absolutePath, linkPath);
 
-    return rxr.locator;
+    return rxr.identifier;
   }
 
   /**
    * Unlink a development directory.
    * Alias for remove().
    */
-  async unlink(rxl: RXL): Promise<void> {
-    return this.remove(rxl);
+  async unlink(rxi: RXI): Promise<void> {
+    return this.remove(rxi);
   }
 
   /**
@@ -158,7 +158,7 @@ export class LinkedRegistry implements Registry {
   private async scanSymlinks(
     dirPath: string,
     relativePath: string,
-    locators: RXL[]
+    identifiers: RXI[]
   ): Promise<void> {
     let entries;
     try {
@@ -175,14 +175,14 @@ export class LinkedRegistry implements Registry {
         const stats = await lstat(fullPath);
 
         if (stats.isSymbolicLink()) {
-          // This is a linked resource, parse the path to get RXL
-          const rxl = this.parsePathToRXL(relPath);
-          if (rxl) {
-            locators.push(rxl);
+          // This is a linked resource, parse the path to get RXI
+          const rxi = this.parsePathToRXI(relPath);
+          if (rxi) {
+            identifiers.push(rxi);
           }
         } else if (stats.isDirectory()) {
           // Recurse into directory
-          await this.scanSymlinks(fullPath, relPath, locators);
+          await this.scanSymlinks(fullPath, relPath, identifiers);
         }
       } catch {
         // Skip entries we can't access
@@ -191,10 +191,10 @@ export class LinkedRegistry implements Registry {
   }
 
   /**
-   * Parse relative path to RXL.
+   * Parse relative path to RXI.
    * Path format: {registry}/{path}/{name}/{tag}
    */
-  private parsePathToRXL(relPath: string): RXL | null {
+  private parsePathToRXI(relPath: string): RXI | null {
     const parts = relPath.split("/");
 
     if (parts.length < 3) {

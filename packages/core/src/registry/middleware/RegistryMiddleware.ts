@@ -6,7 +6,7 @@
  * Subclasses can override specific methods to add behavior.
  */
 
-import type { RXL, RXR } from "~/model/index.js";
+import type { RXI, RXR } from "~/model/index.js";
 import type { Registry, SearchOptions } from "../registries/index.js";
 
 /**
@@ -17,23 +17,23 @@ import type { Registry, SearchOptions } from "../registries/index.js";
 export abstract class RegistryMiddleware implements Registry {
   constructor(protected readonly inner: Registry) {}
 
-  get(rxl: RXL): Promise<RXR> {
-    return this.inner.get(rxl);
+  get(rxi: RXI): Promise<RXR> {
+    return this.inner.get(rxi);
   }
 
   put(rxr: RXR): Promise<void> {
     return this.inner.put(rxr);
   }
 
-  has(rxl: RXL): Promise<boolean> {
-    return this.inner.has(rxl);
+  has(rxi: RXI): Promise<boolean> {
+    return this.inner.has(rxi);
   }
 
-  remove(rxl: RXL): Promise<void> {
-    return this.inner.remove(rxl);
+  remove(rxi: RXI): Promise<void> {
+    return this.inner.remove(rxi);
   }
 
-  list(options?: SearchOptions): Promise<RXL[]> {
+  list(options?: SearchOptions): Promise<RXI[]> {
     return this.inner.list(options);
   }
 }
