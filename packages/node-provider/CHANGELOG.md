@@ -1,5 +1,22 @@
 # @resourcexjs/node-provider
 
+## 2.11.0
+
+### Minor Changes
+
+- 2b95255: feat: auto-resolve registry from config and support runtime override
+
+  - Provider SPI: add optional `getDefaults()` method for platform-specific config resolution
+  - NodeProvider: implement `getDefaults()` — reads `RESOURCEX_REGISTRY` env var and `config.json`
+  - `createResourceX()`: auto-resolves registry from provider defaults when not explicitly provided
+  - `push()`/`pull()`: accept optional `{ registry }` parameter for per-operation override
+  - CLI: rename env vars to `RESOURCEX_REGISTRY`/`RESOURCEX_HOME` (old `RX_*` kept for backward compat)
+
+### Patch Changes
+
+- Updated dependencies [2b95255]
+  - @resourcexjs/core@2.11.0
+
 ## 2.10.0
 
 ### Patch Changes
@@ -19,6 +36,7 @@
 ### Minor Changes
 
 - 89233d7: feat: add Docker-style "latest" tag resolution
+
   - Add `setLatest`/`getLatest` to RXMStore interface for pointer-based latest tracking
   - FileSystemRXMStore stores `.latest` pointer file alongside version manifests
   - MemoryRXMStore tracks latest pointers in memory map
@@ -70,6 +88,7 @@
 ### Patch Changes
 
 - 3c43d76: docs: update documentation for Provider architecture
+
   - Update all READMEs to reflect new Provider pattern
   - Add setProvider() requirement in examples
   - Update storage layout documentation to CAS structure
