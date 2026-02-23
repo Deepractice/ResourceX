@@ -26,7 +26,10 @@ import { addTool, infoTool, ingestTool, listTool, pushTool, searchTool } from ".
 
 function readSharedConfig(): { registry?: string; path?: string } {
   try {
-    const rxHome = process.env.RX_HOME || join(homedir(), ".resourcex");
+    const rxHome =
+      process.env.RESOURCEX_HOME ||
+      process.env.RX_HOME ||
+      join(homedir(), ".deepractice", "resourcex");
     const configPath = join(rxHome, "config.json");
     if (existsSync(configPath)) {
       const raw = JSON.parse(readFileSync(configPath, "utf-8"));

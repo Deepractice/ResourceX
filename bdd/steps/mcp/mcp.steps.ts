@@ -43,6 +43,8 @@ Before({ tags: "@mcp" }, async function (this: MCPWorld) {
     env: {
       ...process.env,
       RESOURCEX_PATH: TEST_STORAGE_PATH,
+      RESOURCEX_HOME: TEST_STORAGE_PATH,
+      RESOURCEX_REGISTRY: "",
     },
   });
 

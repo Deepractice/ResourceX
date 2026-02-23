@@ -18,7 +18,7 @@ import { FolderLoader, FolderSourceLoader } from "@resourcexjs/core";
 import { FileSystemRXAStore } from "./FileSystemRXAStore.js";
 import { FileSystemRXMStore } from "./FileSystemRXMStore.js";
 
-const DEFAULT_BASE_PATH = `${homedir()}/.resourcex`;
+const DEFAULT_BASE_PATH = `${homedir()}/.deepractice/resourcex`;
 
 /**
  * Node.js/Bun provider for ResourceX.

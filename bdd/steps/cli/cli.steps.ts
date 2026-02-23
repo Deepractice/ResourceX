@@ -84,14 +84,17 @@ async function runRxCommand(
   return new Promise((resolve) => {
     const env: Record<string, string> = {
       ...(process.env as Record<string, string>),
+      RESOURCEX_HOME: rxHome,
       RX_HOME: rxHome,
     };
-    // Only set RX_REGISTRY when explicitly provided.
+    // Only set registry env when explicitly provided.
     // When undefined, CLI falls through to config.json registries.
     if (registry !== undefined) {
+      env.RESOURCEX_REGISTRY = registry;
       env.RX_REGISTRY = registry;
     } else {
       // Ensure parent process env doesn't leak
+      delete env.RESOURCEX_REGISTRY;
       delete env.RX_REGISTRY;
     }
 

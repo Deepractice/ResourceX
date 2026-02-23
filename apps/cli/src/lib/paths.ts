@@ -2,7 +2,7 @@
  * Default paths for ResourceX Client
  *
  * Directory structure:
- * ~/.resourcex/
+ * ~/.deepractice/resourcex/
  * ├── config.json     # CLI configuration
  * ├── local/          # Local resources (rx add)
  * ├── cache/          # Cached remote resources (rx pull)
@@ -16,7 +16,7 @@ import { join } from "node:path";
 
 // Support RESOURCEX_HOME environment variable (RX_HOME kept for backward compat)
 export const RX_HOME =
-  process.env.RESOURCEX_HOME || process.env.RX_HOME || join(homedir(), ".resourcex");
+  process.env.RESOURCEX_HOME || process.env.RX_HOME || join(homedir(), ".deepractice", "resourcex");
 
 // Client paths
 export const PATHS = {
