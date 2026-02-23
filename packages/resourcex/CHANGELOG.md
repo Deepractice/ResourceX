@@ -1,5 +1,12 @@
 # resourcexjs
 
+## 2.12.0
+
+### Patch Changes
+
+- @resourcexjs/core@2.12.0
+- @resourcexjs/arp@2.12.0
+
 ## 2.11.0
 
 ### Minor Changes
