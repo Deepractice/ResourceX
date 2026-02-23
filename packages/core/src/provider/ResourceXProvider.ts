@@ -62,6 +62,15 @@ export interface ProviderDefaults {
 }
 
 /**
+ * Registry entry in configuration.
+ */
+export interface RegistryEntry {
+  name: string;
+  url: string;
+  default?: boolean;
+}
+
+/**
  * ResourceX Provider - Platform implementation interface.
  *
  * Platforms implement this interface to provide storage and loading
@@ -98,4 +107,24 @@ export interface ResourceXProvider {
    * Priority: explicit config > env vars > config file > undefined
    */
   getDefaults?(config: ProviderConfig): ProviderDefaults;
+
+  /**
+   * List configured registries (optional).
+   */
+  getRegistries?(config: ProviderConfig): RegistryEntry[];
+
+  /**
+   * Add a registry to configuration (optional).
+   */
+  addRegistry?(config: ProviderConfig, name: string, url: string, setDefault?: boolean): void;
+
+  /**
+   * Remove a registry from configuration (optional).
+   */
+  removeRegistry?(config: ProviderConfig, name: string): void;
+
+  /**
+   * Set a registry as the default (optional).
+   */
+  setDefaultRegistry?(config: ProviderConfig, name: string): void;
 }

@@ -66,6 +66,7 @@ export type {
   ProviderConfig,
   ProviderDefaults,
   ProviderStores,
+  RegistryEntry,
   ResourceXProvider,
 } from "~/provider/index.js";
 // Registry (merged from @resourcexjs/registry)

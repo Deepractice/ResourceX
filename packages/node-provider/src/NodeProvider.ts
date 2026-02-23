@@ -4,13 +4,14 @@
  * Uses filesystem for blob storage and JSON files for manifest storage.
  */
 
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import type {
   ProviderConfig,
   ProviderDefaults,
   ProviderStores,
+  RegistryEntry,
   ResourceXProvider,
   SourceLoader,
 } from "@resourcexjs/core";
@@ -76,5 +77,84 @@ export class NodeProvider implements ResourceXProvider {
     }
 
     return {};
+  }
+
+  private configPath(config: ProviderConfig): string {
+    const basePath = (config.path as string) ?? DEFAULT_BASE_PATH;
+    return join(basePath, "config.json");
+  }
+
+  private readConfig(config: ProviderConfig): { registries?: RegistryEntry[] } {
+    const configPath = this.configPath(config);
+    try {
+      if (existsSync(configPath)) {
+        const raw = JSON.parse(readFileSync(configPath, "utf-8"));
+        // Auto-migrate old single registry field
+        if (raw.registry && !raw.registries) {
+          raw.registries = [{ name: "default", url: raw.registry, default: true }];
+          delete raw.registry;
+        }
+        return raw;
+      }
+    } catch {
+      // Ignore
+    }
+    return {};
+  }
+
+  private writeConfig(config: ProviderConfig, data: { registries?: RegistryEntry[] }): void {
+    const configPath = this.configPath(config);
+    mkdirSync(dirname(configPath), { recursive: true });
+    writeFileSync(configPath, JSON.stringify(data, null, 2));
+  }
+
+  getRegistries(config: ProviderConfig): RegistryEntry[] {
+    return this.readConfig(config).registries ?? [];
+  }
+
+  addRegistry(config: ProviderConfig, name: string, url: string, setDefault?: boolean): void {
+    const data = this.readConfig(config);
+    const registries = data.registries ?? [];
+
+    if (registries.some((r) => r.name === name)) {
+      throw new Error(`Registry "${name}" already exists`);
+    }
+
+    const isDefault = setDefault || registries.length === 0;
+    if (isDefault) {
+      for (const r of registries) r.default = false;
+    }
+
+    registries.push({ name, url, default: isDefault });
+    data.registries = registries;
+    this.writeConfig(config, data);
+  }
+
+  removeRegistry(config: ProviderConfig, name: string): void {
+    const data = this.readConfig(config);
+    const registries = data.registries ?? [];
+    const idx = registries.findIndex((r) => r.name === name);
+
+    if (idx === -1) {
+      throw new Error(`Registry "${name}" not found`);
+    }
+
+    registries.splice(idx, 1);
+    data.registries = registries;
+    this.writeConfig(config, data);
+  }
+
+  setDefaultRegistry(config: ProviderConfig, name: string): void {
+    const data = this.readConfig(config);
+    const registries = data.registries ?? [];
+    const entry = registries.find((r) => r.name === name);
+
+    if (!entry) {
+      throw new Error(`Registry "${name}" not found`);
+    }
+
+    for (const r of registries) r.default = r.name === name;
+    data.registries = registries;
+    this.writeConfig(config, data);
   }
 }

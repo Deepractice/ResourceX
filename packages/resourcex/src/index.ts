@@ -46,6 +46,7 @@ export type {
   IsolatorType,
   ProviderConfig,
   ProviderStores,
+  RegistryEntry,
   ResolveSourceConfig,
   ResourceXProvider,
   RXA,

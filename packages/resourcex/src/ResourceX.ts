@@ -14,6 +14,7 @@ import type {
   FileTree,
   IsolatorType,
   ProviderConfig,
+  RegistryEntry,
   ResourceXProvider,
   RXL,
   RXMArchive,
@@ -196,6 +197,10 @@ export interface ResourceX {
   pull(locator: string, options?: RegistryOptions): Promise<void>;
   clearCache(registry?: string): Promise<void>;
   supportType(type: BundledType): void;
+  registries(): RegistryEntry[];
+  addRegistry(name: string, url: string, setDefault?: boolean): void;
+  removeRegistry(name: string): void;
+  setDefaultRegistry(name: string): void;
 }
 
 /**
@@ -410,6 +415,31 @@ class DefaultResourceX implements ResourceX {
 
   supportType(type: BundledType): void {
     this.typeHandler.register(type);
+  }
+
+  registries(): RegistryEntry[] {
+    return this.provider.getRegistries?.(this.providerConfig) ?? [];
+  }
+
+  addRegistry(name: string, url: string, setDefault?: boolean): void {
+    if (!this.provider.addRegistry) {
+      throw new Error("Provider does not support registry management");
+    }
+    this.provider.addRegistry(this.providerConfig, name, url, setDefault);
+  }
+
+  removeRegistry(name: string): void {
+    if (!this.provider.removeRegistry) {
+      throw new Error("Provider does not support registry management");
+    }
+    this.provider.removeRegistry(this.providerConfig, name);
+  }
+
+  setDefaultRegistry(name: string): void {
+    if (!this.provider.setDefaultRegistry) {
+      throw new Error("Provider does not support registry management");
+    }
+    this.provider.setDefaultRegistry(this.providerConfig, name);
   }
 
   async putResource(rxr: RXR): Promise<Resource> {
