@@ -52,6 +52,16 @@ export interface ResourceLoader {
 }
 
 /**
+ * Platform-specific defaults resolved from environment variables and config files.
+ */
+export interface ProviderDefaults {
+  /**
+   * Default registry URL.
+   */
+  registry?: string;
+}
+
+/**
  * ResourceX Provider - Platform implementation interface.
  *
  * Platforms implement this interface to provide storage and loading
@@ -78,4 +88,14 @@ export interface ResourceXProvider {
    * Create source loader for auto-detection pipeline (optional).
    */
   createSourceLoader?(config: ProviderConfig): SourceLoader;
+
+  /**
+   * Resolve platform-specific defaults (optional).
+   *
+   * Called by createResourceX when config values are not explicitly provided.
+   * Reads environment variables and config files to provide sensible defaults.
+   *
+   * Priority: explicit config > env vars > config file > undefined
+   */
+  getDefaults?(config: ProviderConfig): ProviderDefaults;
 }

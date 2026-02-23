@@ -14,8 +14,9 @@
 import { homedir } from "node:os";
 import { join } from "node:path";
 
-// Support RX_HOME environment variable for testing
-export const RX_HOME = process.env.RX_HOME || join(homedir(), ".resourcex");
+// Support RESOURCEX_HOME environment variable (RX_HOME kept for backward compat)
+export const RX_HOME =
+  process.env.RESOURCEX_HOME || process.env.RX_HOME || join(homedir(), ".resourcex");
 
 // Client paths
 export const PATHS = {

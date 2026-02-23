@@ -92,7 +92,7 @@ export {
 // Provider API
 // ============================================
 export { clearProvider, getProvider, hasProvider, setProvider } from "./provider.js";
-export type { Resource, ResourceX, ResourceXConfig } from "./ResourceX.js";
+export type { RegistryOptions, Resource, ResourceX, ResourceXConfig } from "./ResourceX.js";
 // ============================================
 // Main API
 // ============================================

@@ -41,8 +41,8 @@ export async function getConfig(): Promise<Config> {
     delete fileConfig.registry;
   }
 
-  // Environment variables take precedence over config file
-  const envRegistry = process.env.RX_REGISTRY;
+  // Environment variables take precedence over config file (RESOURCEX_REGISTRY preferred, RX_REGISTRY for backward compat)
+  const envRegistry = process.env.RESOURCEX_REGISTRY ?? process.env.RX_REGISTRY;
   let registry: string | undefined;
   if (envRegistry !== undefined) {
     registry = envRegistry || undefined;
