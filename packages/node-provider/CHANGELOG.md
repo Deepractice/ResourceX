@@ -1,5 +1,18 @@
 # @resourcexjs/node-provider
 
+## 2.12.0
+
+### Minor Changes
+
+- 84c178d: feat: unify default storage path to ~/.deepractice/resourcex
+
+  NodeProvider, CLI, and MCP server all default to ~/.deepractice/resourcex instead of ~/.resourcex.
+  This aligns with the Deepractice convention where all tools share the ~/.deepractice/ prefix.
+
+### Patch Changes
+
+- @resourcexjs/core@2.12.0
+
 ## 2.11.0
 
 ### Minor Changes
