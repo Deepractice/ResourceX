@@ -171,6 +171,17 @@ interface Executable<T = unknown> {
 }
 
 /**
+ * Options for push/pull operations.
+ */
+export interface RegistryOptions {
+  /**
+   * Registry URL override for this operation.
+   * Takes precedence over the default registry.
+   */
+  registry?: string;
+}
+
+/**
  * ResourceX interface - unified API for resource management.
  */
 export interface ResourceX {
@@ -181,8 +192,8 @@ export interface ResourceX {
   resolve<T = unknown>(locator: string, args?: unknown): Promise<T>;
   ingest<T = unknown>(locator: RXL, args?: unknown): Promise<T>;
   search(query?: string): Promise<string[]>;
-  push(locator: string): Promise<void>;
-  pull(locator: string): Promise<void>;
+  push(locator: string, options?: RegistryOptions): Promise<void>;
+  pull(locator: string, options?: RegistryOptions): Promise<void>;
   clearCache(registry?: string): Promise<void>;
   supportType(type: BundledType): void;
 }
@@ -371,23 +382,25 @@ class DefaultResourceX implements ResourceX {
     return results.map((rxl) => format(rxl));
   }
 
-  async push(locator: string): Promise<void> {
-    if (!this.registryUrl) {
+  async push(locator: string, options?: RegistryOptions): Promise<void> {
+    const registry = options?.registry ?? this.registryUrl;
+    if (!registry) {
       throw new RegistryError("Registry URL not configured. Set 'registry' in config.");
     }
 
     const rxl = parse(locator);
     const rxr = await this.cas.get(rxl);
-    await this.publishToRegistry(rxr);
+    await this.publishToRegistry(rxr, registry);
   }
 
-  async pull(locator: string): Promise<void> {
-    if (!this.registryUrl) {
+  async pull(locator: string, options?: RegistryOptions): Promise<void> {
+    const registry = options?.registry ?? this.registryUrl;
+    if (!registry) {
       throw new RegistryError("Registry URL not configured. Set 'registry' in config.");
     }
 
-    const normalizedRegistry = normalizeRegistryUrl(this.registryUrl);
-    const rxr = await this.fetchFromRegistry(locator, this.registryUrl, normalizedRegistry);
+    const normalizedRegistry = normalizeRegistryUrl(registry);
+    const rxr = await this.fetchFromRegistry(locator, registry, normalizedRegistry);
     await this.cas.put(rxr);
   }
 
@@ -412,8 +425,8 @@ class DefaultResourceX implements ResourceX {
 
   // ===== Private methods =====
 
-  private async publishToRegistry(rxr: RXR): Promise<void> {
-    const baseUrl = this.registryUrl!.replace(/\/$/, "");
+  private async publishToRegistry(rxr: RXR, registryUrl: string): Promise<void> {
+    const baseUrl = registryUrl.replace(/\/$/, "");
     const publishUrl = `${baseUrl}/api/v1/publish`;
 
     const formData = new FormData();
@@ -573,6 +586,9 @@ class DefaultResourceX implements ResourceX {
  *
  * Requires a provider to be set first via setProvider() or by importing
  * a platform entry point like 'resourcexjs/node'.
+ *
+ * When registry is not explicitly provided, the provider's getDefaults()
+ * is consulted for environment variables and config file defaults.
  */
 export function createResourceX(config?: ResourceXConfig): ResourceX {
   if (!hasProvider()) {
@@ -581,5 +597,15 @@ export function createResourceX(config?: ResourceXConfig): ResourceX {
         'Import a platform entry point (e.g., "resourcexjs/node") or call setProvider() first.'
     );
   }
+
+  // Resolve registry from provider defaults when not explicitly provided
+  if (config?.registry === undefined) {
+    const provider = getProvider();
+    const defaults = provider.getDefaults?.({ path: config?.path });
+    if (defaults?.registry) {
+      config = { ...config, registry: defaults.registry };
+    }
+  }
+
   return new DefaultResourceX(config);
 }

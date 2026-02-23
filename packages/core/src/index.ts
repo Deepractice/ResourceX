@@ -62,7 +62,12 @@ export {
   wrap,
 } from "~/model/index.js";
 // Provider SPI
-export type { ProviderConfig, ProviderStores, ResourceXProvider } from "~/provider/index.js";
+export type {
+  ProviderConfig,
+  ProviderDefaults,
+  ProviderStores,
+  ResourceXProvider,
+} from "~/provider/index.js";
 // Registry (merged from @resourcexjs/registry)
 export type {
   DiscoveryResult,
