@@ -1,5 +1,13 @@
 # @resourcexjs/mcp-server
 
+## 2.13.0
+
+### Patch Changes
+
+- Updated dependencies [7286d94]
+  - @resourcexjs/node-provider@2.13.0
+  - resourcexjs@2.13.0
+
 ## 2.12.0
 
 ### Minor Changes
