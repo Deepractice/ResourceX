@@ -1,5 +1,20 @@
 # resourcexjs
 
+## 2.13.0
+
+### Minor Changes
+
+- 7286d94: feat: expose registry management API (registries, addRegistry, removeRegistry, setDefaultRegistry)
+
+  Provider SPI gains optional registry management methods. NodeProvider implements them.
+  ResourceX API proxies to provider, enabling downstream consumers (e.g. RoleX) to manage registries without direct config file access.
+
+### Patch Changes
+
+- Updated dependencies [7286d94]
+  - @resourcexjs/core@2.13.0
+  - @resourcexjs/arp@2.13.0
+
 ## 2.12.0
 
 ### Patch Changes
