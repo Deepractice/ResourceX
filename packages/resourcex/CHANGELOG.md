@@ -1,5 +1,13 @@
 # resourcexjs
 
+## 2.14.1
+
+### Patch Changes
+
+- 1d24462: feat: push() returns RXM manifest instead of void
+  - @resourcexjs/core@2.14.1
+  - @resourcexjs/arp@2.14.1
+
 ## 2.14.0
 
 ### Minor Changes
