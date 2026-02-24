@@ -215,6 +215,8 @@ class DefaultResourceX implements ResourceX {
   private readonly providerConfig: ProviderConfig;
   private readonly customDetectors: TypeDetector[];
   private readonly loaderChain: SourceLoaderChain;
+  /** Maps source path/URL to cached locator for freshness checks. */
+  private readonly sourceMap = new Map<string, string>();
 
   constructor(config?: ResourceXConfig) {
     this.provider = getProvider();
@@ -276,11 +278,15 @@ class DefaultResourceX implements ResourceX {
       });
       const newRxr = createResource(newManifest, rxr.archive);
       await this.cas.put(newRxr);
-      return this.toResource(newRxr);
+      const res = this.toResource(newRxr);
+      this.sourceMap.set(path, res.locator);
+      return res;
     }
 
     await this.cas.put(rxr);
-    return this.toResource(rxr);
+    const res = this.toResource(rxr);
+    this.sourceMap.set(path, res.locator);
+    return res;
   }
 
   async has(locator: string): Promise<boolean> {
@@ -322,13 +328,40 @@ class DefaultResourceX implements ResourceX {
     const isSource = await this.canLoadSource(locator);
 
     if (isSource) {
-      // Source path/URL: add to CAS first, then resolve
+      // Check if we already have a cached version and if it's still fresh
+      const cached = await this.findCachedForSource(locator);
+      if (cached) {
+        const isFresh = await this.loaderChain.isFresh(locator, cached.updatedAt);
+        if (isFresh) {
+          // Cache is still fresh — resolve directly without re-loading
+          return this.resolve<T>(cached.locator, args);
+        }
+      }
+
+      // Source path/URL: add to CAS (re-load from source), then resolve
       const resource = await this.add(locator);
       return this.resolve<T>(resource.locator, args);
     }
 
     // RXI identifier: resolve directly
     return this.resolve<T>(locator, args);
+  }
+
+  /**
+   * Find a cached resource for a source path and return its locator + updatedAt.
+   * Returns null if no cached version exists.
+   */
+  private async findCachedForSource(
+    source: string
+  ): Promise<{ locator: string; updatedAt: Date } | null> {
+    const locator = this.sourceMap.get(source);
+    if (!locator) return null;
+
+    const rxi = parse(locator);
+    const manifest = await this.cas.getStoredManifest(rxi);
+    if (!manifest?.updatedAt) return null;
+
+    return { locator, updatedAt: manifest.updatedAt };
   }
 
   /**

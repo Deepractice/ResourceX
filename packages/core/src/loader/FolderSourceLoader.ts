@@ -32,6 +32,41 @@ export class FolderSourceLoader implements SourceLoader {
   }
 
   /**
+   * Check if cached content is still fresh by comparing file mtimes.
+   * Returns true only if no file in the directory has been modified since cachedAt.
+   */
+  async isFresh(source: string, cachedAt: Date): Promise<boolean> {
+    try {
+      const maxMtime = await this.getMaxMtime(source);
+      return maxMtime <= cachedAt;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Get the most recent mtime across all files in a folder (recursive).
+   */
+  private async getMaxMtime(folderPath: string): Promise<Date> {
+    let max = new Date(0);
+    const entries = await readdir(folderPath, { withFileTypes: true });
+
+    for (const entry of entries) {
+      const fullPath = join(folderPath, entry.name);
+
+      if (entry.isFile()) {
+        const stats = await stat(fullPath);
+        if (stats.mtime > max) max = stats.mtime;
+      } else if (entry.isDirectory()) {
+        const subMax = await this.getMaxMtime(fullPath);
+        if (subMax > max) max = subMax;
+      }
+    }
+
+    return max;
+  }
+
+  /**
    * Recursively read all files in a folder.
    */
   private async readFolderFiles(

@@ -139,6 +139,15 @@ export class CASRegistry implements Registry {
     }));
   }
 
+  /**
+   * Get stored manifest metadata without extracting file contents.
+   * Useful for freshness checks (accessing updatedAt) without the cost of blob retrieval.
+   */
+  async getStoredManifest(rxi: RXI): Promise<StoredRXM | null> {
+    const tag = await this.resolveTag(rxi.name, rxi.tag ?? "latest", rxi.registry);
+    return this.rxmStore.get(rxi.name, tag, rxi.registry);
+  }
+
   // ===== CAS-specific methods =====
 
   /**
