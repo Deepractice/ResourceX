@@ -41,7 +41,7 @@ Given("no registries are configured", async function (this: RegistryChainWorld) 
 
 Given(
   "a configured registry {string} at {string}",
-  async function (this: RegistryChainWorld, name: string, url: string) {
+  async function (this: RegistryChainWorld, _name: string, url: string) {
     this.rx = createResourceX({ path: TEST_DIR, registry: url });
   }
 );
