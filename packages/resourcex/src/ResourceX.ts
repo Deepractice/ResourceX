@@ -17,6 +17,7 @@ import type {
   RegistryEntry,
   ResourceXProvider,
   RXL,
+  RXM,
   RXMArchive,
   RXMDefinition,
   RXMSource,
@@ -193,7 +194,7 @@ export interface ResourceX {
   resolve<T = unknown>(locator: string, args?: unknown): Promise<T>;
   ingest<T = unknown>(locator: RXL, args?: unknown): Promise<T>;
   search(query?: string): Promise<string[]>;
-  push(locator: string, options?: RegistryOptions): Promise<void>;
+  push(locator: string, options?: RegistryOptions): Promise<RXM>;
   pull(locator: string, options?: RegistryOptions): Promise<void>;
   clearCache(registry?: string): Promise<void>;
   supportType(type: BundledType): void;
@@ -420,7 +421,7 @@ class DefaultResourceX implements ResourceX {
     return results.map((rxl) => format(rxl));
   }
 
-  async push(locator: string, options?: RegistryOptions): Promise<void> {
+  async push(locator: string, options?: RegistryOptions): Promise<RXM> {
     const registry = options?.registry ?? this.registryUrl;
     if (!registry) {
       throw new RegistryError("Registry URL not configured. Set 'registry' in config.");
@@ -429,6 +430,7 @@ class DefaultResourceX implements ResourceX {
     const rxl = parse(locator);
     const rxr = await this.cas.get(rxl);
     await this.publishToRegistry(rxr, registry);
+    return rxr.manifest;
   }
 
   async pull(locator: string, options?: RegistryOptions): Promise<void> {
