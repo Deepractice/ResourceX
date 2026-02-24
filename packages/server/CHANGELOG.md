@@ -1,5 +1,13 @@
 # @resourcexjs/server
 
+## 2.14.0
+
+### Patch Changes
+
+- Updated dependencies [d1989e2]
+  - @resourcexjs/core@2.14.0
+  - @resourcexjs/node-provider@2.14.0
+
 ## 2.13.0
 
 ### Patch Changes

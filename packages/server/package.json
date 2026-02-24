@@ -1,6 +1,6 @@
 {
   "name": "@resourcexjs/server",
-  "version": "2.13.0",
+  "version": "2.14.0",
   "description": "ResourceX Registry Server - Protocol, Handlers, and Hono Server",
   "type": "module",
   "main": "./dist/index.js",
