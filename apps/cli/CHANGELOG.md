@@ -1,5 +1,14 @@
 # @resourcexjs/cli
 
+## 2.14.1
+
+### Patch Changes
+
+- Updated dependencies [1d24462]
+  - resourcexjs@2.14.1
+  - @resourcexjs/node-provider@2.14.1
+  - @resourcexjs/server@2.14.1
+
 ## 2.14.0
 
 ### Patch Changes

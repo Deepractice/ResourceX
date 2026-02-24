@@ -1,5 +1,11 @@
 # @resourcexjs/node-provider
 
+## 2.14.1
+
+### Patch Changes
+
+- @resourcexjs/core@2.14.1
+
 ## 2.14.0
 
 ### Patch Changes
