@@ -96,6 +96,9 @@ function extractPreview(files: Record<string, Buffer>): string | null {
   return null;
 }
 
+/** Built-in default registry — always available as fallback. */
+const DEFAULT_REGISTRY = "https://registry.deepractice.dev";
+
 /**
  * Normalize registry URL to host:port format.
  */
@@ -383,17 +386,10 @@ class DefaultResourceX implements ResourceX {
     try {
       rxr = await this.cas.get(rxl);
     } catch (error) {
-      // Auto-pull if not found locally
-      if (!rxl.registry && this.registryUrl) {
-        const normalizedRegistry = normalizeRegistryUrl(this.registryUrl);
-        try {
-          rxr = await this.fetchFromRegistry(format(rxl), this.registryUrl, normalizedRegistry);
-          await this.cas.put(rxr);
-        } catch {
-          throw error;
-        }
-      } else if (rxl.registry) {
-        const registryUrl = `http://${rxl.registry}`;
+      if (rxl.registry) {
+        // Pinned registry — fetch from the specified registry only
+        const protocol = rxl.registry.startsWith("localhost") ? "http" : "https";
+        const registryUrl = `${protocol}://${rxl.registry}`;
         const locatorWithoutRegistry = format({ ...rxl, registry: undefined });
         try {
           rxr = await this.fetchFromRegistry(locatorWithoutRegistry, registryUrl, rxl.registry);
@@ -402,7 +398,10 @@ class DefaultResourceX implements ResourceX {
           throw error;
         }
       } else {
-        throw error;
+        // No registry prefix — try registry chain in order
+        const pulled = await this.pullFromChain(format(rxl));
+        if (!pulled) throw error;
+        rxr = pulled;
       }
     }
 
@@ -528,6 +527,34 @@ class DefaultResourceX implements ResourceX {
     if (!response.ok) {
       throw new RegistryError(`Failed to publish: ${response.statusText}`);
     }
+  }
+
+  /**
+   * Try each registry in the chain until one succeeds.
+   * Order: configured registries → built-in default.
+   */
+  private async pullFromChain(locator: string): Promise<RXR | null> {
+    const entries = this.registries();
+    const urls = entries.map((e) => e.url);
+
+    // Append built-in default if not already in the list
+    const defaultUrl = DEFAULT_REGISTRY;
+    const normalizedUrls = urls.map((u) => normalizeRegistryUrl(u));
+    if (!normalizedUrls.includes(normalizeRegistryUrl(defaultUrl))) {
+      urls.push(defaultUrl);
+    }
+
+    for (const url of urls) {
+      const normalized = normalizeRegistryUrl(url);
+      try {
+        const rxr = await this.fetchFromRegistry(locator, url, normalized);
+        await this.cas.put(rxr);
+        return rxr;
+      } catch {
+        // Try next registry
+      }
+    }
+    return null;
   }
 
   private async fetchFromRegistry(
