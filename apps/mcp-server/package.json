@@ -1,6 +1,6 @@
 {
   "name": "@resourcexjs/mcp-server",
-  "version": "2.14.1",
+  "version": "2.15.0",
   "description": "ResourceX MCP Server for AI Agents",
   "license": "Apache-2.0",
   "type": "module",
