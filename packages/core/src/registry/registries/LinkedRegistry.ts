@@ -1,7 +1,7 @@
 import { lstat, mkdir, readdir, readlink, rm, symlink } from "node:fs/promises";
 import { join, resolve as resolvePath } from "node:path";
 import { loadResource } from "~/loader/index.js";
-import type { RXI, RXR } from "~/model/index.js";
+import type { RXI, RXM, RXR } from "~/model/index.js";
 import { format, parse } from "~/model/index.js";
 import { RegistryError } from "../errors.js";
 import type { Registry, SearchOptions } from "./Registry.js";
@@ -61,7 +61,7 @@ export class LinkedRegistry implements Registry {
    * Put is not typically used for LinkedRegistry.
    * Use link() instead to create symlinks.
    */
-  async put(_rxr: RXR): Promise<void> {
+  async put(_rxr: RXR): Promise<RXM> {
     throw new RegistryError("LinkedRegistry does not support put(). Use link() instead.");
   }
 
