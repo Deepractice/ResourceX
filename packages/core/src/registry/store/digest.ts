@@ -13,6 +13,19 @@ export function computeDigest(data: Buffer): string {
 }
 
 /**
+ * Compute deterministic archive digest from file-level digests.
+ * Sorts filenames, concatenates "filename:digest" lines, then SHA-256.
+ */
+export function computeArchiveDigest(files: Record<string, string>): string {
+  const entries = Object.keys(files)
+    .sort()
+    .map((name) => `${name}:${files[name]}`)
+    .join("\n");
+  const hash = createHash("sha256").update(entries).digest("hex");
+  return `sha256:${hash}`;
+}
+
+/**
  * Validate digest format.
  */
 export function isValidDigest(digest: string): boolean {

@@ -12,7 +12,7 @@ Feature: Collaboration between authors
     # Author A creates and publishes
     Given I create a resource directory "shared-prompt" with:
       | file          | content                                                 |
-      | resource.json | {"name":"shared-prompt","type":"text","version":"1.0.0"} |
+      | resource.json | {"name":"shared-prompt","type":"text","tag":"1.0.0"} |
       | content       | A useful prompt to share                                |
     When I run "rx add ./shared-prompt"
     And I run "rx push shared-prompt:1.0.0"
@@ -30,7 +30,7 @@ Feature: Collaboration between authors
     # Original author publishes
     Given I create a resource directory "original" with:
       | file          | content                                              |
-      | resource.json | {"name":"original","type":"text","version":"1.0.0"}  |
+      | resource.json | {"name":"original","type":"text","tag":"1.0.0"}  |
       | content       | Original implementation                              |
     When I run "rx add ./original"
     And I run "rx push original:1.0.0"
@@ -42,7 +42,7 @@ Feature: Collaboration between authors
     # Create modified version with new name
     Given I create a resource directory "improved" with:
       | file          | content                                               |
-      | resource.json | {"name":"improved","type":"text","version":"1.0.0"}   |
+      | resource.json | {"name":"improved","type":"text","tag":"1.0.0"}   |
       | content       | Improved implementation based on original             |
     When I run "rx add ./improved"
     And I run "rx push improved:1.0.0"
@@ -58,7 +58,7 @@ Feature: Collaboration between authors
     # Team member 1 creates initial version
     Given I create a resource directory "team-tool" with:
       | file          | content                                               |
-      | resource.json | {"name":"team-tool","type":"text","version":"1.0.0"}  |
+      | resource.json | {"name":"team-tool","type":"text","tag":"1.0.0"}  |
       | content       | Initial team tool by Member 1                         |
     When I run "rx add ./team-tool"
     And I run "rx push team-tool:1.0.0"
@@ -69,7 +69,7 @@ Feature: Collaboration between authors
 
     Given I create a resource directory "team-tool-v2" with:
       | file          | content                                               |
-      | resource.json | {"name":"team-tool","type":"text","version":"1.1.0"}  |
+      | resource.json | {"name":"team-tool","type":"text","tag":"1.1.0"}  |
       | content       | Improved by Member 2                                  |
     When I run "rx add ./team-tool-v2"
     And I run "rx push team-tool:1.1.0"
@@ -84,7 +84,7 @@ Feature: Collaboration between authors
     # Publisher pushes resource
     Given I create a resource directory "direct-access" with:
       | file          | content                                                  |
-      | resource.json | {"name":"direct-access","type":"text","version":"1.0.0"} |
+      | resource.json | {"name":"direct-access","type":"text","tag":"1.0.0"} |
       | content       | Directly accessible content                              |
     When I run "rx add ./direct-access"
     And I run "rx push direct-access:1.0.0"
@@ -108,7 +108,7 @@ Feature: Collaboration between authors
   Scenario: Push adds registry prefix to locator
     Given I create a resource directory "prefixed" with:
       | file          | content                                              |
-      | resource.json | {"name":"prefixed","type":"text","version":"1.0.0"}  |
+      | resource.json | {"name":"prefixed","type":"text","tag":"1.0.0"}  |
       | content       | This should get a registry prefix                    |
     When I run "rx add ./prefixed"
     And I run "rx push prefixed:1.0.0"

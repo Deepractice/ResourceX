@@ -104,7 +104,7 @@ async function publishResourceToServer(
   const archivePath = join(tmpDir, "archive.tar.gz");
 
   // Type is now in manifest, default to "text" for tests
-  await writeFile(manifestPath, JSON.stringify({ name, type: "text", version: tag }));
+  await writeFile(manifestPath, JSON.stringify({ name, type: "text", tag }));
   await writeFile(contentPath, content);
 
   // Create tar.gz with "content" file

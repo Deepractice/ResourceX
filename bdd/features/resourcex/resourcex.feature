@@ -9,8 +9,8 @@ Feature: ResourceX API
   @add
   Scenario: Add resource from directory
     Given a resource directory with:
-      | name      | type | version | content       |
-      | my-prompt | text | 1.0.0   | Hello World!  |
+      | name      | type | tag   | content       |
+      | my-prompt | text | 1.0.0 | Hello World!  |
     When I add the resource directory
     Then the resource "my-prompt:1.0.0" should exist
     And using "my-prompt:1.0.0" should return "Hello World!"
@@ -27,7 +27,7 @@ Feature: ResourceX API
     When I get info for "info-test:1.0.0"
     Then info name should be "info-test"
     And info type should be "text"
-    And info version should be "1.0.0"
+    And info tag should be "1.0.0"
 
   @remove
   Scenario: Remove local resource

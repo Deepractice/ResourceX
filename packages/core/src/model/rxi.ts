@@ -23,6 +23,9 @@ export interface RXI {
   /** Resource name */
   readonly name: string;
 
-  /** Tag (version or label). Defaults to "latest" if not specified. */
+  /** Tag (mutable pointer). Defaults to "latest" if not specified. */
   readonly tag: string;
+
+  /** Content digest (immutable hash, e.g., "sha256:abc123"). */
+  readonly digest?: string;
 }

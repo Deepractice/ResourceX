@@ -129,7 +129,7 @@ async function runRxCommand(
 async function publishToServer(
   name: string,
   type: string,
-  version: string,
+  tag: string,
   content: string
 ): Promise<void> {
   const { exec } = await import("node:child_process");
@@ -144,7 +144,7 @@ async function publishToServer(
   const contentPath = join(tmpDir, "content");
   const archivePath = join(tmpDir, "archive.tar.gz");
 
-  await writeFile(manifestPath, JSON.stringify({ name, type, version }));
+  await writeFile(manifestPath, JSON.stringify({ name, type, tag }));
   await writeFile(contentPath, content);
 
   // Create tar.gz with "content" file
@@ -152,7 +152,7 @@ async function publishToServer(
 
   // Publish via curl using new Docker-style locator format: registry/name:tag
   // Use localhost:PORT to match the normalized registry format
-  const locator = `localhost:${SERVER_PORT}/${name}:${version}`;
+  const locator = `localhost:${SERVER_PORT}/${name}:${tag}`;
   const _result = await execAsync(
     `curl -s -X POST ${SERVER_URL}/api/v1/publish ` +
       `-F "locator=${locator}" ` +
@@ -264,19 +264,19 @@ Given(
 Given(
   "a local resource {string} with content {string}",
   async function (this: CLIWorld, locator: string, content: string) {
-    // Parse locator in new Docker-style format: name:tag (tag is version)
+    // Parse locator in Docker-style format: name:tag
     // Type defaults to "text" since it's no longer in the locator
     const match = locator.match(/^([^:]+):(.+)$/);
     if (!match) {
       throw new Error(`Invalid locator: ${locator}`);
     }
-    const [, name, version] = match;
+    const [, name, tag] = match;
     const type = "text"; // Default type since it's no longer in locator
 
     // Create resource directory
     const resourceDir = join(TEST_RESOURCES, name);
     await mkdir(resourceDir, { recursive: true });
-    await writeFile(join(resourceDir, "resource.json"), JSON.stringify({ name, type, version }));
+    await writeFile(join(resourceDir, "resource.json"), JSON.stringify({ name, type, tag }));
     await writeFile(join(resourceDir, "content"), content);
 
     // Add using CLI
@@ -292,28 +292,28 @@ Given(
 Given(
   "a remote resource {string} on the registry",
   async function (this: CLIWorld, locator: string) {
-    // Parse locator in new Docker-style format: name:tag (tag is version)
+    // Parse locator in Docker-style format: name:tag
     const match = locator.match(/^([^:]+):(.+)$/);
     if (!match) {
       throw new Error(`Invalid locator: ${locator}`);
     }
-    const [, name, version] = match;
+    const [, name, tag] = match;
     const type = "text"; // Default type since it's no longer in locator
-    await publishToServer(name, type, version, "Remote content");
+    await publishToServer(name, type, tag, "Remote content");
   }
 );
 
 Given(
   "a remote resource {string} on the registry with content {string}",
   async function (this: CLIWorld, locator: string, content: string) {
-    // Parse locator in new Docker-style format: name:tag (tag is version)
+    // Parse locator in Docker-style format: name:tag
     const match = locator.match(/^([^:]+):(.+)$/);
     if (!match) {
       throw new Error(`Invalid locator: ${locator}`);
     }
-    const [, name, version] = match;
+    const [, name, tag] = match;
     const type = "text"; // Default type since it's no longer in locator
-    await publishToServer(name, type, version, content);
+    await publishToServer(name, type, tag, content);
   }
 );
 

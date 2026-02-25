@@ -96,20 +96,30 @@ export function parse(locator: string): RXI {
   // ✅ Security validation
   validateLocatorSecurity(locator);
 
-  // Validate no invalid characters
-  if (locator.includes("@")) {
-    throw new LocatorError("Invalid locator format. Use name:tag instead of name@version", locator);
+  // Extract digest if present (Docker-style: name[:tag]@digest)
+  let digest: string | undefined;
+  let locatorWithoutDigest = locator;
+  const atIndex = locator.indexOf("@");
+  if (atIndex !== -1) {
+    if (atIndex === 0) {
+      throw new LocatorError("Invalid locator format. Name is required before @", locator);
+    }
+    digest = locator.substring(atIndex + 1);
+    locatorWithoutDigest = locator.substring(0, atIndex);
+    if (!digest || digest.includes("@")) {
+      throw new LocatorError("Invalid digest format after @", locator);
+    }
   }
 
   // Split by last colon to extract tag (but be careful with registry port)
   // Strategy: find the name:tag part first, which is after the last /
-  const lastSlashIndex = locator.lastIndexOf("/");
+  const lastSlashIndex = locatorWithoutDigest.lastIndexOf("/");
   let beforeSlash = "";
-  let afterSlash = locator;
+  let afterSlash = locatorWithoutDigest;
 
   if (lastSlashIndex !== -1) {
-    beforeSlash = locator.substring(0, lastSlashIndex);
-    afterSlash = locator.substring(lastSlashIndex + 1);
+    beforeSlash = locatorWithoutDigest.substring(0, lastSlashIndex);
+    afterSlash = locatorWithoutDigest.substring(lastSlashIndex + 1);
   }
 
   // Parse name:tag from afterSlash
@@ -144,6 +154,7 @@ export function parse(locator: string): RXI {
       path: undefined,
       name,
       tag,
+      digest,
     };
   }
 
@@ -159,6 +170,7 @@ export function parse(locator: string): RXI {
       path,
       name,
       tag,
+      digest,
     };
   }
 
@@ -168,5 +180,6 @@ export function parse(locator: string): RXI {
     path: beforeSlash,
     name,
     tag,
+    digest,
   };
 }

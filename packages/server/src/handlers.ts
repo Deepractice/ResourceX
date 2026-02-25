@@ -79,9 +79,12 @@ export async function handlePublish(request: Request, registry: Registry): Promi
     const rxa = wrap(contentBuffer);
     const rxr = resource(rxm, rxa);
 
-    await registry.put(rxr);
+    const storedManifest = await registry.put(rxr);
 
-    const response: PublishResponse = { locator: format(rxr.identifier) };
+    const response: PublishResponse = {
+      locator: format(rxr.identifier),
+      digest: storedManifest.archive.digest,
+    };
     return jsonResponse(response, 201);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
@@ -105,6 +108,7 @@ export async function handleGetResource(locator: string, registry: Registry): Pr
       name: rxr.manifest.definition.name,
       type: rxr.manifest.definition.type,
       tag: rxr.manifest.definition.tag,
+      digest: rxr.manifest.archive.digest,
     };
     return jsonResponse(response);
   } catch (error) {

@@ -37,21 +37,6 @@ export interface ProviderStores {
 }
 
 /**
- * Resource loader interface for loading from directories/archives.
- */
-export interface ResourceLoader {
-  /**
-   * Check if this loader can handle the given source.
-   */
-  canLoad(source: string): boolean | Promise<boolean>;
-
-  /**
-   * Load resource from source.
-   */
-  load(source: string): Promise<unknown>; // Returns RXR
-}
-
-/**
  * Platform-specific defaults resolved from environment variables and config files.
  */
 export interface ProviderDefaults {
@@ -86,12 +71,6 @@ export interface ResourceXProvider {
    * Create storage instances for the platform.
    */
   createStores(config: ProviderConfig): ProviderStores;
-
-  /**
-   * Create resource loader (optional).
-   * Not all platforms support loading from filesystem.
-   */
-  createLoader?(config: ProviderConfig): ResourceLoader;
 
   /**
    * Create source loader for auto-detection pipeline (optional).

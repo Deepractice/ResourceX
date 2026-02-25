@@ -70,26 +70,4 @@ export class SourceLoaderChain {
     }
     throw new ResourceXError(`Cannot load source: ${source}`);
   }
-
-  /**
-   * Check if cached content for a source is still fresh.
-   *
-   * Delegates to the matching loader's isFresh method.
-   * Returns false if the loader doesn't implement isFresh (always reload).
-   *
-   * @param source - Source path or identifier
-   * @param cachedAt - When the resource was last cached
-   * @returns true if cache is still fresh
-   */
-  async isFresh(source: string, cachedAt: Date): Promise<boolean> {
-    for (const loader of this.loaders) {
-      if (await loader.canLoad(source)) {
-        if (loader.isFresh) {
-          return loader.isFresh(source, cachedAt);
-        }
-        return false;
-      }
-    }
-    return false;
-  }
 }

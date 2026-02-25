@@ -11,7 +11,7 @@ Feature: Create and test resource locally
     # Step 1: Create resource directory
     Given I create a resource directory "my-prompt" with:
       | file          | content                                            |
-      | resource.json | {"name":"my-prompt","type":"text","version":"1.0.0"} |
+      | resource.json | {"name":"my-prompt","type":"text","tag":"1.0.0"} |
       | content       | Hello, this is my first resource!                  |
 
     # Step 2: Add to local storage

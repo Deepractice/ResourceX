@@ -15,7 +15,7 @@ Feature: ResourceX CLI
   Scenario: Add resource from directory
     Given a CLI resource directory "hello-prompt" with:
       | file          | content                                          |
-      | resource.json | {"name":"hello","type":"text","version":"1.0.0"} |
+      | resource.json | {"name":"hello","type":"text","tag":"1.0.0"} |
       | content       | Hello World!                                     |
     When I run rx command "add ./hello-prompt"
     Then the command should succeed

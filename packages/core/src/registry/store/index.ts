@@ -4,7 +4,7 @@
  * These interfaces are implemented by platform-specific adapters.
  */
 
-export { computeDigest, isValidDigest } from "./digest.js";
+export { computeArchiveDigest, computeDigest, isValidDigest } from "./digest.js";
 // Memory implementations (for testing)
 export { MemoryRXAStore } from "./MemoryRXAStore.js";
 export { MemoryRXMStore } from "./MemoryRXMStore.js";

@@ -20,8 +20,8 @@ import type { ResourceLoader } from "./types.js";
  * {
  *   "name": "resource-name",      // required
  *   "type": "text",               // required
- *   "version": "1.0.0",           // required
- *   "domain": "localhost",        // optional, defaults to "localhost"
+ *   "tag": "1.0.0",              // optional, defaults to "latest"
+ *   "registry": "localhost",      // optional
  *   "path": "optional/path"       // optional
  * }
  * ```

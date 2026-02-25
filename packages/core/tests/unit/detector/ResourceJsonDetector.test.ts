@@ -44,21 +44,6 @@ describe("ResourceJsonDetector", () => {
     expect(result.path).toBe("tools");
   });
 
-  test("maps version to tag", () => {
-    const files = {
-      "resource.json": Buffer.from(
-        JSON.stringify({
-          name: "hello",
-          type: "text",
-          version: "2.0.0",
-        })
-      ),
-      content: Buffer.from("hi"),
-    };
-    const result = detector.detect(files, "/path")!;
-    expect(result.tag).toBe("2.0.0");
-  });
-
   test("returns null for invalid JSON", () => {
     const files = {
       "resource.json": Buffer.from("not json"),

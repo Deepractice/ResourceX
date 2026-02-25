@@ -29,7 +29,7 @@ export class ResourceJsonDetector implements TypeDetector {
     return {
       type: json.type as string,
       name: json.name as string,
-      tag: (json.tag as string) ?? (json.version as string) ?? undefined,
+      tag: json.tag as string | undefined,
       description: json.description as string | undefined,
       registry: json.registry as string | undefined,
       path: json.path as string | undefined,

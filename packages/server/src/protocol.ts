@@ -41,6 +41,7 @@ export interface ManifestData {
   name: string;
   type: string;
   tag: string;
+  digest?: string;
 }
 
 export const PUBLISH_FIELDS = {
@@ -61,6 +62,7 @@ export interface SearchQuery {
 
 export interface PublishResponse {
   locator: string;
+  digest?: string;
 }
 
 export type GetResourceResponse = ManifestData;

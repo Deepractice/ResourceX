@@ -12,7 +12,7 @@ Feature: Publish resource to registry
     # Step 1: Create and add resource locally
     Given I create a resource directory "my-tool" with:
       | file          | content                                          |
-      | resource.json | {"name":"my-tool","type":"text","version":"1.0.0"} |
+      | resource.json | {"name":"my-tool","type":"text","tag":"1.0.0"} |
       | content       | This is my awesome tool!                         |
     When I run "rx add ./my-tool"
     Then the command should succeed
@@ -31,7 +31,7 @@ Feature: Publish resource to registry
     # Setup: Publish a resource first
     Given I create a resource directory "shared-prompt" with:
       | file          | content                                               |
-      | resource.json | {"name":"shared-prompt","type":"text","version":"1.0.0"} |
+      | resource.json | {"name":"shared-prompt","type":"text","tag":"1.0.0"} |
       | content       | A prompt to share with others                         |
     When I run "rx add ./shared-prompt"
     And I run "rx push shared-prompt:1.0.0"

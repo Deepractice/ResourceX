@@ -15,7 +15,7 @@ import type {
   ResourceXProvider,
   SourceLoader,
 } from "@resourcexjs/core";
-import { FolderLoader, FolderSourceLoader } from "@resourcexjs/core";
+import { FolderSourceLoader } from "@resourcexjs/core";
 import { FileSystemRXAStore } from "./FileSystemRXAStore.js";
 import { FileSystemRXMStore } from "./FileSystemRXMStore.js";
 
@@ -38,10 +38,6 @@ export class NodeProvider implements ResourceXProvider {
       rxaStore: new FileSystemRXAStore(join(basePath, "blobs")),
       rxmStore: new FileSystemRXMStore(join(basePath, "manifests")),
     };
-  }
-
-  createLoader(_config: ProviderConfig): FolderLoader {
-    return new FolderLoader();
   }
 
   createSourceLoader(_config: ProviderConfig): SourceLoader {

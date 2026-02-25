@@ -68,13 +68,13 @@ async function createResourceDir(
   basePath: string,
   name: string,
   type: string,
-  version: string,
+  tag: string,
   content: string
 ): Promise<string> {
   const dir = join(basePath, name);
   await mkdir(dir, { recursive: true });
   await writeFile(join(dir, "content"), content);
-  await writeFile(join(dir, "resource.json"), JSON.stringify({ name, type, version }));
+  await writeFile(join(dir, "resource.json"), JSON.stringify({ name, type, tag }));
   return dir;
 }
 
@@ -87,7 +87,7 @@ Given(
   async function (
     this: ResourceXWorld,
     dataTable: {
-      hashes: () => Array<{ name: string; type: string; version: string; content: string }>;
+      hashes: () => Array<{ name: string; type: string; tag: string; content: string }>;
     }
   ) {
     const rows = dataTable.hashes();
@@ -96,7 +96,7 @@ Given(
       TEST_DIR,
       row.name,
       row.type,
-      row.version,
+      row.tag,
       row.content
     );
   }
@@ -244,7 +244,7 @@ Then("info type should be {string}", function (this: ResourceXWorld, expected: s
   assert.equal(this.info!.definition.type, expected);
 });
 
-Then("info version should be {string}", function (this: ResourceXWorld, expected: string) {
+Then("info tag should be {string}", function (this: ResourceXWorld, expected: string) {
   assert.equal(this.info!.definition.tag, expected);
 });
 

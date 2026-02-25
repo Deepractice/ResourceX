@@ -6,7 +6,7 @@
  * Subclasses can override specific methods to add behavior.
  */
 
-import type { RXI, RXR } from "~/model/index.js";
+import type { RXI, RXM, RXR } from "~/model/index.js";
 import type { Registry, SearchOptions } from "../registries/index.js";
 
 /**
@@ -21,7 +21,7 @@ export abstract class RegistryMiddleware implements Registry {
     return this.inner.get(rxi);
   }
 
-  put(rxr: RXR): Promise<void> {
+  put(rxr: RXR): Promise<RXM> {
     return this.inner.put(rxr);
   }
 

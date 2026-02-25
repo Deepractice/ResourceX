@@ -219,8 +219,6 @@ class DefaultResourceX implements ResourceX {
   private readonly providerConfig: ProviderConfig;
   private readonly customDetectors: TypeDetector[];
   private readonly loaderChain: SourceLoaderChain;
-  /** Maps source path/URL to cached locator for freshness checks. */
-  private readonly sourceMap = new Map<string, string>();
 
   constructor(config?: ResourceXConfig) {
     this.provider = getProvider();
@@ -278,18 +276,18 @@ class DefaultResourceX implements ResourceX {
         path: rxr.manifest.definition.path,
         name: rxr.manifest.definition.name,
         type: rxr.manifest.definition.type,
-        version: rxr.manifest.definition.tag,
+        tag: rxr.manifest.definition.tag,
       });
       const newRxr = createResource(newManifest, rxr.archive);
       await this.cas.put(newRxr);
       const res = this.toResource(newRxr);
-      this.sourceMap.set(path, res.locator);
+
       return res;
     }
 
     await this.cas.put(rxr);
     const res = this.toResource(rxr);
-    this.sourceMap.set(path, res.locator);
+
     return res;
   }
 
@@ -329,51 +327,16 @@ class DefaultResourceX implements ResourceX {
 
   async ingest<T = unknown>(locator: RXL, args?: unknown): Promise<T> {
     // Check if input is a loadable source (directory, URL, etc.)
-    const isSource = await this.canLoadSource(locator);
+    const isSource = await this.loaderChain.canLoad(locator);
 
     if (isSource) {
-      // Check if we already have a cached version and if it's still fresh
-      const cached = await this.findCachedForSource(locator);
-      if (cached) {
-        const isFresh = await this.loaderChain.isFresh(locator, cached.updatedAt);
-        if (isFresh) {
-          // Cache is still fresh — resolve directly without re-loading
-          return this.resolve<T>(cached.locator, args);
-        }
-      }
-
-      // Source path/URL: add to CAS (re-load from source), then resolve
+      // Always re-add from source — CAS deduplicates identical content
       const resource = await this.add(locator);
       return this.resolve<T>(resource.locator, args);
     }
 
     // RXI identifier: resolve directly
     return this.resolve<T>(locator, args);
-  }
-
-  /**
-   * Find a cached resource for a source path and return its locator + updatedAt.
-   * Returns null if no cached version exists.
-   */
-  private async findCachedForSource(
-    source: string
-  ): Promise<{ locator: string; updatedAt: Date } | null> {
-    const locator = this.sourceMap.get(source);
-    if (!locator) return null;
-
-    const rxi = parse(locator);
-    const manifest = await this.cas.getStoredManifest(rxi);
-    if (!manifest?.updatedAt) return null;
-
-    return { locator, updatedAt: manifest.updatedAt };
-  }
-
-  /**
-   * Check if input is a loadable source (directory, URL, etc.)
-   * by delegating to the loader chain.
-   */
-  private async canLoadSource(source: string): Promise<boolean> {
-    return this.loaderChain.canLoad(source);
   }
 
   /**
@@ -385,6 +348,18 @@ class DefaultResourceX implements ResourceX {
 
     try {
       rxr = await this.cas.get(rxl);
+
+      // Freshness check: if resource came from a registry, verify digest is still current
+      if (rxl.registry) {
+        const stale = await this.isRegistryCacheStale(rxl, rxr);
+        if (stale) {
+          const protocol = rxl.registry.startsWith("localhost") ? "http" : "https";
+          const registryUrl = `${protocol}://${rxl.registry}`;
+          const locatorWithoutRegistry = format({ ...rxl, registry: undefined });
+          rxr = await this.fetchFromRegistry(locatorWithoutRegistry, registryUrl, rxl.registry);
+          await this.cas.put(rxr);
+        }
+      }
     } catch (error) {
       if (rxl.registry) {
         // Pinned registry — fetch from the specified registry only
@@ -547,6 +522,18 @@ class DefaultResourceX implements ResourceX {
     for (const url of urls) {
       const normalized = normalizeRegistryUrl(url);
       try {
+        // Check if we already have a cached version from this registry
+        const rxlWithRegistry = parse(`${normalized}/${locator}`);
+        const stored = await this.cas.getStoredManifest(rxlWithRegistry);
+
+        if (stored?.digest) {
+          // Have cache — check remote digest before downloading content
+          const remoteDigest = await this.fetchRemoteDigest(locator, url);
+          if (remoteDigest && stored.digest === remoteDigest) {
+            return this.cas.get(rxlWithRegistry);
+          }
+        }
+
         const rxr = await this.fetchFromRegistry(locator, url, normalized);
         await this.cas.put(rxr);
         return rxr;
@@ -555,6 +542,43 @@ class DefaultResourceX implements ResourceX {
       }
     }
     return null;
+  }
+
+  /**
+   * Check if a cached registry resource is stale by comparing local digest with remote.
+   * Returns true if stale (remote has different digest), false if fresh.
+   * On network errors, returns false (use cache as fallback).
+   */
+  private async isRegistryCacheStale(rxl: ReturnType<typeof parse>, rxr: RXR): Promise<boolean> {
+    const localDigest = rxr.manifest.archive.digest;
+    if (!localDigest) return true; // No local digest — assume stale
+
+    try {
+      const protocol = rxl.registry!.startsWith("localhost") ? "http" : "https";
+      const registryUrl = `${protocol}://${rxl.registry}`;
+      const locatorWithoutRegistry = format({ ...rxl, registry: undefined });
+      const remoteDigest = await this.fetchRemoteDigest(locatorWithoutRegistry, registryUrl);
+      if (!remoteDigest) return true; // Remote doesn't return digest — assume stale
+      return localDigest !== remoteDigest;
+    } catch {
+      // Network error — use cache as fallback
+      return false;
+    }
+  }
+
+  /**
+   * Fetch only the manifest from a registry to get the digest (no content download).
+   */
+  private async fetchRemoteDigest(
+    locator: string,
+    registryUrl: string
+  ): Promise<string | undefined> {
+    const baseUrl = registryUrl.replace(/\/$/, "");
+    const manifestUrl = `${baseUrl}/api/v1/resource/${encodeURIComponent(locator)}`;
+    const response = await fetch(manifestUrl);
+    if (!response.ok) return undefined;
+    const data = (await response.json()) as { digest?: string };
+    return data.digest;
   }
 
   private async fetchFromRegistry(
@@ -581,6 +605,7 @@ class DefaultResourceX implements ResourceX {
       name: string;
       type: string;
       tag: string;
+      digest?: string;
     };
 
     const {
@@ -589,13 +614,18 @@ class DefaultResourceX implements ResourceX {
       resource: createResource,
     } = await import("@resourcexjs/core");
 
-    const rxm = createManifest({
+    const baseRxm = createManifest({
       registry,
       path: manifestData.path,
       name: manifestData.name,
       type: manifestData.type,
       tag: manifestData.tag,
     });
+
+    // Inject digest from server response into archive metadata
+    const rxm = manifestData.digest
+      ? { ...baseRxm, archive: { ...baseRxm.archive, digest: manifestData.digest } }
+      : baseRxm;
 
     const contentUrl = `${baseUrl}/api/v1/content/${encodeURIComponent(locator)}`;
     const contentResponse = await fetch(contentUrl);
@@ -624,7 +654,7 @@ class DefaultResourceX implements ResourceX {
         path: rxr.manifest.definition.path,
         name: rxr.manifest.definition.name,
         type: rxr.manifest.definition.type,
-        version: rxr.manifest.definition.tag,
+        tag: rxr.manifest.definition.tag,
       },
       files,
     };

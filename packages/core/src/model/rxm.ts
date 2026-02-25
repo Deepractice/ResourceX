@@ -24,10 +24,11 @@ export interface RXMDefinition {
 
 /**
  * RXM Archive — packaging metadata.
- * Placeholder for future fields (digest, size, md5, etc.)
  */
-// biome-ignore lint/complexity/noBannedTypes: intentional empty placeholder for future fields (digest, size, md5)
-export type RXMArchive = {};
+export interface RXMArchive {
+  /** Deterministic content digest computed from file-level digests. Format: sha256:<hex> */
+  readonly digest?: string;
+}
 
 /**
  * File entry with metadata.

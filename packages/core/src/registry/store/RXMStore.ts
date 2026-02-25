@@ -20,6 +20,7 @@ export interface StoredRXM {
   readonly license?: string;
   readonly keywords?: string[];
   readonly repository?: string;
+  readonly digest?: string; // deterministic content digest (sha256)
   readonly files: Record<string, string>; // filename → digest
   readonly createdAt?: Date;
   readonly updatedAt?: Date;

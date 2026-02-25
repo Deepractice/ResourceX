@@ -170,7 +170,7 @@ async function publishViaAPI(port: number, locator: string, content: string): Pr
   // Parse locator (Docker-style: name:tag)
   const match = locator.match(/^([^:]+):(.+)$/);
   if (!match) throw new Error(`Invalid locator: ${locator}`);
-  const [, name, version] = match;
+  const [, name, tag] = match;
 
   // Create temp files
   const tmpDir = join(BDD_ROOT, ".tmp-publish");
@@ -180,12 +180,12 @@ async function publishViaAPI(port: number, locator: string, content: string): Pr
   const contentPath = join(tmpDir, "content");
   const archivePath = join(tmpDir, "archive.tar.gz");
 
-  await writeFile(manifestPath, JSON.stringify({ name, type: "text", version }));
+  await writeFile(manifestPath, JSON.stringify({ name, type: "text", tag }));
   await writeFile(contentPath, content);
 
   await execAsync(`tar -czf ${archivePath} -C ${tmpDir} content`);
 
-  const fullLocator = `localhost/${name}:${version}`;
+  const fullLocator = `localhost/${name}:${tag}`;
   await execAsync(
     `curl -s -X POST http://localhost:${port}/api/v1/publish ` +
       `-F "locator=${fullLocator}" ` +

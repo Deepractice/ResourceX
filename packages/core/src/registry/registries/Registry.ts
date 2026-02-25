@@ -1,4 +1,4 @@
-import type { RXI, RXR } from "~/model/index.js";
+import type { RXI, RXM, RXR } from "~/model/index.js";
 
 /**
  * Search options for querying resources.
@@ -36,8 +36,9 @@ export interface Registry {
 
   /**
    * Store resource.
+   * @returns The stored manifest (with computed digest).
    */
-  put(rxr: RXR): Promise<void>;
+  put(rxr: RXR): Promise<RXM>;
 
   /**
    * Check if resource exists.

@@ -7,7 +7,6 @@ const RXDSchema = z
     name: z.string().min(1).max(128),
     type: z.string().min(1).max(64),
     tag: z.string().max(64).optional(),
-    version: z.string().max(64).optional(),
     registry: z.string().max(256).optional(),
     path: z.string().max(256).optional(),
     description: z.string().max(1024).optional(),
@@ -41,7 +40,7 @@ export function define(input: unknown): RXD {
   const rxd = Object.assign(Object.create(null), {
     name: validated.name,
     type: validated.type,
-    tag: validated.tag ?? validated.version ?? undefined,
+    tag: validated.tag ?? undefined,
     registry: validated.registry,
     path: validated.path,
     description: validated.description,

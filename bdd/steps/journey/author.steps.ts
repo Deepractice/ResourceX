@@ -197,13 +197,13 @@ Given(
     if (!match) {
       throw new Error(`Invalid locator: ${locator}`);
     }
-    const [, name, version] = match;
+    const [, name, tag] = match;
     const type = "text";
 
     // Create resource directory in fixtures
     const resourceDir = join(FIXTURES_DIR, `local-${name}`);
     await mkdir(resourceDir, { recursive: true });
-    await writeFile(join(resourceDir, "resource.json"), JSON.stringify({ name, type, version }));
+    await writeFile(join(resourceDir, "resource.json"), JSON.stringify({ name, type, tag }));
     await writeFile(join(resourceDir, "content"), content);
 
     // Add using CLI with author's RX_HOME

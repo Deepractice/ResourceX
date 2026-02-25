@@ -1,24 +1,24 @@
 @resourcex @latest
 Feature: Latest Tag Resolution
-  Resources can be used without specifying a version.
-  The "latest" tag is a pointer to the most recently added version.
+  Resources can be used without specifying a tag.
+  The "latest" tag is a pointer to the most recently added tag.
 
   # ============================================
   # Basic Latest Resolution
   # ============================================
 
-  Scenario: Use resource without version resolves to latest
+  Scenario: Use resource without tag resolves to latest
     Given I have added resource "hello:1.0.0" with type "text" and content "v1"
     When I use "hello"
     Then execute should return "v1"
 
-  Scenario: Latest points to most recently added version
+  Scenario: Latest points to most recently added tag
     Given I have added resource "hello:1.0.0" with type "text" and content "v1"
     And I have added resource "hello:2.0.0" with type "text" and content "v2"
     When I use "hello"
     Then execute should return "v2"
 
-  Scenario: Explicit version still works
+  Scenario: Explicit tag still works
     Given I have added resource "hello:1.0.0" with type "text" and content "v1"
     And I have added resource "hello:2.0.0" with type "text" and content "v2"
     When I use "hello:1.0.0"
@@ -33,17 +33,17 @@ Feature: Latest Tag Resolution
     Then has "hello" should return true
     And has "hello:latest" should return true
 
-  Scenario: Has returns false when no versions exist
+  Scenario: Has returns false when no tags exist
     Then has "nonexistent" should return false
 
   # ============================================
   # Info Resolution
   # ============================================
 
-  Scenario: Info resolves latest to actual version
+  Scenario: Info resolves latest to actual tag
     Given I have added resource "hello:1.0.0" with type "text" and content "v1"
     When I get info for "hello"
-    Then info version should be "1.0.0"
+    Then info tag should be "1.0.0"
 
   # ============================================
   # Non-semver Tags
@@ -64,7 +64,7 @@ Feature: Latest Tag Resolution
   # Backward Compatibility
   # ============================================
 
-  Scenario: Single version resource resolves without pointer
+  Scenario: Single tag resource resolves without pointer
     Given I have added resource "legacy:2.0.0" with type "text" and content "legacy content"
     When I use "legacy"
     Then execute should return "legacy content"

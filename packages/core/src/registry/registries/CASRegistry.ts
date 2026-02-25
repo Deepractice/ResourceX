@@ -11,6 +11,7 @@
 import type { RXI, RXM, RXR } from "~/model/index.js";
 import { archive, extract, format, resource } from "~/model/index.js";
 import { RegistryError } from "../errors.js";
+import { computeArchiveDigest } from "../store/digest.js";
 import type { RXAStore } from "../store/RXAStore.js";
 import type { RXMStore, StoredRXM } from "../store/RXMStore.js";
 import type { Registry, SearchOptions } from "./Registry.js";
@@ -63,7 +64,9 @@ export class CASRegistry implements Registry {
         keywords: storedRxm.keywords,
         repository: storedRxm.repository,
       },
-      archive: {},
+      archive: {
+        digest: storedRxm.digest ?? computeArchiveDigest(storedRxm.files),
+      },
       source: {},
     };
 
@@ -73,7 +76,7 @@ export class CASRegistry implements Registry {
     return resource(rxm, rxa);
   }
 
-  async put(rxr: RXR): Promise<void> {
+  async put(rxr: RXR): Promise<RXM> {
     // 1. Extract files from archive
     const files = await extract(rxr.archive);
 
@@ -84,7 +87,10 @@ export class CASRegistry implements Registry {
       fileDigests[filename] = digest;
     }
 
-    // 3. Build and store manifest
+    // 3. Compute deterministic archive digest from file-level digests
+    const digest = computeArchiveDigest(fileDigests);
+
+    // 4. Build and store manifest
     const storedRxm: StoredRXM = {
       registry: rxr.manifest.definition.registry,
       path: rxr.manifest.definition.path,
@@ -96,6 +102,7 @@ export class CASRegistry implements Registry {
       license: rxr.manifest.definition.license,
       keywords: rxr.manifest.definition.keywords,
       repository: rxr.manifest.definition.repository,
+      digest,
       files: fileDigests,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -109,6 +116,13 @@ export class CASRegistry implements Registry {
       rxr.manifest.definition.tag,
       rxr.manifest.definition.registry
     );
+
+    // Return manifest with computed digest
+    return {
+      definition: rxr.manifest.definition,
+      archive: { digest },
+      source: rxr.manifest.source,
+    };
   }
 
   async has(rxi: RXI): Promise<boolean> {

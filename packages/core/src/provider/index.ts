@@ -7,6 +7,5 @@ export type {
   ProviderDefaults,
   ProviderStores,
   RegistryEntry,
-  ResourceLoader,
   ResourceXProvider,
 } from "./ResourceXProvider.js";

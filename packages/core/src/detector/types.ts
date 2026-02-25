@@ -16,7 +16,7 @@ export interface TypeDetectionResult {
   /** Detected resource name */
   readonly name: string;
 
-  /** Tag/version (defaults to "latest" if not provided) */
+  /** Tag (defaults to "latest" if not provided) */
   readonly tag?: string;
 
   /** Description extracted from content */

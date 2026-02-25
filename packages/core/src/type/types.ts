@@ -25,7 +25,7 @@ export interface ResolveContext {
     path?: string;
     name: string;
     type: string;
-    version: string;
+    tag: string;
   };
 
   /**

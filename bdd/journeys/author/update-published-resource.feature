@@ -12,7 +12,7 @@ Feature: Update published resource
     # Step 1: Create and publish v1.0.0
     Given I create a resource directory "my-tool" with:
       | file          | content                                           |
-      | resource.json | {"name":"my-tool","type":"text","version":"1.0.0"} |
+      | resource.json | {"name":"my-tool","type":"text","tag":"1.0.0"} |
       | content       | Version 1.0.0 content                             |
     When I run "rx add ./my-tool"
     And I run "rx push my-tool:1.0.0"
@@ -21,7 +21,7 @@ Feature: Update published resource
     # Step 2: Update to v1.1.0
     Given I update the resource directory "my-tool" with:
       | file          | content                                           |
-      | resource.json | {"name":"my-tool","type":"text","version":"1.1.0"} |
+      | resource.json | {"name":"my-tool","type":"text","tag":"1.1.0"} |
       | content       | Version 1.1.0 with improvements                   |
     When I run "rx add ./my-tool"
     And I run "rx push my-tool:1.1.0"
@@ -36,14 +36,14 @@ Feature: Update published resource
     # Setup: Publish two versions
     Given I create a resource directory "versioned" with:
       | file          | content                                            |
-      | resource.json | {"name":"versioned","type":"text","version":"1.0.0"} |
+      | resource.json | {"name":"versioned","type":"text","tag":"1.0.0"} |
       | content       | Old version                                        |
     When I run "rx add ./versioned"
     And I run "rx push versioned:1.0.0"
 
     Given I update the resource directory "versioned" with:
       | file          | content                                            |
-      | resource.json | {"name":"versioned","type":"text","version":"2.0.0"} |
+      | resource.json | {"name":"versioned","type":"text","tag":"2.0.0"} |
       | content       | New version                                        |
     When I run "rx add ./versioned"
     And I run "rx push versioned:2.0.0"
@@ -60,7 +60,7 @@ Feature: Update published resource
     # Create v1.0.0 with a bug
     Given I create a resource directory "buggy" with:
       | file          | content                                          |
-      | resource.json | {"name":"buggy","type":"text","version":"1.0.0"} |
+      | resource.json | {"name":"buggy","type":"text","tag":"1.0.0"} |
       | content       | This has a bug                                   |
     When I run "rx add ./buggy"
     And I run "rx push buggy:1.0.0"
@@ -68,7 +68,7 @@ Feature: Update published resource
     # Fix the bug in v1.0.1
     Given I update the resource directory "buggy" with:
       | file          | content                                          |
-      | resource.json | {"name":"buggy","type":"text","version":"1.0.1"} |
+      | resource.json | {"name":"buggy","type":"text","tag":"1.0.1"} |
       | content       | Bug fixed!                                       |
     When I run "rx add ./buggy"
     And I run "rx push buggy:1.0.1"
