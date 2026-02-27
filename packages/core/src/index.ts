@@ -8,6 +8,7 @@
 export type { TypeDetectionResult, TypeDetector } from "~/detector/index.js";
 export {
   generateDefinition,
+  PrototypeDetector,
   ResourceJsonDetector,
   SkillDetector,
   TypeDetectorChain,
@@ -114,7 +115,9 @@ export {
   builtinTypes,
   bundleResourceType,
   jsonType,
+  prototypeType,
   ResourceTypeError,
+  skillType,
   TypeHandlerChain,
   textType,
 } from "~/type/index.js";

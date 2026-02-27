@@ -3,7 +3,14 @@
  */
 
 // Builtin types
-export { binaryType, builtinTypes, jsonType, skillType, textType } from "./builtinTypes.js";
+export {
+  binaryType,
+  builtinTypes,
+  jsonType,
+  prototypeType,
+  skillType,
+  textType,
+} from "./builtinTypes.js";
 
 // Bundler
 export { bundleResourceType } from "./bundler.js";

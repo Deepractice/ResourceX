@@ -1,4 +1,5 @@
 import { ResourceXError } from "~/errors.js";
+import { PrototypeDetector } from "./PrototypeDetector.js";
 import { ResourceJsonDetector } from "./ResourceJsonDetector.js";
 import { SkillDetector } from "./SkillDetector.js";
 import type { TypeDetectionResult, TypeDetector } from "./types.js";
@@ -14,7 +15,8 @@ import type { TypeDetectionResult, TypeDetector } from "./types.js";
  * Detection order:
  * 1. ResourceJsonDetector (explicit resource.json always wins)
  * 2. SkillDetector (SKILL.md pattern)
- * 3. Custom detectors (registered in order)
+ * 3. PrototypeDetector (prototype.json pattern)
+ * 4. Custom detectors (registered in order)
  */
 export class TypeDetectorChain {
   private readonly detectors: TypeDetector[] = [];
@@ -28,6 +30,7 @@ export class TypeDetectorChain {
     const chain = new TypeDetectorChain();
     chain.detectors.push(new ResourceJsonDetector());
     chain.detectors.push(new SkillDetector());
+    chain.detectors.push(new PrototypeDetector());
     return chain;
   }
 
