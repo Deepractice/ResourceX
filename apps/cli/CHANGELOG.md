@@ -1,5 +1,13 @@
 # @resourcexjs/cli
 
+## 2.17.2
+
+### Patch Changes
+
+- @resourcexjs/node-provider@2.17.2
+- resourcexjs@2.17.2
+- @resourcexjs/server@2.17.2
+
 ## 2.17.1
 
 ### Patch Changes

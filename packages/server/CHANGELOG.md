@@ -1,5 +1,13 @@
 # @resourcexjs/server
 
+## 2.17.2
+
+### Patch Changes
+
+- Updated dependencies [53cb97b]
+  - @resourcexjs/core@2.17.2
+  - @resourcexjs/node-provider@2.17.2
+
 ## 2.17.1
 
 ### Patch Changes

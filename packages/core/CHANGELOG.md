@@ -1,5 +1,15 @@
 # @resourcexjs/core
 
+## 2.17.2
+
+### Patch Changes
+
+- 53cb97b: Fix NpmSourceLoader to resolve from consumer's entry point
+
+  Use Bun.main / process.argv[1] as the parent context for import.meta.resolve,
+  so that workspace:\* packages are correctly resolved from the consuming package's
+  context rather than the bundled library's location or monorepo root.
+
 ## 2.17.1
 
 ### Patch Changes
