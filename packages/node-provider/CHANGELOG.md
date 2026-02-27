@@ -1,5 +1,12 @@
 # @resourcexjs/node-provider
 
+## 2.16.0
+
+### Patch Changes
+
+- Updated dependencies [1063b7c]
+  - @resourcexjs/core@2.16.0
+
 ## 2.15.0
 
 ### Minor Changes

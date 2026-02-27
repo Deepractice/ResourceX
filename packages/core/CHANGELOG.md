@@ -1,5 +1,14 @@
 # @resourcexjs/core
 
+## 2.16.0
+
+### Minor Changes
+
+- 1063b7c: feat: built-in prototype resource type and detector
+
+  - Add `prototypeType` as built-in type (resolves prototype.json + @filename references)
+  - Add `PrototypeDetector` for auto-detecting prototype resources from prototype.json
+
 ## 2.15.0
 
 ### Minor Changes
