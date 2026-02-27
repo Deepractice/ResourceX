@@ -1,5 +1,13 @@
 # @resourcexjs/cli
 
+## 2.16.1
+
+### Patch Changes
+
+- @resourcexjs/node-provider@2.16.1
+- resourcexjs@2.16.1
+- @resourcexjs/server@2.16.1
+
 ## 2.16.0
 
 ### Patch Changes
@@ -95,6 +103,7 @@
 - 8884adf: feat: restructure RXM as definition/archive/source context
 
   BREAKING CHANGE: RXM and Resource interfaces restructured from flat to nested.
+
   - RXM now has three sections: `definition`, `archive`, `source`
   - `definition` includes metadata from RXD: description, author, license, keywords, repository
   - `source.files` is a structured FileTree with sizes (replaces flat string array)
@@ -219,6 +228,7 @@
 ### Patch Changes
 
 - 74629d7: docs: restructure documentation with Divio system
+
   - Remove old docs/ directory
   - Add new docs structure: tutorials, guides, reference, concepts
   - Add documentation TOC to main README
