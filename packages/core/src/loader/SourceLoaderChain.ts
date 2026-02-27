@@ -2,6 +2,7 @@ import { ResourceXError } from "~/errors.js";
 import type { RXS } from "~/model/index.js";
 import { FolderSourceLoader } from "./FolderSourceLoader.js";
 import { GitHubSourceLoader } from "./GitHubSourceLoader.js";
+import { NpmSourceLoader } from "./NpmSourceLoader.js";
 import type { SourceLoader } from "./types.js";
 
 /**
@@ -15,7 +16,8 @@ import type { SourceLoader } from "./types.js";
  * Loading order:
  * 1. FolderSourceLoader (local directories)
  * 2. GitHubSourceLoader (GitHub URLs)
- * 3. Custom loaders (registered in order)
+ * 3. NpmSourceLoader (npm: prefixed packages)
+ * 4. Custom loaders (registered in order)
  */
 export class SourceLoaderChain {
   private readonly loaders: SourceLoader[] = [];
@@ -29,6 +31,7 @@ export class SourceLoaderChain {
     const chain = new SourceLoaderChain();
     chain.loaders.push(new FolderSourceLoader());
     chain.loaders.push(new GitHubSourceLoader());
+    chain.loaders.push(new NpmSourceLoader());
     return chain;
   }
 
