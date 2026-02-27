@@ -1,5 +1,14 @@
 # @resourcexjs/core
 
+## 2.17.1
+
+### Patch Changes
+
+- b34e5e6: Fix NpmSourceLoader resolving from bundle location instead of consumer's cwd
+
+  Use import.meta.resolve's second parameter (parent) to resolve from process.cwd(),
+  fixing resolution failures when NpmSourceLoader runs inside a bundled dist.
+
 ## 2.17.0
 
 ### Minor Changes
