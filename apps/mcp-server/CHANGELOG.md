@@ -1,5 +1,12 @@
 # @resourcexjs/mcp-server
 
+## 2.17.1
+
+### Patch Changes
+
+- @resourcexjs/node-provider@2.17.1
+- resourcexjs@2.17.1
+
 ## 2.17.0
 
 ### Patch Changes
