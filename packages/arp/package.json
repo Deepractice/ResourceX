@@ -1,6 +1,6 @@
 {
   "name": "@resourcexjs/arp",
-  "version": "2.16.1",
+  "version": "2.17.0",
   "description": "ARP (Agent Resource Protocol) - A URL protocol for AI agents to access resources",
   "keywords": [
     "arp",

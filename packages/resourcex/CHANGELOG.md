@@ -1,5 +1,13 @@
 # resourcexjs
 
+## 2.17.0
+
+### Patch Changes
+
+- Updated dependencies [60a6107]
+  - @resourcexjs/core@2.17.0
+  - @resourcexjs/arp@2.17.0
+
 ## 2.16.1
 
 ### Patch Changes
