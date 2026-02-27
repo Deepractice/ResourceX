@@ -1,5 +1,12 @@
 # @resourcexjs/mcp-server
 
+## 2.16.0
+
+### Patch Changes
+
+- @resourcexjs/node-provider@2.16.0
+- resourcexjs@2.16.0
+
 ## 2.15.0
 
 ### Patch Changes
@@ -71,7 +78,6 @@
 - 8884adf: feat: restructure RXM as definition/archive/source context
 
   BREAKING CHANGE: RXM and Resource interfaces restructured from flat to nested.
-
   - RXM now has three sections: `definition`, `archive`, `source`
   - `definition` includes metadata from RXD: description, author, license, keywords, repository
   - `source.files` is a structured FileTree with sizes (replaces flat string array)

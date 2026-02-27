@@ -1,5 +1,13 @@
 # @resourcexjs/server
 
+## 2.16.0
+
+### Patch Changes
+
+- Updated dependencies [1063b7c]
+  - @resourcexjs/core@2.16.0
+  - @resourcexjs/node-provider@2.16.0
+
 ## 2.15.0
 
 ### Minor Changes
@@ -7,14 +15,12 @@
 - 9bacb4b: feat: tag + digest model, remove version concept
 
   **Breaking changes:**
-
   - `ResolveContext.manifest.version` renamed to `tag`
   - `define()` no longer accepts `version` field (use `tag` instead)
   - `ResourceJsonDetector` no longer falls back to `version` field
   - `ResourceXProvider.createLoader()` removed (use `createSourceLoader()`)
 
   **New features:**
-
   - Archive digest: deterministic content hash computed from file-level digests
   - `Registry.put()` returns RXM with computed digest
   - Server publish/get responses include digest
@@ -22,7 +28,6 @@
   - Locator format supports digest reference: `name@sha256:abc123`
 
   **Cleanup:**
-
   - Removed `SourceLoader.isFresh` — freshness unified to digest comparison
   - Removed provider-level `ResourceLoader` interface (duplicate of loader-level)
   - Simplified `ingest()` — always re-adds from source, CAS deduplicates
@@ -96,7 +101,6 @@
 - 8884adf: feat: restructure RXM as definition/archive/source context
 
   BREAKING CHANGE: RXM and Resource interfaces restructured from flat to nested.
-
   - RXM now has three sections: `definition`, `archive`, `source`
   - `definition` includes metadata from RXD: description, author, license, keywords, repository
   - `source.files` is a structured FileTree with sizes (replaces flat string array)
@@ -148,7 +152,6 @@
 ### Patch Changes
 
 - 3c43d76: docs: update documentation for Provider architecture
-
   - Update all READMEs to reflect new Provider pattern
   - Add setProvider() requirement in examples
   - Update storage layout documentation to CAS structure

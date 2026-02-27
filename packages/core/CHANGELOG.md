@@ -1,5 +1,13 @@
 # @resourcexjs/core
 
+## 2.16.0
+
+### Minor Changes
+
+- 1063b7c: feat: built-in prototype resource type and detector
+  - Add `prototypeType` as built-in type (resolves prototype.json + @filename references)
+  - Add `PrototypeDetector` for auto-detecting prototype resources from prototype.json
+
 ## 2.15.0
 
 ### Minor Changes
@@ -7,14 +15,12 @@
 - 9bacb4b: feat: tag + digest model, remove version concept
 
   **Breaking changes:**
-
   - `ResolveContext.manifest.version` renamed to `tag`
   - `define()` no longer accepts `version` field (use `tag` instead)
   - `ResourceJsonDetector` no longer falls back to `version` field
   - `ResourceXProvider.createLoader()` removed (use `createSourceLoader()`)
 
   **New features:**
-
   - Archive digest: deterministic content hash computed from file-level digests
   - `Registry.put()` returns RXM with computed digest
   - Server publish/get responses include digest
@@ -22,7 +28,6 @@
   - Locator format supports digest reference: `name@sha256:abc123`
 
   **Cleanup:**
-
   - Removed `SourceLoader.isFresh` — freshness unified to digest comparison
   - Removed provider-level `ResourceLoader` interface (duplicate of loader-level)
   - Simplified `ingest()` — always re-adds from source, CAS deduplicates
@@ -36,7 +41,6 @@
 - d1989e2: feat: SourceLoader freshness check for cache invalidation
 
   SourceLoader gains optional `isFresh(source, cachedAt)` method. Each loader implements its own strategy:
-
   - FolderSourceLoader: compares file mtime against cachedAt (lightweight, no content read)
   - GitHubSourceLoader: not implemented (always stale, re-fetches every time)
 
@@ -60,7 +64,6 @@
 ### Minor Changes
 
 - 2b95255: feat: auto-resolve registry from config and support runtime override
-
   - Provider SPI: add optional `getDefaults()` method for platform-specific config resolution
   - NodeProvider: implement `getDefaults()` — reads `RESOURCEX_REGISTRY` env var and `config.json`
   - `createResourceX()`: auto-resolves registry from provider defaults when not explicitly provided
@@ -85,7 +88,6 @@
 - 8884adf: feat: restructure RXM as definition/archive/source context
 
   BREAKING CHANGE: RXM and Resource interfaces restructured from flat to nested.
-
   - RXM now has three sections: `definition`, `archive`, `source`
   - `definition` includes metadata from RXD: description, author, license, keywords, repository
   - `source.files` is a structured FileTree with sizes (replaces flat string array)
@@ -100,7 +102,6 @@
 ### Minor Changes
 
 - 89233d7: feat: add Docker-style "latest" tag resolution
-
   - Add `setLatest`/`getLatest` to RXMStore interface for pointer-based latest tracking
   - FileSystemRXMStore stores `.latest` pointer file alongside version manifests
   - MemoryRXMStore tracks latest pointers in memory map
@@ -187,14 +188,12 @@
 - 1408238: feat: add RemoteRegistry and auto-create Registry support
 
   ## Registry Package
-
   - Add `RemoteRegistry` for accessing remote registries via HTTP API
   - Add `discoverRegistry()` for well-known service discovery
   - Split `RegistryConfig` into `LocalRegistryConfig` and `RemoteRegistryConfig`
   - `createRegistry()` now supports both local and remote modes
 
   ## ARP Package
-
   - `RxrTransport` now auto-creates Registry based on domain:
     - `localhost` domain: Uses LocalRegistry (filesystem)
     - Other domains: Uses RemoteRegistry with well-known discovery
@@ -202,7 +201,6 @@
   - ARP now depends on registry package
 
   ## Core Package
-
   - Remove unused dependency on ARP package
 
   This completes Phase 2 and Phase 3 of the remote registry support plan.
@@ -246,7 +244,6 @@
 - 7862a52: feat: RXC archive format - multi-file resource support
 
   **Breaking Changes:**
-
   - `createRXC` now accepts a files record instead of string/Buffer/Stream
   - `createRXC` is now async (returns `Promise<RXC>`)
   - Removed `loadRXC` function (use `loadResource` instead)
@@ -267,13 +264,11 @@
   ```
 
   **FolderLoader improvements:**
-
   - No longer requires `content` file name
   - Supports any file names and nested directories
   - All files (except `resource.json`) are packaged into RXC
 
   **Internal:**
-
   - RXC now stores content as tar.gz archive internally
   - Uses `modern-tar` for tar packaging
 
@@ -288,14 +283,12 @@
 - 355851c: **BREAKING CHANGE**: Refactor package structure - separate type system and loader into dedicated packages
 
   ## New Packages
-
   - `@resourcexjs/type` - Type system with global singleton TypeHandlerChain
   - `@resourcexjs/loader` - Resource loading from various sources
 
   ## Breaking Changes
 
   ### Removed APIs
-
   - `defineResourceType()` - **REMOVED** (use `globalTypeHandlerChain.register()` or pass types to `createRegistry()`)
   - `getResourceType()` - **REMOVED**
   - `clearResourceTypes()` - **REMOVED** (use `globalTypeHandlerChain.clearExtensions()` for testing)
@@ -320,7 +313,6 @@
   ```
 
   ### Type System Changes
-
   - TypeHandlerChain is now a **global singleton**
   - Builtin types (text, json, binary) are automatically registered
   - Extension types are registered globally via `globalTypeHandlerChain.register()` or `createRegistry({ types })`
@@ -374,7 +366,6 @@
 - 4d31790: feat: add loadResource API for loading resources from folders
 
   Added `loadResource()` function with pluggable loader architecture to easily load resources from different sources:
-
   - **ResourceLoader interface**: Strategy pattern for custom loaders
   - **FolderLoader**: Default implementation for loading from folders
   - **loadResource()**: Main API with support for custom loaders
@@ -406,7 +397,6 @@
   ```
 
   **Breaking changes:**
-
   - BDD tests now only depend on `resourcexjs` package (removed `@resourcexjs/core` and `@resourcexjs/registry` dependencies)
 
 ### Patch Changes
@@ -438,7 +428,6 @@
 ### Minor Changes
 
 - a31ad63: Implement ResourceType system and Registry
-
   - Add ResourceType system with serializer/resolver and type aliases
   - Add @resourcexjs/registry package with ARPRegistry implementation
   - Add TypeHandlerChain for responsibility chain pattern
@@ -448,7 +437,6 @@
   - ARP now auto-registers default handlers
 
   Breaking changes:
-
   - Remove @resourcexjs/cli package
   - Remove resolver field from RXM manifest
 
@@ -457,7 +445,6 @@
 ### Minor Changes
 
 - 5577d4c: Rename deepractice transport to agentvm:
-
   - Rename `deepracticeHandler` to `agentvmHandler`
   - Rename `DeepracticeConfig` to `AgentVMConfig`
   - Change directory from `~/.deepractice/` to `~/.agentvm/`
@@ -496,7 +483,6 @@
 - bcbc247: feat: add deposit capability and refactor architecture
 
   ## New Features
-
   - **deposit**: Store resources using `rx.deposit(url, data)`
   - **exists**: Check if resource exists using `rx.exists(url)`
   - **delete**: Delete resource using `rx.delete(url)`
@@ -535,14 +521,12 @@
   ```
 
   ### Design Philosophy
-
   - **Transport**: WHERE + I/O primitives (read/write/list)
   - **Semantic**: WHAT + HOW (orchestrates transport primitives)
 
   This enables complex resources (directories, packages) where semantic controls the fetch/store logic.
 
   ## Breaking Changes
-
   - `TransportHandler.fetch` renamed to `read`
   - `TransportHandler.type` renamed to `name`
   - `SemanticHandler.type` renamed to `name`
