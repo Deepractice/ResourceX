@@ -1,5 +1,17 @@
 # @resourcexjs/core
 
+## 2.17.0
+
+### Minor Changes
+
+- 60a6107: Add NpmSourceLoader for loading resources from npm packages
+
+  - New `NpmSourceLoader` resolves `npm:` prefixed sources to installed package directories
+  - Uses `import.meta.resolve` for cross-runtime compatibility (Node.js 20+ and Bun)
+  - Supports both npm-installed packages and `workspace:*` linked packages
+  - Registered as built-in loader in `SourceLoaderChain.create()`
+  - Delegates to `FolderSourceLoader` for actual file reading
+
 ## 2.16.1
 
 ### Patch Changes
