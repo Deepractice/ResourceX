@@ -12,7 +12,7 @@ const NPM_PREFIX = "npm:";
  *
  * Recognizes sources prefixed with "npm:" (e.g. "npm:@rolexjs/rolex-prototype").
  * Resolves the package directory via import.meta.resolve with the consumer's
- * working directory as parent context, then delegates to FolderSourceLoader.
+ * entry point as parent context, then delegates to FolderSourceLoader.
  *
  * Supports both npm-installed packages and workspace:* linked packages.
  */
@@ -39,9 +39,13 @@ export class NpmSourceLoader implements SourceLoader {
   }
 
   private resolvePackageDir(packageName: string): string {
-    // Resolve from consumer's cwd, not from this bundled library's location.
-    // The second argument to import.meta.resolve sets the parent context.
-    const parent = pathToFileURL(join(process.cwd(), "noop.js")).href;
+    // Resolve from the consumer's entry point, not from this bundled library.
+    // Bun.main / process.argv[1] points to the entry script which lives inside
+    // the consuming package, giving import.meta.resolve the right context for
+    // both npm-installed and workspace:* packages.
+    const entry =
+      (globalThis as any).Bun?.main ?? process.argv[1] ?? join(process.cwd(), "noop.js");
+    const parent = pathToFileURL(entry).href;
     try {
       const url = import.meta.resolve(`${packageName}/package.json`, parent);
       return dirname(fileURLToPath(url));
