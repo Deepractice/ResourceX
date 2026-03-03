@@ -23,7 +23,7 @@ export type IsolatorType = "none" | "srt" | "cloudflare" | "e2b" | "custom";
 export type CustomExecutor = <TResult>(
   code: string,
   context: ResolveContext,
-  args?: unknown,
+  args?: unknown
 ) => Promise<TResult>;
 
 /**
