@@ -19,7 +19,7 @@
     },
     "apps/cli": {
       "name": "@resourcexjs/cli",
-      "version": "2.7.0",
+      "version": "2.18.0",
       "bin": {
         "rx": "./dist/index.js",
         "cli": "./dist/index.js",
@@ -38,7 +38,7 @@
     },
     "apps/mcp-server": {
       "name": "@resourcexjs/mcp-server",
-      "version": "2.7.0",
+      "version": "2.18.0",
       "bin": {
         "resourcex-mcp": "./dist/index.js",
         "mcp-server": "./dist/index.js",
@@ -74,11 +74,11 @@
     },
     "packages/arp": {
       "name": "@resourcexjs/arp",
-      "version": "2.7.0",
+      "version": "2.18.0",
     },
     "packages/core": {
       "name": "@resourcexjs/core",
-      "version": "2.7.0",
+      "version": "2.18.0",
       "dependencies": {
         "modern-tar": "^0.7.3",
         "zod": "^4.3.6",
@@ -86,23 +86,22 @@
     },
     "packages/node-provider": {
       "name": "@resourcexjs/node-provider",
-      "version": "2.7.0",
+      "version": "2.18.0",
       "dependencies": {
         "@resourcexjs/core": "workspace:*",
       },
     },
     "packages/resourcex": {
       "name": "resourcexjs",
-      "version": "2.7.0",
+      "version": "2.18.0",
       "dependencies": {
         "@resourcexjs/arp": "workspace:*",
         "@resourcexjs/core": "workspace:*",
-        "sandboxxjs": "^0.5.1",
       },
     },
     "packages/server": {
       "name": "@resourcexjs/server",
-      "version": "2.7.0",
+      "version": "2.18.0",
       "dependencies": {
         "@resourcexjs/core": "workspace:*",
         "@resourcexjs/node-provider": "workspace:*",

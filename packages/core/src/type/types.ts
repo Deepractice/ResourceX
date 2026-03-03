@@ -1,15 +1,10 @@
 /**
  * Isolator type for resolver execution.
- * Matches SandboX isolator types directly.
- * Configured at Registry level, not per-type.
  *
- * - "none": No isolation, fastest (~10ms), for development
- * - "srt": OS-level isolation (~50ms), secure local dev
- * - "cloudflare": Container isolation (~100ms), local Docker or edge
- * - "e2b": MicroVM isolation (~150ms), production (planned)
- * - "custom": User-provided executor function
+ * - "none": No isolation, direct eval execution (default)
+ * - "custom": User-provided executor function (e.g., QuickJS Wasm for Workers)
  */
-export type IsolatorType = "none" | "srt" | "cloudflare" | "e2b" | "custom";
+export type IsolatorType = "none" | "custom";
 
 /**
  * Custom executor function for resolver execution.

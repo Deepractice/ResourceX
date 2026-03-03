@@ -20,7 +20,7 @@ const result = await Bun.build({
   sourcemap: "external",
   minify: false,
   plugins: [rejectNodeBuiltins, dts()],
-  external: ["@resourcexjs/arp", "sandboxxjs"],
+  external: ["@resourcexjs/arp"],
   define: {
     __VERSION__: JSON.stringify(pkg.version),
   },

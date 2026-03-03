@@ -678,46 +678,20 @@ class DefaultResourceX implements ResourceX {
       return this.executor<TResult>(code, context, args);
     }
 
-    if (this.isolator === "none") {
-      const resolverMatch = code.match(/\/\/ @resolver: (\w+)/);
+    // isolator === "none": direct eval execution
+    const resolverMatch = code.match(/\/\/ @resolver: (\w+)/);
 
-      if (resolverMatch) {
-        const resolverName = resolverMatch[1];
-        const evalCode = `
+    if (resolverMatch) {
+      const resolverName = resolverMatch[1];
+      const evalCode = `
           ${code}
           ${resolverName};
         `;
-        const resolver = eval(evalCode);
-        return resolver.resolve(context, args);
-      } else {
-        const resolver = eval(`(${code})`);
-        return resolver.resolve(context, args);
-      }
+      const resolver = eval(evalCode);
+      return resolver.resolve(context, args);
     } else {
-      const { createSandbox } = await import("sandboxxjs");
-      const sandbox = createSandbox({ type: this.isolator } as any);
-
-      const resolverMatch = code.match(/\/\/ @resolver: (\w+)/);
-      const resolverName = resolverMatch ? resolverMatch[1] : "resolver";
-
-      const script = resolverMatch
-        ? `
-          ${code}
-          const ctx = ${JSON.stringify(context)};
-          const args = ${JSON.stringify(args)};
-          const result = await ${resolverName}.resolve(ctx, args);
-          console.log(JSON.stringify(result));
-        `
-        : `
-          const resolver = ${code};
-          const ctx = ${JSON.stringify(context)};
-          const args = ${JSON.stringify(args)};
-          const result = await resolver.resolve(ctx, args);
-          console.log(JSON.stringify(result));
-        `;
-
-      const result = await sandbox.execute(script);
-      return JSON.parse(result.stdout) as TResult;
+      const resolver = eval(`(${code})`);
+      return resolver.resolve(context, args);
     }
   }
 }

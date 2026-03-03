@@ -212,7 +212,7 @@ const rx = createResourceX({
   path: "~/.resourcex", // Storage path (default: ~/.resourcex)
   registry: "https://...", // Central registry URL (required for remote ops)
   types: [myType], // Custom types
-  isolator: "none", // Sandbox: none | srt | cloudflare | e2b
+  isolator: "none", // Execution: none | custom
 });
 ```
 

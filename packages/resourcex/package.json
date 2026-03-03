@@ -44,8 +44,7 @@
   },
   "dependencies": {
     "@resourcexjs/arp": "workspace:*",
-    "@resourcexjs/core": "workspace:*",
-    "sandboxxjs": "^0.5.1"
+    "@resourcexjs/core": "workspace:*"
   },
   "devDependencies": {},
   "publishConfig": {
