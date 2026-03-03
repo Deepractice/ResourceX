@@ -1,5 +1,21 @@
 # resourcexjs
 
+## 2.20.0
+
+### Minor Changes
+
+- a31fa3f: Remove sandboxxjs dependency and simplify isolator to `none | custom`
+
+  - **IsolatorType**: Remove `srt`, `cloudflare`, `e2b` options, keep only `none` and `custom`
+  - **resourcexjs**: Remove `sandboxxjs` dependency and sandbox execution branch
+  - Users needing isolated execution use `custom` executor (e.g., QuickJS Wasm)
+
+### Patch Changes
+
+- Updated dependencies [a31fa3f]
+  - @resourcexjs/core@2.20.0
+  - @resourcexjs/arp@2.20.0
+
 ## 2.19.0
 
 ### Minor Changes
