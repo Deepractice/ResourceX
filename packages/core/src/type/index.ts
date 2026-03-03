@@ -23,6 +23,7 @@ export { TypeHandlerChain } from "./TypeHandlerChain.js";
 // Types
 export type {
   BundledType,
+  CustomExecutor,
   IsolatorType,
   JSONSchema,
   JSONSchemaProperty,

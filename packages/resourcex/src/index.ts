@@ -41,6 +41,7 @@
 // ============================================
 export type {
   BundledType,
+  CustomExecutor,
   FileEntry,
   FileTree,
   IsolatorType,

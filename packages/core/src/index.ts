@@ -102,6 +102,7 @@ export {
 // Type System (merged from @resourcexjs/type)
 export type {
   BundledType,
+  CustomExecutor,
   IsolatorType,
   JSONSchema,
   JSONSchemaProperty,

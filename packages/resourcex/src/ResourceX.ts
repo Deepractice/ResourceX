@@ -11,6 +11,7 @@
 
 import type {
   BundledType,
+  CustomExecutor,
   FileTree,
   IsolatorType,
   ProviderConfig,
@@ -150,6 +151,12 @@ export interface ResourceXConfig {
   isolator?: IsolatorType;
 
   /**
+   * Custom executor function for resolver execution.
+   * Required when isolator is set to "custom".
+   */
+  executor?: CustomExecutor;
+
+  /**
    * Custom type detectors for auto-detection.
    * Built-in detectors (resource.json, SKILL.md) are always included.
    */
@@ -214,6 +221,7 @@ class DefaultResourceX implements ResourceX {
   private readonly registryUrl?: string;
   private readonly typeHandler: TypeHandlerChain;
   private readonly isolator: IsolatorType;
+  private readonly executor?: CustomExecutor;
   private readonly cas: CASRegistry;
   private readonly provider: ResourceXProvider;
   private readonly providerConfig: ProviderConfig;
@@ -225,6 +233,10 @@ class DefaultResourceX implements ResourceX {
     this.providerConfig = { path: config?.path };
     this.registryUrl = config?.registry;
     this.isolator = config?.isolator ?? "none";
+    this.executor = config?.executor;
+    if (this.isolator === "custom" && !this.executor) {
+      throw new Error('ResourceX: executor function is required when isolator is "custom"');
+    }
     this.customDetectors = config?.detectors ?? [];
 
     // Initialize type handler
@@ -658,6 +670,10 @@ class DefaultResourceX implements ResourceX {
       },
       files,
     };
+
+    if (this.isolator === "custom" && this.executor) {
+      return this.executor<TResult>(code, context, args);
+    }
 
     if (this.isolator === "none") {
       const resolverMatch = code.match(/\/\/ @resolver: (\w+)/);

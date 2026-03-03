@@ -7,8 +7,24 @@
  * - "srt": OS-level isolation (~50ms), secure local dev
  * - "cloudflare": Container isolation (~100ms), local Docker or edge
  * - "e2b": MicroVM isolation (~150ms), production (planned)
+ * - "custom": User-provided executor function
  */
-export type IsolatorType = "none" | "srt" | "cloudflare" | "e2b";
+export type IsolatorType = "none" | "srt" | "cloudflare" | "e2b" | "custom";
+
+/**
+ * Custom executor function for resolver execution.
+ * Used when isolator is set to "custom".
+ *
+ * @param code - Bundled resolver code string
+ * @param context - Pre-processed resolve context (manifest + files)
+ * @param args - Optional arguments for the resolver
+ * @returns Resolver result
+ */
+export type CustomExecutor = <TResult>(
+  code: string,
+  context: ResolveContext,
+  args?: unknown,
+) => Promise<TResult>;
 
 /**
  * ResolveContext - Pure data context passed to resolver in sandbox.
