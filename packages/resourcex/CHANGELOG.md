@@ -1,5 +1,23 @@
 # resourcexjs
 
+## 2.18.0
+
+### Minor Changes
+
+- f41c7ad: Add custom isolator support for pluggable resolver execution
+
+  - Add `"custom"` to IsolatorType union
+  - Add `CustomExecutor` type for user-provided executor functions
+  - Add `executor` option to ResourceXConfig
+  - executeResolver delegates to custom executor when isolator is "custom"
+  - Enables QuickJS Wasm execution in Cloudflare Workers (no eval)
+
+### Patch Changes
+
+- Updated dependencies [f41c7ad]
+  - @resourcexjs/core@2.18.0
+  - @resourcexjs/arp@2.18.0
+
 ## 2.17.2
 
 ### Patch Changes
