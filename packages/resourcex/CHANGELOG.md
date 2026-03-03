@@ -1,5 +1,25 @@
 # resourcexjs
 
+## 2.19.0
+
+### Minor Changes
+
+- a7c161f: Build with browser target to enforce environment-agnostic contracts
+
+  - Add `tools/browser-target.ts` Bun plugin that rejects `node:*` imports at build time
+  - **core**: Replace `node:crypto` with Web Crypto API, `node:zlib` with CompressionStream/DecompressionStream, `node:path` with pure string operations
+  - **core → node-provider**: Move `FolderSourceLoader`, `FolderLoader`, `NpmSourceLoader`, `LinkedRegistry`, `bundleResourceType` to node-provider
+  - **Provider SPI**: `createSourceLoader()` → `createSourceLoaders()` returning `SourceLoader[]`
+  - **server**: Remove unnecessary `@resourcexjs/node-provider` re-export
+  - **resourcexjs**: Mark `sandboxxjs` and `@resourcexjs/arp` as external
+
+### Patch Changes
+
+- 03fd1c3: Fix executeResolver context to use `domain` matching ResolveContext type
+- Updated dependencies [a7c161f]
+  - @resourcexjs/core@2.19.0
+  - @resourcexjs/arp@2.19.0
+
 ## 2.18.0
 
 ### Minor Changes
