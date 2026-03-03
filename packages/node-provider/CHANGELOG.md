@@ -1,5 +1,12 @@
 # @resourcexjs/node-provider
 
+## 2.18.0
+
+### Patch Changes
+
+- Updated dependencies [f41c7ad]
+  - @resourcexjs/core@2.18.0
+
 ## 2.17.2
 
 ### Patch Changes
