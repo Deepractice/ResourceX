@@ -29,8 +29,6 @@ export type {
   SourceLoader,
 } from "~/loader/index.js";
 export {
-  FolderLoader,
-  FolderSourceLoader,
   GitHubSourceLoader,
   loadResource,
   resolveSource,
@@ -91,7 +89,6 @@ export {
   // Discovery & middleware
   discoverRegistry,
   isValidDigest,
-  LinkedRegistry,
   // Memory implementations (for testing)
   MemoryRXAStore,
   MemoryRXMStore,
@@ -114,7 +111,6 @@ export type {
 export {
   binaryType,
   builtinTypes,
-  bundleResourceType,
   jsonType,
   prototypeType,
   ResourceTypeError,

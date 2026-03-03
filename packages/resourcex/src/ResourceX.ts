@@ -250,9 +250,11 @@ class DefaultResourceX implements ResourceX {
 
     // Initialize loader chain
     this.loaderChain = SourceLoaderChain.create();
-    const providerLoader = this.provider.createSourceLoader?.(this.providerConfig);
-    if (providerLoader) {
-      this.loaderChain.register(providerLoader);
+    const providerLoaders = this.provider.createSourceLoaders?.(this.providerConfig);
+    if (providerLoaders) {
+      for (const loader of providerLoaders) {
+        this.loaderChain.register(loader);
+      }
     }
 
     // Initialize CAS stores via provider

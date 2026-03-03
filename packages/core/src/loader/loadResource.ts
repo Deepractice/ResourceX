@@ -1,6 +1,5 @@
 import { ResourceXError } from "~/errors.js";
 import type { RXR } from "~/model/index.js";
-import { FolderLoader } from "./FolderLoader.js";
 import type { ResourceLoader } from "./types.js";
 
 /**
@@ -8,43 +7,31 @@ import type { ResourceLoader } from "./types.js";
  */
 export interface LoadResourceConfig {
   /**
-   * Custom loader to use. If not provided, defaults to FolderLoader.
+   * Loader to use. Required — environment-specific loaders are provided by the provider.
+   * For Node.js/Bun: use FolderLoader from @resourcexjs/node-provider.
    */
-  loader?: ResourceLoader;
+  loader: ResourceLoader;
 }
 
 /**
  * Load a resource from a given source using a ResourceLoader.
  *
- * By default, uses FolderLoader which expects:
- * ```
- * folder/
- * ├── resource.json    # Resource metadata
- * └── content          # Resource content
- * ```
- *
- * You can provide a custom loader via config.loader to support other formats
- * (e.g., zip, tar.gz, URLs).
- *
  * @param source - Source path or identifier
- * @param config - Optional configuration
+ * @param config - Configuration with loader
  * @returns Complete RXR object ready for registry.link()
  * @throws ResourceXError if the source cannot be loaded
  *
  * @example
  * ```typescript
- * // Load from folder (default)
- * const rxr = await loadResource("./my-resource");
- * await registry.link(rxr);
+ * import { FolderLoader } from "@resourcexjs/node-provider";
  *
- * // Load with custom loader
- * const rxr = await loadResource("resource.zip", {
- *   loader: new ZipLoader()
+ * const rxr = await loadResource("./my-resource", {
+ *   loader: new FolderLoader()
  * });
  * ```
  */
-export async function loadResource(source: string, config?: LoadResourceConfig): Promise<RXR> {
-  const loader = config?.loader ?? new FolderLoader();
+export async function loadResource(source: string, config: LoadResourceConfig): Promise<RXR> {
+  const loader = config.loader;
 
   // Check if loader can handle this source
   const canLoad = await loader.canLoad(source);

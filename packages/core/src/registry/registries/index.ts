@@ -7,5 +7,4 @@
  */
 
 export { CASRegistry } from "./CASRegistry.js";
-export { LinkedRegistry } from "./LinkedRegistry.js";
 export type { Registry, SearchOptions } from "./Registry.js";

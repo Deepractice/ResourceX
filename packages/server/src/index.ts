@@ -22,8 +22,6 @@
 export type { Registry, RXAStore, RXMStore } from "@resourcexjs/core";
 // Re-export core types for convenience
 export { CASRegistry } from "@resourcexjs/core";
-// Re-export node-provider stores for convenience
-export { FileSystemRXAStore, FileSystemRXMStore } from "@resourcexjs/node-provider";
 // Handlers
 export {
   handleDeleteResource,

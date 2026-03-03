@@ -1,9 +1,30 @@
-import { promisify } from "node:util";
-import { gzip } from "node:zlib";
 import { packTar } from "modern-tar";
 import type { RXA } from "./rxa.js";
 
-const gzipAsync = promisify(gzip);
+/**
+ * Compress data using Web API CompressionStream (gzip).
+ */
+async function gzipCompress(data: Uint8Array): Promise<Buffer> {
+  const cs = new CompressionStream("gzip");
+  const writer = cs.writable.getWriter();
+  writer.write(data);
+  writer.close();
+  const reader = cs.readable.getReader();
+  const chunks: Uint8Array[] = [];
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value);
+  }
+  const totalLength = chunks.reduce((sum, c) => sum + c.length, 0);
+  const result = new Uint8Array(totalLength);
+  let offset = 0;
+  for (const chunk of chunks) {
+    result.set(chunk, offset);
+    offset += chunk.length;
+  }
+  return Buffer.from(result);
+}
 
 /**
  * RXA Implementation for primitives
@@ -48,7 +69,7 @@ export async function archive(files: Record<string, Buffer>): Promise<RXA> {
   const tarBuffer = await packTar(entries);
 
   // Compress with gzip
-  const gzipBuffer = await gzipAsync(Buffer.from(tarBuffer));
+  const gzipBuffer = await gzipCompress(new Uint8Array(tarBuffer));
 
   return new RXAImpl(gzipBuffer);
 }

@@ -65,7 +65,7 @@ export class CASRegistry implements Registry {
         repository: storedRxm.repository,
       },
       archive: {
-        digest: storedRxm.digest ?? computeArchiveDigest(storedRxm.files),
+        digest: storedRxm.digest ?? (await computeArchiveDigest(storedRxm.files)),
       },
       source: {},
     };
@@ -88,7 +88,7 @@ export class CASRegistry implements Registry {
     }
 
     // 3. Compute deterministic archive digest from file-level digests
-    const digest = computeArchiveDigest(fileDigests);
+    const digest = await computeArchiveDigest(fileDigests);
 
     // 4. Build and store manifest
     const storedRxm: StoredRXM = {

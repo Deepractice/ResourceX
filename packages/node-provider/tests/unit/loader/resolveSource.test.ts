@@ -1,11 +1,22 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import type { TypeDetectionResult, TypeDetector } from "~/detector/types.js";
-import { resolveSource } from "~/loader/resolveSource.js";
-import { extract } from "~/model/index.js";
+import type { TypeDetectionResult, TypeDetector } from "@resourcexjs/core";
+import { extract, resolveSource, SourceLoaderChain } from "@resourcexjs/core";
+import { FolderSourceLoader } from "../../../src/FolderSourceLoader.js";
 
 const TEST_DIR = join(import.meta.dir, ".test-resolve-source");
+
+/**
+ * Create a SourceLoaderChain with FolderSourceLoader registered.
+ * Since core no longer includes filesystem loaders by default,
+ * tests must explicitly inject them.
+ */
+function createLoaderChain(): SourceLoaderChain {
+  const chain = SourceLoaderChain.create();
+  chain.register(new FolderSourceLoader());
+  return chain;
+}
 
 beforeEach(async () => {
   await mkdir(TEST_DIR, { recursive: true });
@@ -25,7 +36,7 @@ describe("resolveSource", () => {
     );
     await writeFile(join(dir, "content"), "Hello World!");
 
-    const rxr = await resolveSource(dir);
+    const rxr = await resolveSource(dir, { loaderChain: createLoaderChain() });
     expect(rxr.manifest.definition.name).toBe("hello");
     expect(rxr.manifest.definition.type).toBe("text");
     expect(rxr.manifest.definition.tag).toBe("1.0.0");
@@ -41,12 +52,11 @@ describe("resolveSource", () => {
     await mkdir(dir, { recursive: true });
     await writeFile(join(dir, "SKILL.md"), "# My Skill\nDo something useful");
 
-    const rxr = await resolveSource(dir);
+    const rxr = await resolveSource(dir, { loaderChain: createLoaderChain() });
     expect(rxr.manifest.definition.name).toBe("my-skill");
     expect(rxr.manifest.definition.type).toBe("skill");
 
     const files = await extract(rxr.archive);
-    // SKILL.md should be IN the archive (it's content)
     expect(files["SKILL.md"]).toBeDefined();
   });
 
@@ -56,13 +66,15 @@ describe("resolveSource", () => {
     await writeFile(join(dir, "resource.json"), JSON.stringify({ name: "explicit", type: "text" }));
     await writeFile(join(dir, "SKILL.md"), "# Skill\ncontent");
 
-    const rxr = await resolveSource(dir);
+    const rxr = await resolveSource(dir, { loaderChain: createLoaderChain() });
     expect(rxr.manifest.definition.name).toBe("explicit");
     expect(rxr.manifest.definition.type).toBe("text");
   });
 
   test("throws for non-existent directory", async () => {
-    await expect(resolveSource(join(TEST_DIR, "nope"))).rejects.toThrow("Cannot load source");
+    await expect(
+      resolveSource(join(TEST_DIR, "nope"), { loaderChain: createLoaderChain() })
+    ).rejects.toThrow("Cannot load source");
   });
 
   test("throws when no detector matches", async () => {
@@ -70,7 +82,9 @@ describe("resolveSource", () => {
     await mkdir(dir, { recursive: true });
     await writeFile(join(dir, "random.txt"), "hello");
 
-    await expect(resolveSource(dir)).rejects.toThrow("Cannot detect resource type");
+    await expect(resolveSource(dir, { loaderChain: createLoaderChain() })).rejects.toThrow(
+      "Cannot detect resource type"
+    );
   });
 
   test("uses custom detector", async () => {
@@ -88,7 +102,10 @@ describe("resolveSource", () => {
       },
     };
 
-    const rxr = await resolveSource(dir, { detectors: [promptDetector] });
+    const rxr = await resolveSource(dir, {
+      loaderChain: createLoaderChain(),
+      detectors: [promptDetector],
+    });
     expect(rxr.manifest.definition.name).toBe("auto-prompt");
     expect(rxr.manifest.definition.type).toBe("text");
   });

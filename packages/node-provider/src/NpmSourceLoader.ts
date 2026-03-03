@@ -1,0 +1,54 @@
+import { dirname, join } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { ResourceXError, type RXS, type SourceLoader } from "@resourcexjs/core";
+import { FolderSourceLoader } from "./FolderSourceLoader.js";
+
+const NPM_PREFIX = "npm:";
+
+/**
+ * NpmSourceLoader - Loads raw files from an installed package.
+ *
+ * Recognizes sources prefixed with "npm:" (e.g. "npm:@rolexjs/rolex-prototype").
+ * Resolves the package directory via import.meta.resolve with the consumer's
+ * entry point as parent context, then delegates to FolderSourceLoader.
+ *
+ * Supports both npm-installed packages and workspace:* linked packages.
+ */
+export class NpmSourceLoader implements SourceLoader {
+  private readonly folder = new FolderSourceLoader();
+
+  canLoad(source: string): boolean {
+    return source.startsWith(NPM_PREFIX);
+  }
+
+  async load(source: string): Promise<RXS> {
+    if (!this.canLoad(source)) {
+      throw new ResourceXError(`Not an npm source: ${source}`);
+    }
+
+    const packageName = source.slice(NPM_PREFIX.length);
+    if (!packageName) {
+      throw new ResourceXError(`Empty package name in npm source: ${source}`);
+    }
+
+    const packageDir = this.resolvePackageDir(packageName);
+    const rxs = await this.folder.load(packageDir);
+    return { source, files: rxs.files };
+  }
+
+  private resolvePackageDir(packageName: string): string {
+    // Resolve from the consumer's entry point, not from this bundled library.
+    // Bun.main / process.argv[1] points to the entry script which lives inside
+    // the consuming package, giving import.meta.resolve the right context for
+    // both npm-installed and workspace:* packages.
+    const entry =
+      (globalThis as any).Bun?.main ?? process.argv[1] ?? join(process.cwd(), "noop.js");
+    const parent = pathToFileURL(entry).href;
+    try {
+      const url = import.meta.resolve(`${packageName}/package.json`, parent);
+      return dirname(fileURLToPath(url));
+    } catch {
+      throw new ResourceXError(`Cannot resolve npm package: ${packageName}`);
+    }
+  }
+}

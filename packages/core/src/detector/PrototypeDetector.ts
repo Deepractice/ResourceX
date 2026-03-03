@@ -1,4 +1,3 @@
-import { basename } from "node:path";
 import type { TypeDetectionResult, TypeDetector } from "./types.js";
 
 /**
@@ -16,7 +15,7 @@ export class PrototypeDetector implements TypeDetector {
       return null;
     }
 
-    const name = basename(source);
+    const name = source.split("/").pop() ?? source;
 
     return {
       type: "prototype",

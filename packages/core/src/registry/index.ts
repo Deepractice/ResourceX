@@ -21,7 +21,7 @@ export { RegistryError } from "./errors.js";
 export { DomainValidation, RegistryMiddleware, withDomainValidation } from "./middleware/index.js";
 // Registry layer
 export type { Registry, SearchOptions } from "./registries/index.js";
-export { CASRegistry, LinkedRegistry } from "./registries/index.js";
+export { CASRegistry } from "./registries/index.js";
 // Store SPI interfaces
 export type { RXAStore, RXMSearchOptions, RXMStore, StoredRXM } from "./store/index.js";
 // Memory implementations (for testing)

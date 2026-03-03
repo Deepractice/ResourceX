@@ -1,23 +1,22 @@
 import { ResourceXError } from "~/errors.js";
 import type { RXS } from "~/model/index.js";
-import { FolderSourceLoader } from "./FolderSourceLoader.js";
 import { GitHubSourceLoader } from "./GitHubSourceLoader.js";
-import { NpmSourceLoader } from "./NpmSourceLoader.js";
 import type { SourceLoader } from "./types.js";
 
 /**
  * SourceLoaderChain - Chain of source loaders.
  *
  * Follows the same pattern as TypeDetectorChain:
- * - Static create() factory with built-in loaders
+ * - Static create() factory with built-in environment-agnostic loaders
  * - Extensible via register()
  * - First match wins
  *
- * Loading order:
- * 1. FolderSourceLoader (local directories)
- * 2. GitHubSourceLoader (GitHub URLs)
- * 3. NpmSourceLoader (npm: prefixed packages)
- * 4. Custom loaders (registered in order)
+ * Built-in loaders (environment-agnostic):
+ * 1. GitHubSourceLoader (GitHub URLs via fetch)
+ *
+ * Provider-registered loaders (environment-specific):
+ * - FolderSourceLoader (local directories) — via node-provider
+ * - NpmSourceLoader (npm: prefixed packages) — via node-provider
  */
 export class SourceLoaderChain {
   private readonly loaders: SourceLoader[] = [];
@@ -25,13 +24,12 @@ export class SourceLoaderChain {
   private constructor() {}
 
   /**
-   * Create a new SourceLoaderChain with built-in loaders.
+   * Create a new SourceLoaderChain with built-in environment-agnostic loaders.
+   * Environment-specific loaders (folder, npm) are registered by the provider.
    */
   static create(): SourceLoaderChain {
     const chain = new SourceLoaderChain();
-    chain.loaders.push(new FolderSourceLoader());
     chain.loaders.push(new GitHubSourceLoader());
-    chain.loaders.push(new NpmSourceLoader());
     return chain;
   }
 

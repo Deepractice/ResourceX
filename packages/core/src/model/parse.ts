@@ -1,4 +1,3 @@
-import { normalize } from "node:path";
 import { LocatorError } from "~/errors.js";
 import type { RXI } from "./rxi.js";
 
@@ -37,14 +36,20 @@ function validateLocatorSecurity(locator: string): void {
   }
 
   // Check for path traversal after normalization
-  const pathNormalized = normalize(decoded);
-  if (
-    pathNormalized.startsWith("..") ||
-    pathNormalized.includes("/..") ||
-    pathNormalized.includes("\\..") ||
-    pathNormalized.startsWith("/") ||
-    pathNormalized.startsWith("\\")
-  ) {
+  const segments = decoded.split("/");
+  const stack: string[] = [];
+  for (const seg of segments) {
+    if (seg === "..") {
+      if (stack.length > 0) stack.pop();
+      else {
+        throw new LocatorError("Path traversal detected", locator);
+      }
+    } else if (seg !== "." && seg !== "") {
+      stack.push(seg);
+    }
+  }
+  const pathNormalized = stack.join("/");
+  if (pathNormalized.startsWith("/") || pathNormalized.startsWith("\\")) {
     throw new LocatorError("Path traversal detected", locator);
   }
 

@@ -72,9 +72,7 @@ export type {
 // ============================================
 export {
   archive,
-  bundleResourceType,
   extract,
-  FolderSourceLoader,
   format,
   GitHubSourceLoader,
   generateDefinition,

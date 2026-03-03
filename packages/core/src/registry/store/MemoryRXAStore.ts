@@ -20,7 +20,7 @@ export class MemoryRXAStore implements RXAStore {
   }
 
   async put(data: Buffer): Promise<string> {
-    const digest = computeDigest(data);
+    const digest = await computeDigest(data);
     if (!this.blobs.has(digest)) {
       this.blobs.set(digest, data);
     }

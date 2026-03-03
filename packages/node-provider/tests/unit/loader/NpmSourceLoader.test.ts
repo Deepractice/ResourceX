@@ -1,17 +1,5 @@
-import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { mkdir, writeFile } from "node:fs/promises";
-import { join } from "node:path";
-import { NpmSourceLoader } from "~/loader/NpmSourceLoader.js";
-
-const TEST_DIR = join(import.meta.dir, ".test-npm-source-loader");
-
-beforeEach(async () => {
-  await mkdir(TEST_DIR, { recursive: true });
-});
-
-afterEach(async () => {
-  await rm(TEST_DIR, { recursive: true, force: true });
-});
+import { describe, expect, test } from "bun:test";
+import { NpmSourceLoader } from "../../../src/NpmSourceLoader.js";
 
 describe("NpmSourceLoader", () => {
   const loader = new NpmSourceLoader();
@@ -45,7 +33,6 @@ describe("NpmSourceLoader", () => {
     });
 
     test("loads files from a real npm package", async () => {
-      // Use bun:test itself — it's always available
       const rxs = await loader.load("npm:typescript");
       expect(rxs.source).toBe("npm:typescript");
       expect(rxs.files["package.json"]).toBeDefined();

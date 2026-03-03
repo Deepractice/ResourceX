@@ -15,9 +15,10 @@ import type {
   ResourceXProvider,
   SourceLoader,
 } from "@resourcexjs/core";
-import { FolderSourceLoader } from "@resourcexjs/core";
 import { FileSystemRXAStore } from "./FileSystemRXAStore.js";
 import { FileSystemRXMStore } from "./FileSystemRXMStore.js";
+import { FolderSourceLoader } from "./FolderSourceLoader.js";
+import { NpmSourceLoader } from "./NpmSourceLoader.js";
 
 const DEFAULT_BASE_PATH = `${homedir()}/.deepractice/resourcex`;
 
@@ -40,8 +41,8 @@ export class NodeProvider implements ResourceXProvider {
     };
   }
 
-  createSourceLoader(_config: ProviderConfig): SourceLoader {
-    return new FolderSourceLoader();
+  createSourceLoaders(_config: ProviderConfig): SourceLoader[] {
+    return [new FolderSourceLoader(), new NpmSourceLoader()];
   }
 
   getDefaults(config: ProviderConfig): ProviderDefaults {

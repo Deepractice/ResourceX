@@ -73,9 +73,10 @@ export interface ResourceXProvider {
   createStores(config: ProviderConfig): ProviderStores;
 
   /**
-   * Create source loader for auto-detection pipeline (optional).
+   * Create source loaders for auto-detection pipeline (optional).
+   * Returns environment-specific loaders to register on the chain.
    */
-  createSourceLoader?(config: ProviderConfig): SourceLoader;
+  createSourceLoaders?(config: ProviderConfig): SourceLoader[];
 
   /**
    * Resolve platform-specific defaults (optional).

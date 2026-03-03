@@ -1,4 +1,3 @@
-import { basename } from "node:path";
 import type { TypeDetectionResult, TypeDetector } from "./types.js";
 
 /**
@@ -18,7 +17,7 @@ export class SkillDetector implements TypeDetector {
       return null;
     }
 
-    const name = basename(source);
+    const name = source.split("/").pop() ?? source;
     const content = files["SKILL.md"].toString("utf-8");
     const description = this.extractDescription(content);
 

@@ -3,6 +3,7 @@
  */
 
 import { dts } from "bun-dts";
+import { rejectNodeBuiltins } from "../../tools/browser-target.ts";
 
 const pkg = await Bun.file("./package.json").json();
 const outdir = "./dist";
@@ -15,10 +16,11 @@ const result = await Bun.build({
   entrypoints: ["src/index.ts", "src/arp.ts"],
   outdir,
   format: "esm",
-  target: "node",
+  target: "browser",
   sourcemap: "external",
   minify: false,
-  plugins: [dts()],
+  plugins: [rejectNodeBuiltins, dts()],
+  external: ["@resourcexjs/arp", "sandboxxjs"],
   define: {
     __VERSION__: JSON.stringify(pkg.version),
   },

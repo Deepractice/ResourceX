@@ -59,7 +59,7 @@ export class FileSystemRXAStore implements RXAStore {
   }
 
   async put(data: Buffer): Promise<string> {
-    const digest = computeDigest(data);
+    const digest = await computeDigest(data);
     const path = this.getPath(digest);
 
     // Skip if already exists (deduplication)
