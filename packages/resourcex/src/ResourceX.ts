@@ -16,6 +16,7 @@ import type {
   IsolatorType,
   ProviderConfig,
   RegistryEntry,
+  ResolveContext,
   ResourceXProvider,
   RXL,
   RXM,
@@ -660,9 +661,9 @@ class DefaultResourceX implements ResourceX {
       files[filePath] = new Uint8Array(buffer);
     }
 
-    const context = {
+    const context: ResolveContext = {
       manifest: {
-        registry: rxr.manifest.definition.registry,
+        domain: rxr.manifest.definition.registry ?? "",
         path: rxr.manifest.definition.path,
         name: rxr.manifest.definition.name,
         type: rxr.manifest.definition.type,
