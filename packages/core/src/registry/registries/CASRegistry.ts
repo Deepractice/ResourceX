@@ -227,6 +227,48 @@ export class CASRegistry implements Registry {
   }
 
   /**
+   * Append files to an existing resource without re-archiving.
+   *
+   * Leverages per-file CAS storage: only new files are written to blob store,
+   * then the manifest's file map is extended and the digest recomputed.
+   *
+   * @param rxi - Resource identifier (name + tag)
+   * @param newFiles - Files to append: relative path → content
+   * @returns Updated StoredRXM
+   * @throws RegistryError if resource not found
+   */
+  async append(rxi: RXI, newFiles: Record<string, Buffer>): Promise<StoredRXM> {
+    const tag = await this.resolveTag(rxi.name, rxi.tag ?? "latest", rxi.registry);
+
+    // 1. Get existing manifest
+    const existing = await this.rxmStore.get(rxi.name, tag, rxi.registry);
+    if (!existing) {
+      throw new RegistryError(`Resource not found: ${format(rxi)}`);
+    }
+
+    // 2. Store new files, collect digests
+    const mergedFiles = { ...existing.files };
+    for (const [filename, content] of Object.entries(newFiles)) {
+      mergedFiles[filename] = await this.rxaStore.put(content);
+    }
+
+    // 3. Recompute archive digest
+    const digest = await computeArchiveDigest(mergedFiles);
+
+    // 4. Update manifest
+    const updated: StoredRXM = {
+      ...existing,
+      digest,
+      files: mergedFiles,
+      updatedAt: new Date(),
+    };
+
+    await this.rxmStore.put(updated);
+
+    return updated;
+  }
+
+  /**
    * Check if a digest exists in the blob store.
    * Useful for "instant upload" - skip uploading if server already has it.
    */
