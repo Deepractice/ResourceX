@@ -8,7 +8,7 @@
  * ResourceX is for AI agents (add, resolve, ingest, push, pull).
  */
 
-import type { RXAStore, RXMStore, StoredRXM } from "@resourcexjs/core";
+import type { RXAStore, RXM, RXMStore, RXR, StoredRXM } from "@resourcexjs/core";
 import { CASRegistry, parse } from "@resourcexjs/core";
 
 /**
