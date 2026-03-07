@@ -1,5 +1,11 @@
 # storexjs
 
+## 0.2.1
+
+### Patch Changes
+
+- 4a39675: fix: add missing RXR and RXM type imports for typecheck
+
 ## 0.2.0
 
 ### Minor Changes
