@@ -1,5 +1,15 @@
 # @resourcexjs/core
 
+## 2.21.0
+
+### Minor Changes
+
+- 2178d0e: Add file-level access API for retrieving individual files from resources
+
+  - CASRegistry.getFile(rxi, file): lookup manifest → get blob by digest directly
+  - ResourceX.getFile(locator, file): user-facing API for single file retrieval
+  - Server GET /content/:locator?file=path: serve individual files with proper Content-Type
+
 ## 2.20.0
 
 ### Minor Changes
