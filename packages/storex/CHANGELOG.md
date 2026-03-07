@@ -1,5 +1,15 @@
 # storexjs
 
+## 0.2.0
+
+### Minor Changes
+
+- e375c70: refactor: clean API — accept blobStore/manifestStore instead of CASRegistry
+
+  createStoreX now takes { blobStore, manifestStore } directly.
+  CASRegistry is created internally — callers never see it.
+  Removed CASRegistry from public exports.
+
 ## 0.1.0
 
 ### Minor Changes
