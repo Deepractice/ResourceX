@@ -8,8 +8,8 @@
  * ResourceX is for AI agents (add, resolve, ingest, push, pull).
  */
 
-import type { CASRegistry, RXI, RXM, RXR, SearchOptions, StoredRXM } from "@resourcexjs/core";
-import { format, parse } from "@resourcexjs/core";
+import type { CASRegistry, RXM, RXR, StoredRXM } from "@resourcexjs/core";
+import { parse } from "@resourcexjs/core";
 
 /**
  * File metadata returned by list operations.
