@@ -1,5 +1,22 @@
 # resourcexjs
 
+## 2.22.0
+
+### Minor Changes
+
+- d2c5164: refactor: remove getFile from ResourceX API
+
+  getFile is a storage-level operation that belongs in StoreX (storexjs),
+  not in the AI agent API (resourcexjs). CASRegistry.getFile remains
+  available through StoreX.
+
+### Patch Changes
+
+- Updated dependencies [ac9f80d]
+- Updated dependencies [f0010b8]
+  - @resourcexjs/core@2.22.0
+  - @resourcexjs/arp@2.22.0
+
 ## 2.21.0
 
 ### Minor Changes
