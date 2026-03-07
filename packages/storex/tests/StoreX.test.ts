@@ -1,26 +1,20 @@
 import { beforeEach, describe, expect, it } from "bun:test";
-import {
-  archive,
-  CASRegistry,
-  MemoryRXAStore,
-  MemoryRXMStore,
-  manifest,
-  resource,
-} from "@resourcexjs/core";
-import { createStoreX, type StoreX } from "../src/index";
+import { archive, manifest, resource } from "@resourcexjs/core";
+import { createStoreX, MemoryRXAStore, MemoryRXMStore, type StoreX } from "../src/index";
 
 describe("StoreX", () => {
   let store: StoreX;
-  let cas: CASRegistry;
 
   beforeEach(() => {
-    cas = new CASRegistry(new MemoryRXAStore(), new MemoryRXMStore());
-    store = createStoreX({ registry: cas });
+    store = createStoreX({
+      blobStore: new MemoryRXAStore(),
+      manifestStore: new MemoryRXMStore(),
+    });
   });
 
   describe("list", () => {
     it("lists all resources", async () => {
-      await cas.put(
+      await store.put(
         resource(
           manifest({ name: "img-pack", type: "binary", tag: "latest" }),
           await archive({ "photo.png": Buffer.from("png-data") })
@@ -35,13 +29,13 @@ describe("StoreX", () => {
     });
 
     it("filters by query", async () => {
-      await cas.put(
+      await store.put(
         resource(
           manifest({ name: "issue-5-files", type: "binary", tag: "latest" }),
           await archive({ "a.png": Buffer.from("a") })
         )
       );
-      await cas.put(
+      await store.put(
         resource(
           manifest({ name: "my-skill", type: "skill", tag: "latest" }),
           await archive({ "SKILL.md": Buffer.from("# Skill") })
@@ -56,7 +50,7 @@ describe("StoreX", () => {
 
   describe("getFile", () => {
     it("retrieves a single file by locator and path", async () => {
-      await cas.put(
+      await store.put(
         resource(
           manifest({ name: "attachments", type: "binary", tag: "latest" }),
           await archive({ "screenshot.png": Buffer.from("image-bytes") })
@@ -68,7 +62,7 @@ describe("StoreX", () => {
     });
 
     it("returns null for non-existent file", async () => {
-      await cas.put(
+      await store.put(
         resource(
           manifest({ name: "attachments", type: "binary", tag: "latest" }),
           await archive({ "a.txt": Buffer.from("a") })
@@ -82,7 +76,7 @@ describe("StoreX", () => {
 
   describe("append", () => {
     it("appends files to an existing resource", async () => {
-      await cas.put(
+      await store.put(
         resource(
           manifest({ name: "issue-3", type: "binary", tag: "latest" }),
           await archive({ "img1.png": Buffer.from("first") })
@@ -105,7 +99,7 @@ describe("StoreX", () => {
 
   describe("getManifest", () => {
     it("returns manifest metadata", async () => {
-      await cas.put(
+      await store.put(
         resource(
           manifest({ name: "docs", type: "text", tag: "1.0.0", description: "My docs" }),
           await archive({ "readme.md": Buffer.from("Hello") })
@@ -126,7 +120,7 @@ describe("StoreX", () => {
 
   describe("has", () => {
     it("returns true for existing resource", async () => {
-      await cas.put(
+      await store.put(
         resource(
           manifest({ name: "exists", type: "text", tag: "latest" }),
           await archive({ "a.txt": Buffer.from("a") })
@@ -157,7 +151,7 @@ describe("StoreX", () => {
 
   describe("remove", () => {
     it("removes a resource", async () => {
-      await cas.put(
+      await store.put(
         resource(
           manifest({ name: "temp", type: "text", tag: "latest" }),
           await archive({ "a.txt": Buffer.from("a") })

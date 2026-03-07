@@ -8,8 +8,8 @@
  * ResourceX is for AI agents (add, resolve, ingest, push, pull).
  */
 
-import type { CASRegistry, RXM, RXR, StoredRXM } from "@resourcexjs/core";
-import { parse } from "@resourcexjs/core";
+import type { RXAStore, RXMStore, StoredRXM } from "@resourcexjs/core";
+import { CASRegistry, parse } from "@resourcexjs/core";
 
 /**
  * File metadata returned by list operations.
@@ -28,8 +28,10 @@ export interface ResourceInfo {
  * StoreX configuration.
  */
 export interface StoreXConfig {
-  /** CASRegistry instance (the storage backend) */
-  registry: CASRegistry;
+  /** Blob storage backend (R2, filesystem, memory, etc.) */
+  blobStore: RXAStore;
+  /** Manifest storage backend (SQLite, D1, memory, etc.) */
+  manifestStore: RXMStore;
 }
 
 /**
@@ -39,7 +41,7 @@ export class StoreX {
   private readonly cas: CASRegistry;
 
   constructor(config: StoreXConfig) {
-    this.cas = config.registry;
+    this.cas = new CASRegistry(config.blobStore, config.manifestStore);
   }
 
   /**

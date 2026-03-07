@@ -5,8 +5,10 @@
  * ResourceX is for AI agents.
  */
 
-// Re-export store SPI types for implementors
+// SPI types — for platform implementors (R2RXAStore, DORXMStore, etc.)
 export type { RXAStore, RXMStore, StoredRXM } from "@resourcexjs/core";
-export { CASRegistry, MemoryRXAStore, MemoryRXMStore } from "@resourcexjs/core";
+// Memory implementations — for testing only
+export { MemoryRXAStore, MemoryRXMStore } from "@resourcexjs/core";
 export type { ResourceInfo, StoreXConfig } from "./StoreX.js";
+// StoreX API
 export { createStoreX, StoreX } from "./StoreX.js";
