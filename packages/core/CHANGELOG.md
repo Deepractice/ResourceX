@@ -1,5 +1,25 @@
 # @resourcexjs/core
 
+## 2.22.0
+
+### Minor Changes
+
+- ac9f80d: feat: add storexjs — Storage API for ResourceX applications
+
+  New package `storexjs` provides application-level storage operations:
+
+  - `createStoreX({ registry })` factory function
+  - `list()`, `getFile()`, `append()`, `getManifest()`, `has()`, `put()`, `remove()`
+
+  StoreX wraps CASRegistry for applications (Console, App gateway).
+  ResourceX (resourcexjs) remains the API for AI agents.
+
+- f0010b8: feat: add CASRegistry.append() for incremental file addition
+
+  Append files to an existing resource without re-archiving.
+  Leverages per-file CAS storage: only new files are written to blob store,
+  then the manifest's file map is extended and the digest recomputed.
+
 ## 2.21.0
 
 ### Minor Changes
