@@ -19,7 +19,7 @@
     },
     "apps/cli": {
       "name": "@resourcexjs/cli",
-      "version": "2.18.0",
+      "version": "2.21.0",
       "bin": {
         "rx": "./dist/index.js",
         "cli": "./dist/index.js",
@@ -38,7 +38,7 @@
     },
     "apps/mcp-server": {
       "name": "@resourcexjs/mcp-server",
-      "version": "2.18.0",
+      "version": "2.21.0",
       "bin": {
         "resourcex-mcp": "./dist/index.js",
         "mcp-server": "./dist/index.js",
@@ -74,11 +74,11 @@
     },
     "packages/arp": {
       "name": "@resourcexjs/arp",
-      "version": "2.18.0",
+      "version": "2.21.0",
     },
     "packages/core": {
       "name": "@resourcexjs/core",
-      "version": "2.18.0",
+      "version": "2.21.0",
       "dependencies": {
         "modern-tar": "^0.7.3",
         "zod": "^4.3.6",
@@ -86,14 +86,14 @@
     },
     "packages/node-provider": {
       "name": "@resourcexjs/node-provider",
-      "version": "2.18.0",
+      "version": "2.21.0",
       "dependencies": {
         "@resourcexjs/core": "workspace:*",
       },
     },
     "packages/resourcex": {
       "name": "resourcexjs",
-      "version": "2.18.0",
+      "version": "2.21.0",
       "dependencies": {
         "@resourcexjs/arp": "workspace:*",
         "@resourcexjs/core": "workspace:*",
@@ -101,11 +101,18 @@
     },
     "packages/server": {
       "name": "@resourcexjs/server",
-      "version": "2.18.0",
+      "version": "2.21.0",
       "dependencies": {
         "@resourcexjs/core": "workspace:*",
         "@resourcexjs/node-provider": "workspace:*",
         "hono": "^4.7.10",
+      },
+    },
+    "packages/storex": {
+      "name": "storexjs",
+      "version": "0.0.0",
+      "dependencies": {
+        "@resourcexjs/core": "workspace:*",
       },
     },
   },
@@ -1059,6 +1066,8 @@
     "statuses": ["statuses@2.0.2", "", {}, "sha512-DvEy55V3DB7uknRo+4iOGT5fP1slR8wQohVdknigZPMpMstaKJQWhwiYBACJE3Ul2pTnATihhBYnRhZQHGBiRw=="],
 
     "std-env": ["std-env@3.10.0", "", {}, "sha512-5GS12FdOZNliM5mAOxFRg7Ir0pWz8MdpYm6AY6VPkGpbA7ZzmbzNcBJQ0GPvvyWgcY7QAhCgf9Uy89I03faLkg=="],
+
+    "storexjs": ["storexjs@workspace:packages/storex"],
 
     "strict-event-emitter-types": ["strict-event-emitter-types@2.0.0", "", {}, "sha512-Nk/brWYpD85WlOgzw5h173aci0Teyv8YdIAEtV+N88nDB0dLlazZyJMIsN6eo1/AR61l+p6CJTG1JIyFaoNEEA=="],
 
