@@ -83,10 +83,11 @@ export function createRegistryServer(config: RegistryServerConfig): Hono {
     return handleDeleteResource(locator, registry);
   });
 
-  // GET /content/:locator
+  // GET /content/:locator?file=path/to/file
   app.get(`${ENDPOINTS.content}/:locator`, async (c) => {
     const locator = decodeURIComponent(c.req.param("locator"));
-    return handleGetContent(locator, registry);
+    const file = c.req.query("file");
+    return handleGetContent(locator, registry, file || undefined);
   });
 
   // GET /search

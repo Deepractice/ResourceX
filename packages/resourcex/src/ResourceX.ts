@@ -205,6 +205,7 @@ export interface ResourceX {
   resolve<T = unknown>(locator: string, args?: unknown): Promise<T>;
   ingest<T = unknown>(locator: RXL, args?: unknown): Promise<T>;
   search(query?: string): Promise<string[]>;
+  getFile(locator: string, file: string): Promise<Buffer | null>;
   push(locator: string, options?: RegistryOptions): Promise<RXM>;
   pull(locator: string, options?: RegistryOptions): Promise<void>;
   clearCache(registry?: string): Promise<void>;
@@ -333,6 +334,11 @@ class DefaultResourceX implements ResourceX {
   async remove(locator: string): Promise<void> {
     const rxl = parse(locator);
     await this.cas.remove(rxl);
+  }
+
+  async getFile(locator: string, file: string): Promise<Buffer | null> {
+    const rxl = parse(locator);
+    return this.cas.getFile(rxl, file);
   }
 
   async resolve<T = unknown>(locator: string, args?: unknown): Promise<T> {

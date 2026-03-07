@@ -154,6 +154,24 @@ export class CASRegistry implements Registry {
   }
 
   /**
+   * Get a single file from a resource by filename.
+   * Looks up the file's digest in the manifest, then retrieves the blob directly.
+   * Much cheaper than get() — no archive reassembly needed.
+   *
+   * @returns File content as Buffer, or null if resource or file not found.
+   */
+  async getFile(rxi: RXI, file: string): Promise<Buffer | null> {
+    const tag = await this.resolveTag(rxi.name, rxi.tag ?? "latest", rxi.registry);
+    const storedRxm = await this.rxmStore.get(rxi.name, tag, rxi.registry);
+    if (!storedRxm) return null;
+
+    const digest = storedRxm.files[file];
+    if (!digest) return null;
+
+    return this.rxaStore.get(digest);
+  }
+
+  /**
    * Get stored manifest metadata without extracting file contents.
    * Useful for freshness checks (accessing updatedAt) without the cost of blob retrieval.
    */

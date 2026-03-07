@@ -4,7 +4,7 @@
  * Handler functions for Next.js Route Handler or any other framework.
  */
 
-import type { Registry } from "@resourcexjs/core";
+import type { CASRegistry, Registry } from "@resourcexjs/core";
 import { format, manifest, parse, resource, wrap } from "@resourcexjs/core";
 import {
   ERROR_CODES,
@@ -156,12 +156,66 @@ export async function handleDeleteResource(locator: string, registry: Registry):
 }
 
 /**
- * Handle GET /content/:locator
+ * Infer Content-Type from file extension.
  */
-export async function handleGetContent(locator: string, registry: Registry): Promise<Response> {
+function inferContentType(filename: string): string {
+  const ext = filename.split(".").pop()?.toLowerCase();
+  const types: Record<string, string> = {
+    png: "image/png",
+    jpg: "image/jpeg",
+    jpeg: "image/jpeg",
+    gif: "image/gif",
+    webp: "image/webp",
+    svg: "image/svg+xml",
+    ico: "image/x-icon",
+    pdf: "application/pdf",
+    json: "application/json",
+    md: "text/markdown",
+    txt: "text/plain",
+    html: "text/html",
+    css: "text/css",
+    js: "text/javascript",
+    ts: "text/typescript",
+    yaml: "text/yaml",
+    yml: "text/yaml",
+    xml: "application/xml",
+    csv: "text/csv",
+  };
+  return types[ext ?? ""] ?? "application/octet-stream";
+}
+
+/**
+ * Handle GET /content/:locator
+ *
+ * Without ?file= query parameter: returns the full archive (tar.gz).
+ * With ?file=path/to/file: returns a single file from the resource.
+ */
+export async function handleGetContent(
+  locator: string,
+  registry: Registry,
+  file?: string
+): Promise<Response> {
   try {
     const rxl = parse(locator);
     const localRxl = { ...rxl, registry: undefined };
+
+    // Single file access
+    if (file && "getFile" in registry) {
+      const buffer = await (registry as CASRegistry).getFile(localRxl, file);
+      if (!buffer) {
+        return errorResponse("File not found", ERROR_CODES.RESOURCE_NOT_FOUND, 404);
+      }
+      return new Response(buffer, {
+        status: 200,
+        headers: {
+          "Content-Type": inferContentType(file),
+          "Content-Length": buffer.byteLength.toString(),
+          "Cache-Control": "public, max-age=31536000, immutable",
+        },
+      });
+    }
+
+    // Full archive
     const rxr = await registry.get(localRxl);
     const buffer = await rxr.archive.buffer();
 
