@@ -1,5 +1,13 @@
 # storexjs
 
+## 0.3.0
+
+### Minor Changes
+
+- b58af94: feat: add create() method for creating resources from files
+
+  Default type is "object" — pure storage, not for AI resolution.
+
 ## 0.2.1
 
 ### Patch Changes
