@@ -9,7 +9,7 @@
  */
 
 import type { RXAStore, RXM, RXMStore, RXR, StoredRXM } from "@resourcexjs/core";
-import { CASRegistry, parse } from "@resourcexjs/core";
+import { archive, CASRegistry, manifest, parse, resource } from "@resourcexjs/core";
 
 /**
  * File metadata returned by list operations.
@@ -110,6 +110,32 @@ export class StoreX {
   async has(locator: string): Promise<boolean> {
     const rxi = parse(locator);
     return this.cas.has(rxi);
+  }
+
+  /**
+   * Create a new resource from files.
+   *
+   * @param opts.name - Resource name
+   * @param opts.tag - Version tag (default: "latest")
+   * @param opts.type - Resource type (default: "object" — pure storage, not for AI resolution)
+   * @param opts.description - Optional description
+   * @param opts.files - Files: relative path → content
+   */
+  async create(opts: {
+    name: string;
+    files: Record<string, Buffer>;
+    tag?: string;
+    type?: string;
+    description?: string;
+  }): Promise<RXM> {
+    const rxm = manifest({
+      name: opts.name,
+      type: opts.type ?? "object",
+      tag: opts.tag ?? "latest",
+      description: opts.description,
+    });
+    const rxa = await archive(opts.files);
+    return this.cas.put(resource(rxm, rxa));
   }
 
   /**
