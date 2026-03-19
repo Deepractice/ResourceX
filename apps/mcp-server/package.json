@@ -4,7 +4,7 @@
   "description": "ResourceX MCP Server for AI Agents",
   "license": "Apache-2.0",
   "type": "module",
-  "main": "dist/index.js",
+  "main": "dist/index.ts",
   "bin": {
     "resourcex-mcp": "./dist/index.js",
     "mcp-server": "./dist/index.js"
@@ -24,5 +24,8 @@
   "devDependencies": {
     "@types/node": "^22.14.0",
     "typescript": "^5.8.3"
+  },
+  "publishConfig": {
+    "main": "dist/index.js"
   }
 }
